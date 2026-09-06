@@ -197,5 +197,103 @@ ok(!/\byou should\b/i.test(all), "the app never tells anyone what they should do
 ok(!/\bwe recommend\b/i.test(all), "the app never recommends anything");
 ok(!/serviceWorker\.register/.test(all), "no service worker — the app is served fresh and the deploy is upload-only");
 
+/* ————— 12. the Observatory (4.0): the console's rules ————— */
+suite("content 12 — the console: motion, markup, copy");
+const obsPath = join(APP, "css", "observatory.css");
+ok(existsSync(obsPath), "css/observatory.css ships");
+const obs = text[obsPath] || "";
+const obsCode = obs.replace(/\/\*[\s\S]*?\*\//g, "");
+/* the four forbidden effects — the whole page must stay cheap enough to run
+ * beside a screening worker on a phone */
+for (const prop of ["filter", "backdrop-filter", "mix-blend-mode", "text-shadow"]) {
+  ok(!new RegExp("(^|[\\s;{])" + prop.replace("-", "\\-") + "\\s*:", "m").test(obsCode), "observatory.css never sets " + prop);
+}
+/* nothing animates or transitions width/height/top/left: transform + opacity only */
+ok(!/transition\s*:[^;]*\b(width|height|top|left)\b/.test(obsCode), "observatory.css never transitions width/height/top/left");
+{
+  const frames = obsCode.match(/@keyframes[^{]*\{[\s\S]*?\}\s*\}/g) || [];
+  ok(frames.length >= 4, "observatory.css names its keyframes (" + frames.length + ")");
+  ok(frames.every((f) => !/\b(width|height|top|left)\s*:/.test(f)), "no keyframe animates width/height/top/left");
+  for (const name of ["obs-grow", "obs-flip", "obs-swap", "obs-bloom"]) {
+    ok(new RegExp("@keyframes\\s+" + name + "\\b").test(obsCode), "keyframe " + name + " is defined");
+  }
+  /* reduced motion REDEFINES the keyframes as fades rather than switching them off */
+  const rm = obsCode.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*)/);
+  ok(!!rm, "observatory.css has a prefers-reduced-motion block");
+  const rmBody = rm ? rm[1] : "";
+  for (const name of ["obs-grow", "obs-flip", "obs-swap", "obs-bloom"]) {
+    ok(new RegExp("@keyframes\\s+" + name + "\\s*\\{[^}]*opacity[^}]*\\}").test(rmBody), "reduced motion redefines " + name + " as an opacity fade");
+  }
+  ok(/html\[data-still\]/.test(obsCode), "the in-page 'Hold the instruments still' switch (html[data-still]) is honoured");
+  ok(/\.is-parked/.test(obsCode) && /animation-play-state\s*:\s*paused/.test(obsCode), "off-screen panels can be parked");
+  ok(/html\[data-dpr="2"\]/.test(obsCode) && /mask-image/.test(obsCode), "the dot-matrix mask is gated on html[data-dpr=\"2\"]");
+}
+/* the view modules: createElement + textContent only, exports prefixed */
+const viewDir = join(APP, "js", "view");
+const viewFiles = files.filter((p) => p.startsWith(viewDir + "/") && p.endsWith(".js"));
+ok(viewFiles.length >= 2, "js/view/ ships its modules (" + viewFiles.length + ")");
+for (const p of viewFiles) {
+  const name = "js/view/" + p.split("/").pop();
+  const src = text[p];
+  ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(src), name + ": no HTML sinks");
+  ok(!/parseSmiles\s*\(/.test(src), name + ": never calls parseSmiles( — molFromSmiles is the only door");
+  const names = [];
+  for (const m of src.matchAll(/^\s*export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) names.push(m[1]);
+  for (const m of src.matchAll(/^\s*export\s*\{([^}]*)\}/gm)) for (const sp of m[1].split(",")) { const t = sp.trim().split(/\s+as\s+/).pop(); if (t) names.push(t); }
+  ok(names.length > 0 && names.every((n) => /^view[A-Z]/.test(n) || /^[A-Z][A-Z0-9_]*$/.test(n)),
+     name + ": every export is view* or UPPER_CASE data (" + names.join(", ") + ")");
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  ok(!/\.start\s*\(\s*\)/.test(code), name + ": never starts the client — CPU is the Lab's two handlers' business");
+}
+/* the strip: mounted once in index.html, the only poller, no polling left in lab.js */
+ok(/<div id="strip"><\/div>/.test(index), "index.html carries the #strip mount under #nav");
+ok(index.indexOf('id="nav"') < index.indexOf('id="strip"') && index.indexOf('id="strip"') < index.indexOf('id="view"'), "#strip sits between #nav and #view");
+ok(/css\/observatory\.css/.test(index), "index.html links observatory.css");
+ok(/data-dpr/.test(index), "index.html sets html[data-dpr] for the dot-matrix mask");
+ok(/viewTelemetry\(\$\("#strip"\)/.test(app), "app.js mounts the strip once at boot");
+ok(!/setInterval/.test(lab.replace(/\/\*[\s\S]*?\*\//g, "")), "lab.js has no polling timer of its own — telemetry.js is the only poller");
+ok(!/apiGet\("(stats|hits|history)"/.test(lab), "lab.js never fetches stats/hits/history itself");
+ok(/viewTelemetry\.subscribe/.test(lab), "lab.js subscribes to the telemetry store");
+const telemetry = text[join(viewDir, "telemetry.js")] || "";
+ok(/If-None-Match/.test(telemetry) && /304/.test(telemetry), "telemetry.js revalidates with If-None-Match and understands 304");
+ok(/aria-live", "off"/.test(telemetry), "the strip is aria-live=off (the log is the accessible reading)");
+ok(/hud-log/.test(telemetry) && /toISOString/.test(telemetry), "the 20-line log carries UTC timestamps");
+ok(/visibilitychange/.test(telemetry), "polling is suspended while the document is hidden");
+/* the parking is real: the observer lives in js/view and the Lab hands it its panels */
+const ledSrc = text[join(viewDir, "led.js")] || "";
+ok(/IntersectionObserver/.test(ledSrc) && /is-parked/.test(ledSrc) && (lab.match(/viewPark\(/g) || []).length >= 3, "off-screen parking is implemented, not just styled: IntersectionObserver in js/view/led.js, viewPark() on the Lab's panels");
+/* the queue that feeds the strip is bounded and a stop clears it */
+ok(/QUEUE_PER_TAG/.test(telemetry) && /trimQueue\(/.test(telemetry) && /viewTelemetry\.drop\("LAB"\)/.test(lab), "the strip's frame queue is bounded per tag and the Lab drops a finished run's frames on stop");
+/* no count-up: nothing in the view or the Lab tweens a number toward a target */
+ok(!/requestAnimationFrame/.test(text[join(viewDir, "led.js")] || "x") && !/requestAnimationFrame/.test(lab), "no rAF loop drives a readout — numbers roll old → new in one step");
+/* the LED text twin is structural: every led svg is followed by its twin */
+ok(/led-text/.test(text[join(viewDir, "led.js")] || ""), "led.js emits the visible .led-text twin");
+
+/* THE WORD RULE. The activity is "screening" and the ask is "set up this
+ * browser" — never mining: the roadmap's own token-optics argument applied to
+ * words. Word boundaries keep "determine", "vitamin", "spermine" legal. This
+ * scans COPY: string literals and comments in JS, whole files for HTML/CSS. */
+const MINE_RE = /\bmin(e|er|ers|ing|es)\b/i;
+function copyOf(p, src) {
+  if (!p.endsWith(".js")) return src;
+  const out = [];
+  for (const m of src.matchAll(/"((?:[^"\\\n]|\\.)*)"|'((?:[^'\\\n]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)) out.push(m[1] || m[2] || m[3] || "");
+  for (const m of src.matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g)) out.push(m[0]);
+  return out.join("\n");
+}
+for (const p of files) {
+  const hit = copyOf(p, text[p]).match(MINE_RE);
+  ok(!hit, "app/" + p.slice(APP.length + 1) + " never calls the activity mining (" + (hit ? hit[0] : "") + ")");
+}
+/* the rest of the §12 checklist, app-wide */
+for (const [re, why] of [
+  [/\b(streak|combo|jackpot|level[- ]?up|loot)\b/i, "game-loop vocabulary (streak/combo/jackpot/level up/loot)"],
+  [/\bbreakthrough\b/i, "'breakthrough'"],
+  [/\bthousands of machines\b|\bmillions of molecules\b/i, "an unmeasured scale"],
+  [/\bexpired\b/i, "'expired'"]
+]) {
+  ok(!re.test(files.map((p) => copyOf(p, text[p])).join("\n")), "no shipped copy uses " + why);
+}
+
 console.log(failed ? "content: " + failed + " FAILED of " + checks : "content: " + checks + " checks passed ✓");
 process.exit(failed ? 1 : 0);

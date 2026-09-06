@@ -65,11 +65,25 @@ define('LOS_TEAM_ALPHABET', 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'); // 32 symbols, 
 /* ————————————————————————— response plumbing ————————————————————————— */
 
 header('Content-Type: application/json; charset=utf-8');
-// LiteSpeed on this host caches aggressively and has cached 404s before now. A
-// cached work unit would hand two volunteers the same "independent" answer, so
-// nothing from this endpoint is ever storable.
+// THE CACHE SPLIT (4.0). LiteSpeed on this host caches aggressively and has
+// cached 404s before now, so nothing here is ever "public". Two regimes:
+//
+//   READ endpoints (health / stats / hits / history / team / contributor):
+//   Cache-Control: no-cache + a STRONG ETag (sha1 of the JSON body) + 304 to a
+//   matching If-None-Match. The strip polls stats every 15 seconds; an
+//   unchanged board must cost the server a hash and a 304, not a body.
+//
+//   WORK endpoints (work / submit / join / leave / team_* / me / ingest /
+//   canary): Cache-Control: no-store. A cached work unit would hand two
+//   "independent" volunteers the same answer, which is the one thing the
+//   consensus rule cannot survive. These are never revalidated because they
+//   are never stored.
+//
+// The default below is the strict one; los_out() relaxes it ONLY for a
+// successful response from a read action (see LOS_READ_ACTIONS).
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
+header('Access-Control-Expose-Headers: ETag');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 // Safe with a wildcard: this API has no cookies and no session, so a browser
@@ -85,14 +99,45 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     exit;
 }
 
+/** The read actions: revalidatable (no-cache + ETag + 304). Everything else is
+ *  no-store — see THE CACHE SPLIT above. */
+define('LOS_READ_ACTIONS', 'health,stats,hits,history,team,contributor');
+
+function los_is_read_action()
+{
+    $a = isset($_GET['a']) && is_scalar($_GET['a']) ? (string) $_GET['a'] : '';
+    return $a !== '' && in_array($a, explode(',', LOS_READ_ACTIONS), true);
+}
+
 /** Emit JSON and stop. Never leaks a path, a query or a stack trace. */
 function los_out(array $data, $status = 200)
 {
-    http_response_code((int) $status);
     $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     if ($json === false) {
         $json = '{"error":"encode_failed"}';
     }
+    if ((int) $status === 200 && los_is_read_action()
+        && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+        // A strong validator over the exact bytes: the same board hashes the
+        // same, and a board that changed by one credit does not.
+        $etag = '"' . sha1($json) . '"';
+        header('Cache-Control: no-cache');
+        header('ETag: ' . $etag);
+        $inm = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? (string) $_SERVER['HTTP_IF_NONE_MATCH'] : '';
+        if ($inm !== '') {
+            foreach (explode(',', $inm) as $candidate) {
+                $candidate = trim($candidate);
+                if (strncmp($candidate, 'W/', 2) === 0) {
+                    $candidate = substr($candidate, 2);
+                }
+                if ($candidate === $etag || $candidate === '*') {
+                    http_response_code(304);
+                    exit;
+                }
+            }
+        }
+    }
+    http_response_code((int) $status);
     echo $json;
     exit;
 }

@@ -3,6 +3,7 @@ import { RUNGS, strongest, hasRigorousNull, rungLabel, ORGANISM_LABEL } from "./
 import { EVIDENCE_HEADLINE, EVIDENCE_NOTE, EVIDENCE_RUNGS, HUMAN_EVIDENCE, strongestHuman, hasHumanNull, rungLabelHuman, KIND_LABEL, DESIGN_LABEL, OUTCOME_LABEL } from "./evidence.js";
 import { FEED_URL, parseFeed, feedFreshness } from "./feed.js";
 import { renderLab } from "./lab.js";
+import { viewTelemetry } from "./view/telemetry.js";
 
 /* The Lab talks to the swarm server that ships beside the app. A page served
  * from photon-bounce.com/longevityos/ finds it at ./api/; QA overrides it. */
@@ -334,6 +335,8 @@ async function loadFeed() {
   } catch (_) { state.feedError = true; }
 }
 
+/* 4.0: the telemetry strip is mounted ONCE, outside #view, before the first render (a deep link may open the Lab at once), and is the app's only poller (reads, never CPU) */
+viewTelemetry($("#strip"), { apiBase: API_BASE, atlas: { compounds: COMPOUNDS.length, rows: COMPOUNDS.reduce((n, c) => n + c.evidence.length, 0), nulls: COMPOUNDS.filter(hasRigorousNull).length, ledger: HUMAN_EVIDENCE.length } });
 render();
 loadFeed();
 

@@ -1,0 +1,365 @@
+/* observatory.css — 4.0 "The Observatory": the instrument-room tokens, the
+ * console panels, the seven-segment readouts, the LED bars, the telemetry
+ * strip and the motion rules.
+ *
+ * WHAT THIS FILE MAY NOT CONTAIN (qa/content.mjs lints it): filter,
+ * backdrop-filter, mix-blend-mode, text-shadow, and any animation or
+ * transition of width/height/top/left. Motion is transform + opacity only.
+ *
+ * NOTHING MOVES WHILE NOTHING IS RUNNING. The carrier dot pulses only while
+ * the client is in the running state (html[data-running]); the strip's row
+ * swap is the one animation that plays without a running client, and it is
+ * a single 260ms translate every six seconds.
+ *
+ * REDUCED MOTION. @media (prefers-reduced-motion: reduce) — and the in-page
+ * "Hold the instruments still" switch, which sets html[data-still] — REDEFINE
+ * every keyframe as a 120ms opacity fade, so nothing freezes mid-transform;
+ * bars lose their transition; the dot is display:none.
+ *
+ * style.css's tokens are untouched; these sit beside them. */
+
+:root {
+  --instr-well: #070c11;
+  --instr-face: #0f1720;
+  --bezel: #1c2836;
+  --bezel-hi: rgba(255, 255, 255, .045);
+  --phosphor: #6ff0c0;
+  --phosphor-dim: rgba(111, 240, 192, .11);
+  --trace: #7ab8ff;
+  --trace-ghost: rgba(122, 184, 255, .16);
+  --grid: rgba(122, 184, 255, .06);
+  --amber: #ffb454;
+  --rose: #ff7a90;
+  --violet: #c39bff;
+  --atom-c: #e8eef4;
+  --atom-n: #7ab8ff;
+  --atom-o: #ff9a86;
+  --atom-s: #ffcf6b;
+  --atom-p: #c39bff;
+  --atom-hal: #6ff0c0;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+}
+
+/* ————— the header rail: 3px, on every tab ————— */
+
+header { border-bottom: 3px solid var(--bezel); }
+
+/* ————— type ————— */
+
+.instr-label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--dim);
+  line-height: 1.3;
+}
+.instr-value {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  line-height: 1.3;
+}
+/* dot-matrix mask: only on dense screens (JS sets html[data-dpr="2"]) and only
+   on text at least 12px — smaller text under a 3px mask is unreadable */
+html[data-dpr="2"] .instr-value,
+html[data-dpr="2"] .led-text {
+  -webkit-mask-image: radial-gradient(circle, #000 .85px, transparent 1.05px);
+  mask-image: radial-gradient(circle, #000 .85px, transparent 1.05px);
+  -webkit-mask-size: 3px 3px;
+  mask-size: 3px 3px;
+}
+
+/* ————— surfaces ————— */
+
+.console-panel {
+  position: relative;
+  background: linear-gradient(180deg, var(--instr-face), #0c141c);
+  border: 1px solid var(--bezel);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 var(--bezel-hi), 0 1px 0 rgba(0, 0, 0, .5);
+  padding: 12px 14px;
+}
+/* rivets: one pseudo-element, four radial gradients */
+.console-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 7px 7px, var(--bezel) 0 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) 7px, var(--bezel) 0 1.6px, transparent 2.2px),
+    radial-gradient(circle at 7px calc(100% - 7px), var(--bezel) 0 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), var(--bezel) 0 1.6px, transparent 2.2px);
+}
+.instr-well {
+  background:
+    repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 12px),
+    var(--instr-well);
+  border: 1px solid var(--bezel);
+  border-radius: 3px;
+}
+
+/* the Lab as a console: named areas, one column on a phone */
+.console {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "status status"
+    "lens consensus"
+    "scope controls";
+}
+.console > [data-area="status"] { grid-area: status; }
+.console > [data-area="lens"] { grid-area: lens; }
+.console > [data-area="consensus"] { grid-area: consensus; }
+.console > [data-area="scope"] { grid-area: scope; }
+.console > [data-area="controls"] { grid-area: controls; }
+@media (max-width: 760px) {
+  .console {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "status" "lens" "consensus" "scope" "controls";
+  }
+}
+
+/* ————— readouts ————— */
+
+.instr {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.instr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.instr-led .led {
+  display: block;
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  overflow: visible;
+}
+.led-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* THE USE-SHADOW RULE. Chromium styles the clones inside a <use> by matching
+   selectors against the ORIGINAL element's ancestors (symbol#seg7), not the
+   <use>'s — so ".led .sa" never matches and "#seg7 .sa" always does. What
+   DOES cross into the shadow tree is inheritance: the seven --a..--g lit
+   flags set inline on each <use>, and --led-color set on the readout. */
+#seg7 polygon, #seg7 rect { fill: var(--led-color, var(--phosphor)); }
+#seg7 .sa { fill-opacity: calc(.11 + .89 * var(--a, 0)); }
+#seg7 .sb { fill-opacity: calc(.11 + .89 * var(--b, 0)); }
+#seg7 .sc { fill-opacity: calc(.11 + .89 * var(--c, 0)); }
+#seg7 .sd { fill-opacity: calc(.11 + .89 * var(--d, 0)); }
+#seg7 .se { fill-opacity: calc(.11 + .89 * var(--e, 0)); }
+#seg7 .sf { fill-opacity: calc(.11 + .89 * var(--f, 0)); }
+#seg7 .sg { fill-opacity: calc(.11 + .89 * var(--g, 0)); }
+#seg7 .sp { fill-opacity: calc(.11 + .89 * var(--p, 0)); }
+.led use { transform-box: fill-box; transform-origin: center; }
+.led use.flip { animation: obs-flip 180ms ease-out; }
+.led-text {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--phosphor);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.instr-led-amber { --led-color: var(--amber); }
+.instr-led-amber .led-text { color: var(--amber); }
+
+/* LED bar: a segmented track, a segmented fill scaled on X */
+.led-bar {
+  position: relative;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, var(--phosphor-dim) 0 6px, transparent 6px 9px);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.led-bar > i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: repeating-linear-gradient(90deg, var(--phosphor) 0 6px, transparent 6px 9px);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 320ms ease-out;
+}
+.instr-bar-amber .led-bar > i { background: repeating-linear-gradient(90deg, var(--amber) 0 6px, transparent 6px 9px); }
+.instr-bar-trace .led-bar > i { background: repeating-linear-gradient(90deg, var(--trace) 0 6px, transparent 6px 9px); }
+
+/* ————— the telemetry strip ————— */
+
+#strip { max-width: 980px; margin: 10px auto 0; padding: 0 18px; }
+.strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--instr-well);
+  border: 1px solid var(--bezel);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.strip-left { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.strip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--phosphor);
+  opacity: .45;
+}
+html[data-running] .strip-dot { animation: obs-bloom 1.6s ease-in-out infinite; opacity: 1; }
+.strip-tag {
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  color: var(--dim);
+  min-width: 4.2em;
+}
+.strip-tag-NET { color: var(--trace); }
+.strip-tag-LAB { color: var(--phosphor); }
+.strip-tag-YOU { color: var(--phosphor); }
+.strip-tag-CONF { color: var(--amber); }
+.strip-tag-ATLAS { color: var(--violet); }
+.strip-frame { position: relative; height: 28px; overflow: hidden; min-width: 0; }
+.strip-rows { display: flex; flex-direction: column; }
+.strip-rows.swap { animation: obs-swap 260ms ease-in-out both; }
+.strip-rows.fade { animation: obs-swap 120ms ease-out both; }
+.strip-row {
+  height: 28px;
+  line-height: 28px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 0 0 28px;
+}
+.strip-right { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.strip-lamp {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: var(--bezel);
+}
+.strip-link { font-size: 10.5px; letter-spacing: .14em; color: var(--dim); min-width: 5.5em; }
+.strip-link-live .strip-lamp { background: var(--phosphor); }
+.strip-link-live .strip-link { color: var(--phosphor); }
+.strip-link-quiet .strip-lamp { background: var(--trace); }
+.strip-link-quiet .strip-link { color: var(--trace); }
+.strip-link-linking .strip-lamp { background: var(--dim); }
+.strip-link-linking .strip-link { color: var(--dim); }
+.strip-link-none .strip-lamp { background: var(--rose); }
+.strip-link-none .strip-link { color: var(--rose); }
+.strip-link-paused .strip-lamp { background: var(--amber); }
+.strip-link-paused .strip-link { color: var(--amber); }
+/* PAUSE/RESUME: the box a finger meets is 44px each way (negative vertical
+   margins keep the strip at 28px); the 22px bezel a visitor sees is drawn by
+   ::before inside it, so the target is large and the strip stays thin */
+.strip-btn {
+  position: relative;
+  background: transparent;
+  color: var(--dim);
+  border: 0;
+  border-radius: 3px;
+  padding: 0 8px;
+  margin: -8px 0;
+  font: inherit;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+}
+.strip-btn::before {
+  content: "";
+  position: absolute;
+  inset: 11px 0;
+  border: 1px solid var(--bezel);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.strip-btn:hover { color: var(--ink); }
+.strip-btn:hover::before { border-color: var(--dim); }
+.strip-btn:focus-visible { outline: none; }
+.strip-btn:focus-visible::before, .instr-switch input:focus-visible { outline: 2px solid var(--trace); outline-offset: 2px; }
+@media (max-width: 480px) {
+  .strip-tag { min-width: 0; }
+  .strip-link { min-width: 0; }
+}
+
+/* the accessible equivalent of the strip: the last twenty lines, always open */
+.hud-log {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--dim);
+  max-height: 14em;
+  overflow-y: auto;
+}
+.hud-log li { display: flex; gap: 8px; overflow-wrap: anywhere; }
+.hud-log time { flex: 0 0 auto; color: var(--dim); opacity: .8; }
+.hud-log .hud-tag { flex: 0 0 4.2em; font-size: 10.5px; letter-spacing: .14em; line-height: 1.7; }
+.hud-log .hud-text { color: var(--ink); min-width: 0; }
+
+/* the "Hold the instruments still" switch */
+.instr-switch { display: flex; gap: 10px; align-items: center; font-size: 13.5px; color: var(--ink); cursor: pointer; min-height: 44px; }
+.instr-switch input { width: 20px; height: 20px; margin: 0; accent-color: var(--phosphor); }
+.instr-switch-note { color: var(--dim); font-size: 12.5px; }
+
+/* ————— motion ————— */
+
+@keyframes obs-grow {
+  from { transform: scale(.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes obs-flip {
+  from { transform: scaleY(.2); opacity: .4; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+@keyframes obs-swap {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+@keyframes obs-bloom {
+  0% { opacity: .35; }
+  50% { opacity: 1; }
+  100% { opacity: .35; }
+}
+
+/* off-screen panels do not animate */
+.is-parked, .is-parked * { animation-play-state: paused !important; }
+
+/* REDUCED MOTION: the keyframes are REDEFINED as 120ms fades, so an element
+   mid-animation is never frozen half-transformed; bars stop transitioning;
+   the strip cross-fades; the carrier dot is gone. The in-page switch
+   (html[data-still]) is honoured by exactly the same rules. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes obs-grow { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes obs-flip { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes obs-swap { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes obs-bloom { from { opacity: 0; } to { opacity: 1; } }
+  .led use.flip { animation-duration: 120ms; }
+  .strip-rows.swap { animation-duration: 120ms; }
+  .led-bar > i { transition: none; }
+  .strip-dot { display: none; }
+  html[data-running] .strip-dot { animation: none; }
+}
+html[data-still] .led use.flip { animation: obs-still 120ms ease-out; }
+html[data-still] .strip-rows.swap, html[data-still] .strip-rows.fade { animation: obs-still 120ms ease-out both; }
+html[data-still] .led-bar > i { transition: none; }
+html[data-still] .strip-dot { display: none; }
+html[data-still][data-running] .strip-dot { animation: none; }
+@keyframes obs-still { from { opacity: 0; } to { opacity: 1; } }
+

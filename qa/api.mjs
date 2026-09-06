@@ -9,7 +9,7 @@
  * Everything runs offline against a temp DB and cleans up after itself.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { targetsDigest, ENGINE_VERSION } from "../app/js/chem/targets.js";
 import { screenUnit, referenceSet } from "../app/js/chem/score.js";
@@ -581,6 +581,61 @@ suite("api 13 — a re-pinned reference set retires the old units");
   /* restore the real pin so the server state stays honest for anything after */
   await call("a=ingest", { key: KEY, engine: ENGINE_VERSION, targets_digest: targetsDigest(), molecules: [] });
   ok((await call("a=health")).json.targets_digest === targetsDigest(), "pin restored");
+}
+
+/* ————— 14. the cache split (4.0): reads revalidate, work is never stored ————— */
+suite("api 14 — the cache split: ETag + 304 on reads, no-store on work");
+{
+  const raw = async (qs, headers, body) => {
+    const init = body === undefined
+      ? { headers: headers || {} }
+      : { method: "POST", headers: Object.assign({ "content-type": "application/json" }, headers || {}), body: JSON.stringify(body) };
+    const res = await fetch(BASE + "?" + qs, init);
+    const text = await res.text();
+    return { status: res.status, text, cc: res.headers.get("cache-control") || "", etag: res.headers.get("etag") || "" };
+  };
+  for (const qs of ["a=stats", "a=hits", "a=health"]) {
+    const first = await raw(qs);
+    ok(first.status === 200, `${qs} answers 200`);
+    ok(/^no-cache$/.test(first.cc.trim()), `${qs} is Cache-Control: no-cache (got '${first.cc}')`);
+    ok(/^"[0-9a-f]{40}"$/.test(first.etag), `${qs} carries a strong sha1 ETag (got '${first.etag}')`);
+    const { createHash } = await import("node:crypto");
+    ok(first.etag === '"' + createHash("sha1").update(first.text).digest("hex") + '"', `${qs}'s ETag is the sha1 of the exact body`);
+    const again = await raw(qs, { "if-none-match": first.etag });
+    ok(again.status === 304 && again.text === "", `${qs} with a matching If-None-Match answers 304 with no body (got ${again.status}, ${again.text.length} bytes)`);
+    const weak = await raw(qs, { "if-none-match": "W/" + first.etag });
+    ok(weak.status === 304, `${qs} accepts a weak-prefixed validator too (got ${weak.status})`);
+    const miss = await raw(qs, { "if-none-match": '"' + "0".repeat(40) + '"' });
+    ok(miss.status === 200 && miss.text.length > 2, `${qs} with a stale validator answers 200 with the body`);
+  }
+  /* a changed board changes the validator */
+  const s1 = await raw("a=stats");
+  const who = (await call("a=join", { name: "etag-mover" })).json;
+  ok(!!(who && who.token), "a new contributor joins");
+  const s2 = await raw("a=stats");
+  ok(s1.etag !== s2.etag, "one more contributor ⇒ a different stats ETag");
+  ok((await raw("a=stats", { "if-none-match": s1.etag })).status === 200, "the old validator no longer matches");
+  /* work endpoints: no-store, no ETag, never 304 */
+  const w = await raw("a=work&token=" + who.token);
+  ok(/no-store/.test(w.cc) && w.etag === "", `?a=work is no-store with no ETag (got '${w.cc}' / '${w.etag}')`);
+  const w2 = await raw("a=work&token=" + who.token, { "if-none-match": "*" });
+  ok(w2.status !== 304, "?a=work never answers 304, whatever If-None-Match says");
+  const sub = await raw("a=submit", { "if-none-match": "*" }, { token: who.token, unit_id: "nope", digest: "0".repeat(64), results: [] });
+  ok(/no-store/.test(sub.cc) && sub.etag === "" && sub.status !== 304, `?a=submit is no-store with no ETag and never 304 (got ${sub.status} '${sub.cc}')`);
+  const j = await raw("a=join", { "if-none-match": "*" }, { name: "no-store" });
+  ok(/no-store/.test(j.cc) && j.etag === "" && j.status === 200, "?a=join is no-store");
+  const me = await raw("a=me&token=" + who.token);
+  ok(/no-store/.test(me.cc) && me.etag === "", "?a=me (token-bound) is no-store");
+  /* error responses from a read action are never revalidatable */
+  const bad = await raw("a=contributor&id=x");
+  ok(bad.status === 400 && /no-store/.test(bad.cc) && bad.etag === "", "a read action's 4xx is no-store with no ETag");
+  /* a read action's POST is not a cache candidate either */
+  const post = await raw("a=stats", {}, {});
+  ok(post.status === 200 && /no-store/.test(post.cc), "a POSTed read is answered but not made revalidatable");
+  /* the comment the spec asks for is above the header code */
+  const php = readFileSync(join(API, "index.php"), "utf8");
+  ok(/THE CACHE SPLIT/.test(php) && php.indexOf("THE CACHE SPLIT") < php.indexOf("header('Cache-Control"), "the cache split is explained above the header code");
+  ok(/two volunteers the same|two "independent" volunteers/.test(php), "and it says why work units are never stored");
 }
 
 cleanup();

@@ -36,9 +36,19 @@
  * charging" never starts the loop when a charger appears unless the visitor
  * had it running when they unplugged. What donating costs is spelled out
  * before the first press.
+ *
+ * 4.0. This file no longer polls. js/view/telemetry.js is the app's ONLY
+ * poller (stats / hits / history, ETag-aware, suspended while hidden); the
+ * Lab SUBSCRIBES to its store, asks it to refresh after its own events, and
+ * reports LAB / YOU / CONF lines into the strip. The numbers on this page are
+ * seven-segment readouts (js/view/led.js) that roll old → new in one step —
+ * there is no count-up anywhere, and a server figure changes only when a
+ * poll lands.
  */
 
 import { createSwarmClient } from "./swarm/client.js";
+import { viewLed, viewLedBar, viewPark } from "./view/led.js";
+import { viewTelemetry } from "./view/telemetry.js";
 
 /* ————— style conventions, borrowed from app.js verbatim ————— */
 
@@ -49,7 +59,6 @@ const labEl = (tag, cls, text) => {
   return n;
 };
 
-const POLL_MS = 15000;
 const REQUEST_MS = 12000;
 const MAX_BODY = 262144;
 const HITS_LIMIT = 20;
@@ -103,13 +112,14 @@ const PACES = [
 let client = null;
 let ui = null;
 let apiBase = "./api/";
-let pollTimer = null;
 let visibilityHooked = false;
+let subscribed = false;
 
 /* Each endpoint carries its OWN reachability. ?a=stats and ?a=hits are separate
  * handlers over separate tables on the server, so one can fail while the other
  * answers; borrowing one flag for both made a hits-only outage render as a
- * spinner that never stops — the exact failure this file's header forbids. */
+ * spinner that never stops — the exact failure this file's header forbids.
+ * Since 4.0 both are copied out of the telemetry store's snapshot. */
 const remote = {
   stats: null,        // last good ?a=stats payload (already sanitized)
   hits: null,         // last good ?a=hits payload (already sanitized)
@@ -145,10 +155,10 @@ const phone = {
   chargeNote: ""      // what the charging gate is doing right now
 };
 
-/* Teams. `mine` is the team this contributor is in (or null); `invited` is the
+/* Teams. `own` is the team this contributor is in (or null); `invited` is the
  * team a ?team= link pointed at, once the server described it. */
 const team = {
-  mine: null,         // { code, name, members, units, credits, since }
+  own: null,          // { code, name, members, units, credits, since }
   board: [],          // rows of the team whose board is shown
   boardCode: "",      // which team the board belongs to
   boardName: "",
@@ -487,11 +497,7 @@ function writePhonePrefs() {
   } catch (_) { /* storage refused: the preference lives for this page only */ }
 }
 
-/* ————— polling ————— */
-
-function stopPolling() {
-  if (pollTimer !== null) { clearInterval(pollTimer); pollTimer = null; }
-}
+/* ————— the telemetry store (4.0: the Lab subscribes, it does not poll) ————— */
 
 function tabIsVisible() {
   try { return typeof document === "undefined" || document.visibilityState !== "hidden"; }
@@ -506,17 +512,61 @@ function clientRunning() {
   try { return !!(client && client.isRunning && client.isRunning()); } catch (_) { return false; }
 }
 
-function startPolling() {
-  stopPolling();
-  pollTimer = setInterval(() => {
-    /* Two reasons to go quiet: the visitor switched away from this tab (a
-     * hidden page has no business making requests), or the Lab was torn down
-     * by a tab change inside the app and this timer is the last thing left of
-     * it. Both are checked here rather than trusted to a listener. */
-    if (!attached()) { stopPolling(); return; }
-    if (!tabIsVisible()) return;
-    refresh();
-  }, POLL_MS);
+/* Copy what the strip knows into the Lab's own state. The payloads are the
+ * server's, verbatim; they are shaped (sanitized) here exactly as before. */
+function applyTelemetry(snap) {
+  if (!snap) return;
+  if (snap.stats) {
+    remote.stats = shapeStats(snap.stats);
+    team.top = remote.stats.teams;
+  }
+  remote.reachable = snap.statsReachable;
+  remote.statsError = snap.statsError || "";
+  if (snap.hits) remote.hits = shapeHits(snap.hits);
+  remote.hitsReachable = snap.hitsReachable;
+  remote.hitsError = snap.hitsError || "";
+}
+
+/* One subscription for the life of the page. Every landed stats poll also
+ * refreshes the personal record and the team board — the same cadence the
+ * Lab's own 15-second timer had before 4.0, now driven by the one poller. */
+function subscribeTelemetry() {
+  if (subscribed) return;
+  subscribed = true;
+  viewTelemetry.subscribe((snap, ev) => {
+    try {
+      /* only a stats or hits event carries anything the Lab shapes; log,
+       * running, link and pause events are the strip's own business */
+      if (!ev || (ev.kind !== "stats" && ev.kind !== "hits")) return;
+      applyTelemetry(snap);
+      if (!attached()) return;
+      if (ev.kind === "stats" && ev.changed && !refreshing) { refreshMine(); return; }
+      paintStats(); paintBoard(); paintHits(); paintTeams();
+    } catch (_) { /* the Lab's problem, never the strip's */ }
+  });
+}
+
+/* The personal half of a refresh: ?a=me (only with a token) and the team
+ * board. Not a poll — it rides on the strip's stats cadence. */
+let refreshingMine = false;
+async function refreshMine() {
+  if (refreshingMine) return;
+  refreshingMine = true;
+  try {
+    const c = ensureClient();
+    const wantMe = !!(c && c.status().joined);
+    const m = wantMe ? await c.me() : null;
+    if (m) applyMe(m);
+    await refreshTeam();
+  } finally {
+    refreshingMine = false;
+  }
+  if (!attached()) return;
+  paintStats();
+  paintBoard();
+  paintHits();
+  paintTeams();
+  paintRecord();
 }
 
 function hookVisibility() {
@@ -526,7 +576,8 @@ function hookVisibility() {
     if (typeof document === "undefined" || typeof document.addEventListener !== "function") return;
     document.addEventListener("visibilitychange", () => {
       try {
-        if (tabIsVisible() && attached()) refresh();
+        /* the strip re-polls on its own when the page comes back; the Lab
+         * only has the wake lock to look after here */
         /* The wake lock is re-acquired when the page comes back — but only if
          * the visitor asked for it AND the swarm is actually running. The
          * client's own visibility handler resumes the loop in the same tick,
@@ -552,33 +603,16 @@ async function refresh() {
   refreshedOnce = true;
   try {
     /* The record is asked for only when a token exists — a visitor who has
-     * never pressed Donate has no record and is never signed up to get one. */
+     * never pressed Donate has no record and is never signed up to get one.
+     * stats + hits come from the one poller, forced now; the record and the
+     * team board are the Lab's own one-shot reads. */
     const c = ensureClient();
     const wantMe = !!(c && c.status().joined);
-    const [s, h, m] = await Promise.all([
-      apiGet("stats"),
-      apiGet("hits", { limit: HITS_LIMIT }),
+    const [snap, m] = await Promise.all([
+      viewTelemetry.refresh(),
       wantMe ? c.me() : Promise.resolve(null)
     ]);
-    if (s.ok) {
-      remote.stats = shapeStats(s.data);
-      remote.reachable = true;
-      remote.statsError = "";
-      team.top = remote.stats.teams;
-    } else {
-      remote.reachable = false;
-      remote.statsError = s.error || "could not reach the server";
-    }
-    /* Recorded separately on purpose: a hits-only outage must not blank the
-     * stats grid, and a stats-only outage must not leave hits spinning. */
-    if (h.ok) {
-      remote.hits = shapeHits(h.data);
-      remote.hitsReachable = true;
-      remote.hitsError = "";
-    } else {
-      remote.hitsReachable = false;
-      remote.hitsError = h.error || "could not reach the server";
-    }
+    applyTelemetry(snap);
     if (m) applyMe(m);
     await refreshTeam();
   } finally {
@@ -613,11 +647,11 @@ function applyMe(m) {
   record.since = c.since;
   record.team = c.team;
   if (c.team && c.team.code) {
-    if (!team.mine || team.mine.code !== c.team.code) {
-      team.mine = { code: c.team.code, name: c.team.name, members: null, units: null, credits: null, since: "" };
+    if (!team.own || team.own.code !== c.team.code) {
+      team.own = { code: c.team.code, name: c.team.name, members: null, units: null, credits: null, since: "" };
     }
   } else {
-    team.mine = null;
+    team.own = null;
   }
 }
 
@@ -630,7 +664,7 @@ function resetRecord() {
   record.since = "";
   record.team = null;
   record.confirmArmed = 0;
-  team.mine = null;
+  team.own = null;
   team.board = [];
   team.boardCode = "";
   team.boardName = "";
@@ -639,18 +673,18 @@ function resetRecord() {
 /* The board shown is the visitor's own team's, or — before they join — the
  * team the invitation pointed at. */
 async function refreshTeam() {
-  const code = (team.mine && team.mine.code) || team.inviteCode;
+  const code = (team.own && team.own.code) || team.inviteCode;
   if (!code) { team.board = []; team.boardCode = ""; team.boardName = ""; return; }
   const res = await apiGet("team", { code });
   if (!res.ok) {
-    if (team.inviteCode && !team.mine) team.inviteError = res.status === 404 ? "no team has that code" : safeText(res.error, 60);
+    if (team.inviteCode && !team.own) team.inviteError = res.status === 404 ? "no team has that code" : safeText(res.error, 60);
     return;
   }
   const info = shapeTeamInfo(res.data.team);
   team.board = shapeRows(res.data.board, BOARD_LIMIT);
   team.boardCode = code;
   team.boardName = info ? info.name : "";
-  if (team.mine && team.mine.code === code && info) team.mine = info;
+  if (team.own && team.own.code === code && info) team.own = info;
   if (team.inviteCode === code) { team.invited = { code, name: info ? info.name : "" }; team.inviteError = ""; }
 }
 
@@ -691,32 +725,81 @@ const STAT_FIELDS = [
 
 function buildStats(root) {
   const sec = labEl("section", "lab-section");
+  sec.setAttribute("data-lab", "stats");
   sec.appendChild(labEl("h3", "sect", "Live totals"));
   const host = labEl("div", "lab-stats-host");
   sec.appendChild(host);
   root.appendChild(sec);
   ui.statsHost = host;
+  ui.statsLeds = null;
   paintStats();
 }
 
+/* The readouts are built ONCE and then only re-set: a seven-segment display
+ * that is rebuilt on every poll cannot diff its digits, and a number that is
+ * rebuilt is a number that flickers. The grid appears the first time stats
+ * land and stays; only the note under it is rewritten. */
 function paintStats() {
   const host = ui && ui.statsHost;
   if (!host) return;
-  host.textContent = "";
   if (!remote.stats) {
+    host.textContent = "";
+    ui.statsLeds = null;
     host.appendChild(remote.reachable === false ? offlinePanel() : labEl("p", "lab-empty", "Asking the swarm server…"));
     return;
   }
-  const grid = labEl("div", "lab-stats");
-  for (const [key, label] of STAT_FIELDS) {
-    const cell = labEl("div", "lab-stat");
-    cell.appendChild(labEl("div", "lab-stat-num", groupInt(remote.stats[key])));
-    cell.appendChild(labEl("div", "lab-stat-label", label));
-    grid.appendChild(cell);
+  if (!ui.statsLeds) {
+    host.textContent = "";
+    const grid = labEl("div", "instr-grid console-panel lab-stats");
+    grid.setAttribute("data-lab", "stats-grid");
+    const leds = {};
+    for (const [key, label] of STAT_FIELDS) {
+      leds[key] = viewLed(grid, { label, digits: 8, text: groupInt(remote.stats[key]) });
+      leds[key].el.setAttribute("data-stat", key);
+    }
+    host.appendChild(grid);
+    viewPark(grid);
+    ui.statsLeds = leds;
+    ui.statsNote = labEl("p", "lab-note");
+    host.appendChild(ui.statsNote);
+  } else {
+    for (const [key] of STAT_FIELDS) ui.statsLeds[key].set(groupInt(remote.stats[key]));
   }
-  host.appendChild(grid);
-  if (remote.reachable === false) host.appendChild(labEl("p", "lab-note", "Showing the last figures we managed to fetch — " + OFFLINE_MSG));
-  else host.appendChild(labEl("p", "lab-note", "Refreshed every 15 seconds while this tab is in front."));
+  ui.statsNote.textContent = remote.reachable === false
+    ? "Showing the last figures we managed to fetch — " + OFFLINE_MSG
+    : "Server figures, as last polled by the strip above: every 15 seconds while this tab is in front, every 5 minutes when the server asks for quiet. A number changes only when a poll lands.";
+}
+
+/* ————— section 3b: the console log and the still switch ————— */
+
+function buildConsole(root) {
+  const sec = labEl("section", "lab-section");
+  sec.setAttribute("data-lab", "console");
+  sec.appendChild(labEl("h3", "sect", "The live route"));
+  sec.appendChild(labEl("p", "lab-lede",
+    "The strip under the tabs says what the swarm did; this is the same route as a list — the last twenty lines, " +
+    "with the time each arrived. NET is the server's totals, LAB and YOU are this browser, CONF is a second volunteer agreeing with it."));
+  const panel = labEl("div", "console-panel");
+  viewTelemetry.log(panel);
+  viewPark(panel);
+  sec.appendChild(panel);
+
+  /* "Hold the instruments still": html[data-still] — the same rules as the
+   * reduced-motion media query, remembered in los.hud.v1. Turning it on
+   * starts nothing and stops nothing but motion. */
+  const sw = labEl("label", "instr-switch");
+  const box = labEl("input");
+  box.type = "checkbox";
+  box.checked = viewTelemetry.prefs().still;
+  box.setAttribute("data-pref", "still");
+  box.addEventListener("change", () => { viewTelemetry.still(box.checked); });
+  sw.appendChild(box);
+  const text = labEl("span", "lab-toggle-text");
+  text.appendChild(labEl("span", "lab-toggle-label", "Hold the instruments still"));
+  text.appendChild(labEl("span", "instr-switch-note", "no motion on this page beyond a short fade — remembered on this device"));
+  sw.appendChild(text);
+  sec.appendChild(sw);
+  root.appendChild(sec);
 }
 
 function noticePanel(title, body, reason) {
@@ -787,13 +870,20 @@ function buildContribute(root) {
   const status = labEl("p", "lab-status");
   panel.appendChild(status);
 
-  const bar = labEl("div", "lab-progress");
-  const fill = labEl("div", "lab-progress-fill");
-  bar.appendChild(fill);
-  panel.appendChild(bar);
-
-  const readout = labEl("div", "lab-readout");
+  /* the session readouts: an LED bar for the unit in hand, seven-segment
+   * counters for the tallies — built once, set on every event */
+  const readout = labEl("div", "instr-grid lab-readout console-panel");
+  readout.setAttribute("data-lab", "readout");
+  const unitBar = viewLedBar(readout, { label: "current unit", value01: 0, text: "—" });
+  unitBar.el.setAttribute("data-read", "unit");
+  const unitsLed = viewLed(readout, { label: "units this session", digits: 6, text: "0" });
+  unitsLed.el.setAttribute("data-read", "units");
+  const confirmedLed = viewLed(readout, { label: "confirmed by a second volunteer", digits: 6, text: "0" });
+  confirmedLed.el.setAttribute("data-read", "confirmed");
+  const creditsLed = viewLed(readout, { label: "your credits", digits: 8, text: "0" });
+  creditsLed.el.setAttribute("data-read", "credits");
   panel.appendChild(readout);
+  viewPark(readout);
 
   sec.appendChild(panel);
   root.appendChild(sec);
@@ -802,9 +892,10 @@ function buildContribute(root) {
   ui.goBtn = go;
   ui.stopBtn = stop;
   ui.status = status;
-  ui.progressBar = bar;
-  ui.progressFill = fill;
-  ui.readout = readout;
+  ui.unitBar = unitBar;
+  ui.unitsLed = unitsLed;
+  ui.confirmedLed = confirmedLed;
+  ui.creditsLed = creditsLed;
   paintDonate();
 }
 
@@ -881,13 +972,23 @@ async function startDonating() {
     ? "Screening. Thank you — you can leave this tab open and forget about it."
     : "Screening. (Still trying to sign in with the server; it will retry by itself.)";
   donate.tone = joined ? "ok" : "warn";
+  viewTelemetry.push({ tag: "LAB", text: "Screening started — " + paceLabel() + "; only while this tab is open" });
   paintDonate();
   paintPhone();
   scheduleRefresh();
 }
 
+function paceLabel() {
+  const p = PACES.find((x) => x[1] === phone.pace);
+  return p ? p[2].toLowerCase() + " pace" : "full pace";
+}
+
 function stopDonating() {
   phone.wantRunning = false;
+  /* a running client emits `stopped` synchronously from stop(), and that
+   * handler writes the strip's "Stopped" line; only a client that was not
+   * running (nothing to emit) gets the line from here — one line, never two */
+  const willEmit = clientRunning();
   if (client) { try { client.stop(); } catch (_) {} }
   donate.phase = "stopped";
   donate.unitId = "";
@@ -895,6 +996,7 @@ function stopDonating() {
   donate.total = 0;
   donate.message = "Stopped. Nothing is using your CPU.";
   donate.tone = "dim";
+  if (!willEmit) viewTelemetry.push({ tag: "LAB", text: "Stopped — nothing is using this CPU" });
   releaseWakeLock();
   paintDonate();
   paintPhone();
@@ -915,6 +1017,7 @@ function onSwarmEvent(ev) {
         donate.message = "Signed in as " + (safeText(ev.name, NAME_MAX) || "an anonymous contributor") + ".";
         donate.tone = "ok";
         if (ev.stored === false) donate.message += " (This browser will not remember it after a reload.)";
+        viewTelemetry.push({ tag: "LAB", text: "Signed in as " + (safeText(ev.name, NAME_MAX) || "an anonymous contributor") });
       }
     } else if (ev.type === "unit") {
       donate.phase = "running";
@@ -923,6 +1026,7 @@ function onSwarmEvent(ev) {
       donate.total = safeInt(ev.total) || 0;
       donate.message = "Screening a new work unit.";
       donate.tone = "ok";
+      viewTelemetry.push({ tag: "LAB", text: "Unit " + (donate.unitId || "?") + " issued — " + groupInt(donate.total) + " molecules to screen" });
     } else if (ev.type === "progress") {
       donate.done = safeInt(ev.done) || 0;
       if (ev.total !== undefined) donate.total = safeInt(ev.total) || donate.total;
@@ -931,25 +1035,44 @@ function onSwarmEvent(ev) {
       donate.credits = safeInt(ev.credits) || donate.credits;
       donate.message = describeStatus(ev.status);
       donate.tone = ev.status === "conflict" || ev.status === "canary_failed" ? "warn" : "ok";
+      const uid = safeText(ev.unitId, 24) || donate.unitId || "?";
+      if (ev.status === "conflict") {
+        viewTelemetry.push({ tag: "LAB", text: "Unit " + uid + " — disagreement is the system working; the unit is not lost, a third browser settles it" });
+      } else if (ev.status !== "confirmed") {
+        /* a submit the server confirmed on the spot is followed, in the same
+         * tick, by the client's own `confirmed` event — the CONF line and the
+         * YOU tally are written there, once, never here as well */
+        viewTelemetry.push({ tag: "LAB", text: "Unit " + uid + " fingerprint sent — waiting for a second volunteer" });
+      }
+      if (ev.status !== "confirmed") pushSessionLine();
       scheduleRefresh();
     } else if (ev.type === "confirmed") {
       donate.confirmed = safeInt(ev.confirmed) || donate.confirmed + 1;
       donate.credits = safeInt(ev.credits) || donate.credits;
       donate.message = "A second volunteer agreed with your result — that unit is confirmed.";
       donate.tone = "ok";
+      viewTelemetry.push({ tag: "CONF", text: "Unit " + (safeText(ev.unitId, 24) || donate.unitId || "?") + " — a second volunteer's browser produced the same fingerprint as yours. Those molecules are now on the record." });
+      pushSessionLine();
       scheduleRefresh();
     } else if (ev.type === "idle") {
       donate.message = "No work units are waiting — checking again shortly.";
       donate.tone = "dim";
+      viewTelemetry.push({ tag: "LAB", text: "No work units waiting — checking again shortly" });
     } else if (ev.type === "error") {
       donate.message = safeText(ev.message, 140) || "Something went wrong; retrying.";
       donate.tone = "warn";
+      viewTelemetry.push({ tag: "LAB", text: "Retrying — " + (safeText(ev.message, 120) || "something went wrong") });
     } else if (ev.type === "stopped") {
       donate.phase = "stopped";
       donate.unitId = "";
       donate.done = 0;
       donate.total = 0;
       if (donate.tone !== "warn") { donate.message = "Stopped. Nothing is using your CPU."; donate.tone = "dim"; }
+      /* the frames still waiting for the strip describe a run that is over —
+       * the log keeps every line; the strip says "Stopped" now */
+      viewTelemetry.drop("LAB");
+      viewTelemetry.drop("YOU");
+      viewTelemetry.push({ tag: "LAB", text: "Stopped — nothing is using this CPU" });
       /* The screen may sleep again whatever stopped the loop. */
       releaseWakeLock();
     } else if (ev.type === "team") {
@@ -971,6 +1094,10 @@ function onSwarmEvent(ev) {
     }
     paintDonate();
   } catch (_) { /* the UI's problem, never the swarm's */ }
+}
+
+function pushSessionLine() {
+  viewTelemetry.push({ tag: "YOU", text: "This session: " + groupInt(donate.units) + (donate.units === 1 ? " unit" : " units") + " · " + groupInt(donate.confirmed) + " confirmed · " + groupInt(donate.credits) + " credits" });
 }
 
 function describeStatus(status) {
@@ -1002,23 +1129,13 @@ function paintDonate() {
 
   const total = donate.total > 0 ? donate.total : 0;
   const done = total ? Math.min(donate.done, total) : 0;
-  ui.progressBar.hidden = !total;
-  ui.progressFill.style.width = total ? String(Math.floor((done * 100) / total)) + "%" : "0%";
-
-  ui.readout.textContent = "";
-  const rows = [
-    ["current unit", donate.unitId || "—"],
-    ["molecules in this unit", total ? groupInt(done) + " / " + groupInt(total) : "—"],
-    ["your units submitted", groupInt(donate.units)],
-    ["confirmed by a second volunteer", groupInt(donate.confirmed)],
-    ["your credits", groupInt(donate.credits)]
-  ];
-  for (const [k, v] of rows) {
-    const row = labEl("div", "lab-read-row");
-    row.appendChild(labEl("span", "lab-read-k", k));
-    row.appendChild(labEl("span", "lab-read-v", v));
-    ui.readout.appendChild(row);
-  }
+  ui.unitBar.set(total ? done / total : 0,
+    total ? (donate.unitId || "unit") + " · " + groupInt(done) + " / " + groupInt(total) + " molecules" : (donate.unitId || "—"));
+  ui.unitsLed.set(groupInt(donate.units));
+  ui.confirmedLed.set(groupInt(donate.confirmed));
+  ui.creditsLed.set(groupInt(donate.credits));
+  viewTelemetry.session({ units: donate.units, confirmed: donate.confirmed, credits: donate.credits });
+  viewTelemetry.running(clientRunning());
 }
 
 /* ————— section 4b: on a phone or tablet ————— */
@@ -1414,7 +1531,7 @@ async function leaveTeam() {
   try {
     const res = await c.teamLeave();
     if (!res.ok) { setTeamMsg(teamError(res.error), "warn"); return; }
-    team.mine = null;
+    team.own = null;
     record.team = null;
     team.board = [];
     team.boardCode = "";
@@ -1431,8 +1548,8 @@ async function leaveTeam() {
 
 function applyTeamPayload(data) {
   const info = shapeTeamInfo(isPlainObject(data) ? data.team : null);
-  team.mine = info && info.code ? info : null;
-  record.team = team.mine ? { code: team.mine.code, name: team.mine.name } : null;
+  team.own = info && info.code ? info : null;
+  record.team = team.own ? { code: team.own.code, name: team.own.name } : null;
   team.board = [];
   team.boardCode = "";
   team.boardName = "";
@@ -1581,20 +1698,20 @@ function paintTeams() {
   if (!ui || !ui.teamCard) return;
   const card = ui.teamCard;
   card.textContent = "";
-  const mine = team.mine;
+  const own = team.own;
 
-  if (mine) {
-    card.appendChild(labEl("div", "lab-team-name", mine.name));
+  if (own) {
+    card.appendChild(labEl("div", "lab-team-name", own.name));
     const codeLine = labEl("div", "lab-team-codeline");
     codeLine.appendChild(labEl("span", "lab-read-k", "code "));
-    codeLine.appendChild(labEl("span", "lab-team-code", mine.code || "—"));
+    codeLine.appendChild(labEl("span", "lab-team-code", own.code || "—"));
     card.appendChild(codeLine);
     const rows = [
-      ["members", groupInt(mine.members)],
-      ["units", groupInt(mine.units)],
-      ["credits", groupInt(mine.credits)]
+      ["members", groupInt(own.members)],
+      ["units", groupInt(own.units)],
+      ["credits", groupInt(own.credits)]
     ];
-    if (mine.since) rows.push(["since", mine.since]);
+    if (own.since) rows.push(["since", own.since]);
     const readout = labEl("div", "lab-readout");
     for (const [k, v] of rows) {
       const row = labEl("div", "lab-read-row");
@@ -1605,7 +1722,7 @@ function paintTeams() {
     card.appendChild(readout);
     /* THE LINK RULE: a share link is built only from a code that matched the
      * server's own alphabet; a team whose code did not gets no link. */
-    if (mine.code) card.appendChild(shareRow("Invite link", shareUrl("team", mine.code)));
+    if (own.code) card.appendChild(shareRow("Invite link", shareUrl("team", own.code)));
     const leave = labEl("button", "lab-btn lab-btn-stop", "Leave team");
     leave.setAttribute("data-team", "leave");
     leave.disabled = team.busy;
@@ -2012,6 +2129,7 @@ export function renderLab(root, options) {
 
   if (profile.id) buildProfile(wrap);
   buildIntro(wrap);
+  buildConsole(wrap);
   buildStats(wrap);
   buildContribute(wrap);
   buildPhone(wrap);
@@ -2036,9 +2154,11 @@ export function renderLab(root, options) {
    * first open must fetch; after that the panels are already painted from the
    * last payload and the debounced refresh is enough — a visitor must not be
    * able to rate-limit themselves out of the swarm by fidgeting. */
+  subscribeTelemetry();
+  applyTelemetry(viewTelemetry.snapshot());
+  paintStats(); paintBoard(); paintHits(); paintTeams();
   if (refreshedOnce) scheduleRefresh();
   else refresh();
-  startPolling();
   return wrap;
 }
 
@@ -2056,7 +2176,7 @@ try {
           held: !!(phone.sentinel && phone.sentinel.released !== true)
         },
         team: {
-          mine: team.mine ? Object.assign({}, team.mine) : null, boardCode: team.boardCode, boardRows: team.board.length,
+          own: team.own ? Object.assign({}, team.own) : null, boardCode: team.boardCode, boardRows: team.board.length,
           invited: team.invited, inviteCode: team.inviteCode, top: team.top.length
         },
         record: Object.assign({}, record),
