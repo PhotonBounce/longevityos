@@ -26,6 +26,17 @@
  *   POST ?a=ingest    (key)         -> { added, skipped }
  *   POST ?a=canary    (key)         -> { stored }
  *
+ * 3.0 — teams, public contributor records, and an honest way to leave:
+ *   POST ?a=team_create {token, name} -> { team: {id, code, name, members, units, credits} }
+ *   POST ?a=team_join   {token, code} -> { team: {...same} }        (idempotent; switches)
+ *   POST ?a=team_leave  {token}       -> { ok:true }                (idempotent)
+ *   GET  ?a=team&code=X               -> { team: {code, name, members, units, credits, created_at},
+ *                                          board: [{name, units, credits}] }
+ *   GET  ?a=contributor&id=N          -> { contributor: {id, name, units, credits, created_at, rank, team|null} }
+ *   GET  ?a=me&token=T                -> { contributor: {id, name, units, credits, created_at, team|null} }
+ *   POST ?a=leave       {token}       -> { ok:true }   (hide the public record; work is never deleted)
+ *   ?a=stats additionally carries teams: [{code, name, members, units, credits}] (top 10).
+ *
  * PHP 8 + pdo_sqlite. No framework, no cookies, no sessions, no dependencies.
  */
 
@@ -47,6 +58,9 @@ define('LOS_SMILES_MAX', 200);    // stored/served SMILES length cap
 define('LOS_INGEST_MAX', 500);    // molecules per ingest call
 define('LOS_CREDIT_PENDING', 1);
 define('LOS_CREDIT_CONFIRMED', 10);
+define('LOS_TEAM_CAP', 500);      // visible members a team may hold
+define('LOS_TEAM_CODE_LEN', 8);   // join-code length
+define('LOS_TEAM_ALPHABET', 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'); // 32 symbols, no 0/O, no 1/I
 
 /* ————————————————————————— response plumbing ————————————————————————— */
 
@@ -261,10 +275,26 @@ function los_client_hash(PDO $db)
     return $h;
 }
 
-/** Fixed-window limiter. Returns false when the caller is over budget. */
+/** Fixed-window limiter keyed by the caller's IP hash. False when over budget. */
 function los_rate(PDO $db, $bucket, $limit, $window)
 {
-    $k   = $bucket . ':' . substr(los_client_hash($db), 0, 32);
+    return los_rate_key($db, $bucket . ':' . substr(los_client_hash($db), 0, 32), $limit, $window);
+}
+
+/**
+ * Fixed-window limiter keyed by contributor id, for actions whose natural
+ * unit of abuse is a token rather than an address (one person founding
+ * teams in a loop). Keys never collide with the IP-hash form: an id is
+ * decimal, a hash prefix is hex and 32 long.
+ */
+function los_rate_contrib(PDO $db, $bucket, $cid, $limit, $window)
+{
+    return los_rate_key($db, $bucket . ':c' . (int) $cid, $limit, $window);
+}
+
+/** The limiter itself: one row per key, a window start and a count. */
+function los_rate_key(PDO $db, $k, $limit, $window)
+{
     $now = time();
 
     $st = $db->prepare('SELECT window_start, n FROM ratelimit WHERE k = ?');
@@ -295,7 +325,8 @@ function los_contributor(PDO $db, $token)
     if (!is_string($token) || preg_match('/^[0-9a-f]{8,64}$/', $token) !== 1) {
         return null;                        // an injection-shaped token is just unknown
     }
-    $st = $db->prepare('SELECT id, name, credits, units, flagged FROM contributors WHERE token_hash = ?');
+    $st = $db->prepare('SELECT id, name, credits, units, flagged, team_id, hidden, created_at
+                          FROM contributors WHERE token_hash = ?');
     $st->execute(array(hash('sha256', $token)));
     $row = $st->fetch();
     $st->closeCursor();                     // see los_meta_get(): read->write upgrade
@@ -547,7 +578,9 @@ function action_health(PDO $db)
         'molecules'      => los_count($db, 'SELECT COUNT(*) FROM molecules'),
         'screened'       => (int) los_meta_get($db, 'screened', '0'),
         'verified'       => los_count($db, "SELECT COUNT(*) FROM molecules WHERE state = 'verified'"),
-        'contributors'   => los_count($db, 'SELECT COUNT(*) FROM contributors'),
+        // Contributors on the public record: one who pressed ?a=leave is
+        // counted nowhere public, here included.
+        'contributors'   => los_count($db, 'SELECT COUNT(*) FROM contributors WHERE hidden = 0'),
         // A boolean, never the key, never the path it lives at.
         'ingest_armed'   => los_ingest_key() !== null,
     ));
@@ -1053,14 +1086,15 @@ function action_stats(PDO $db)
         'harvested'    => los_count($db, 'SELECT COUNT(*) FROM molecules'),
         'screened'     => (int) los_meta_get($db, 'screened', '0'),
         'verified'     => los_count($db, "SELECT COUNT(*) FROM molecules WHERE state = 'verified'"),
-        'contributors' => los_count($db, 'SELECT COUNT(*) FROM contributors'),
+        'contributors' => los_count($db, 'SELECT COUNT(*) FROM contributors WHERE hidden = 0'),
         'units_open'   => los_count($db, "SELECT COUNT(*) FROM units
                                            WHERE canary_digest IS NULL AND status IN ('open','conflict')"),
     );
 
     // Names and totals only — never a token, never a token hash, never an id.
+    // hidden = 0: a contributor who left the public record is on no board.
     $st = $db->prepare('SELECT name, units, credits FROM contributors
-                         WHERE flagged = 0 AND credits > 0
+                         WHERE flagged = 0 AND hidden = 0 AND credits > 0
                       ORDER BY credits DESC, units DESC, id ASC LIMIT 20');
     $st->execute();
     $board = array();
@@ -1074,7 +1108,33 @@ function action_stats(PDO $db)
         $board[] = array('name' => $name, 'units' => (int) $r['units'], 'credits' => (int) $r['credits']);
     }
 
-    los_out(array('totals' => $totals, 'leaderboard' => $board));
+    // Top 10 teams by the credits of their VISIBLE members. A team with no
+    // visible member is swept on departure, so every row here has at least
+    // one; the HAVING is belt and braces against a stale row.
+    $ts = $db->prepare('SELECT t.code AS code, t.name AS name, COUNT(c.id) AS members,
+                               COALESCE(SUM(c.units), 0) AS units, COALESCE(SUM(c.credits), 0) AS credits
+                          FROM teams t
+                          LEFT JOIN contributors c ON c.team_id = t.id AND c.hidden = 0
+                      GROUP BY t.id HAVING COUNT(c.id) > 0
+                      ORDER BY credits DESC, units DESC, t.id ASC LIMIT 10');
+    $ts->execute();
+    $teams = array();
+    foreach ($ts->fetchAll() as $t) {
+        $name   = los_clean_short((string) $t['name'], 24);
+        $bytes += strlen($name) + 80;
+        if ($teams && $bytes > LOS_JSON_BUDGET) {
+            break;
+        }
+        $teams[] = array(
+            'code'    => (string) $t['code'],
+            'name'    => $name,
+            'members' => (int) $t['members'],
+            'units'   => (int) $t['units'],
+            'credits' => (int) $t['credits'],
+        );
+    }
+
+    los_out(array('totals' => $totals, 'leaderboard' => $board, 'teams' => $teams));
 }
 
 function action_hits(PDO $db)
@@ -1186,11 +1246,13 @@ class LosRefusal extends RuntimeException
 {
     public $reason;
     public $hint;
-    public function __construct($reason, $hint)
+    public $status;
+    public function __construct($reason, $hint, $status = 400)
     {
         parent::__construct((string) $reason);
         $this->reason = (string) $reason;
         $this->hint   = (string) $hint;
+        $this->status = (int) $status;
     }
 }
 
@@ -1332,6 +1394,458 @@ function action_canary(PDO $db)
     los_out($out);
 }
 
+/* ————————————————————————— 3.0: teams, public records, leaving ————————————————————————— */
+
+/**
+ * A fresh join code: LOS_TEAM_CODE_LEN characters from an alphabet with no
+ * 0/O or 1/I, so a code read out loud or copied from a screenshot survives.
+ * 32 symbols make each byte's low five bits an unbiased draw (256 % 32 === 0).
+ */
+function los_team_code()
+{
+    $alphabet = LOS_TEAM_ALPHABET;
+    $bytes    = random_bytes(LOS_TEAM_CODE_LEN);
+    $code     = '';
+    for ($i = 0; $i < LOS_TEAM_CODE_LEN; $i++) {
+        $code .= $alphabet[ord($bytes[$i]) & 31];
+    }
+    return $code;
+}
+
+/** A join code as the client typed it, normalised; null when it is not one. */
+function los_clean_code($raw)
+{
+    if (!is_string($raw)) {
+        return null;
+    }
+    $c = strtoupper(trim($raw));
+    return preg_match('/^[A-HJ-NP-Z2-9]{8}$/', $c) === 1 ? $c : null;
+}
+
+/** A team row by code, or null. */
+function los_team_by_code(PDO $db, $code)
+{
+    $st = $db->prepare('SELECT id, code, name, created_by, created_at FROM teams WHERE code = ?');
+    $st->execute(array($code));
+    $row = $st->fetch();
+    $st->closeCursor();                     // see los_meta_get(): read->write upgrade
+    return $row === false ? null : $row;
+}
+
+/** A team row by id, or null. */
+function los_team_by_id(PDO $db, $id)
+{
+    $st = $db->prepare('SELECT id, code, name, created_by, created_at FROM teams WHERE id = ?');
+    $st->execute(array((int) $id));
+    $row = $st->fetch();
+    $st->closeCursor();
+    return $row === false ? null : $row;
+}
+
+/** Aggregates over a team's VISIBLE members: hidden rows count for nothing here. */
+function los_team_totals(PDO $db, $teamId)
+{
+    $st = $db->prepare('SELECT COUNT(*) AS members, COALESCE(SUM(units), 0) AS units,
+                               COALESCE(SUM(credits), 0) AS credits
+                          FROM contributors WHERE team_id = ? AND hidden = 0');
+    $st->execute(array((int) $teamId));
+    $row = $st->fetch();
+    $st->closeCursor();
+    return array(
+        'members' => (int) $row['members'],
+        'units'   => (int) $row['units'],
+        'credits' => (int) $row['credits'],
+    );
+}
+
+/**
+ * The wire form of a team. The private shape (create/join, to a member) carries
+ * the id; the public shape (?a=team, ?a=stats) carries created_at instead.
+ * Neither ever carries a token, a token hash, or who created it.
+ */
+function los_team_wire(PDO $db, array $team, $public)
+{
+    $t   = los_team_totals($db, $team['id']);
+    $out = $public ? array() : array('id' => (int) $team['id']);
+    $out['code']    = (string) $team['code'];
+    $out['name']    = los_clean_short((string) $team['name'], 24);
+    $out['members'] = $t['members'];
+    $out['units']   = $t['units'];
+    $out['credits'] = $t['credits'];
+    if ($public) {
+        $out['created_at'] = (int) $team['created_at'];
+    }
+    return $out;
+}
+
+/**
+ * Delete a team the moment it has no visible member left. Called inside the
+ * SAME transaction as the departure (team_leave, a switch, ?a=leave), so a
+ * daily create/join/leave leaves nothing behind and the code is simply
+ * unknown afterwards. Null/0 is a no-op so callers need not branch.
+ */
+function los_team_sweep(PDO $db, $teamId)
+{
+    $teamId = (int) $teamId;
+    if ($teamId <= 0) {
+        return;
+    }
+    $db->prepare('DELETE FROM teams WHERE id = ?
+                    AND NOT EXISTS (SELECT 1 FROM contributors WHERE team_id = ? AND hidden = 0)')
+       ->execute(array($teamId, $teamId));
+}
+
+/** The {code, name} a contributor record shows for its team, or null. */
+function los_team_ref(PDO $db, $teamId)
+{
+    if ($teamId === null || (int) $teamId <= 0) {
+        return null;
+    }
+    $t = los_team_by_id($db, (int) $teamId);
+    if ($t === null) {
+        return null;
+    }
+    return array('code' => (string) $t['code'], 'name' => los_clean_short((string) $t['name'], 24));
+}
+
+/**
+ * A token-bearing team action's contributor: known, unflagged, and still on
+ * the public record. A contributor who pressed ?a=leave chose to be nobody
+ * here; they can keep contributing on that token, but a team is a public
+ * face and they gave theirs up. Re-joining the swarm mints a fresh identity.
+ */
+function los_team_actor(PDO $db)
+{
+    $me = los_contributor($db, los_param('token', ''));
+    if ($me === null) {
+        los_fail('unknown_token', 401);
+    }
+    los_refuse_flagged($me);
+    if ((int) $me['hidden'] === 1) {
+        los_fail('departed', 403, array(
+            'message' => 'This contributor left the public record. Join the swarm again to team up.',
+        ));
+    }
+    return $me;
+}
+
+/** Translate a refusal raised inside a team transaction into its response. */
+function los_team_refused(LosRefusal $e)
+{
+    $extra = $e->hint !== '' ? array('message' => $e->hint) : array();
+    los_fail($e->reason, $e->status, $extra);
+}
+
+/**
+ * POST ?a=team_create {token, name} -> {team:{id, code, name, members, units, credits}}
+ *
+ * The creator is placed in the team. One contributor may found five teams an
+ * hour, and only while standing in none (409 already_in_team): switching is
+ * ?a=team_join's job, and a founder who wants a new team leaves first. The
+ * name is cleaned the way every other stranger-typed string is and must keep
+ * two characters (400 bad_name).
+ */
+function action_team_create(PDO $db)
+{
+    if (!los_rate($db, 'team_create', 60, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+    $me  = los_team_actor($db);
+    $cid = (int) $me['id'];
+    if (!los_rate_contrib($db, 'team_create', $cid, 5, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+
+    $name = los_clean_short(los_param('name', ''), 24);
+    if (strlen($name) < 2) {
+        los_fail('bad_name', 400, array('message' => 'A team name needs at least two printable characters.'));
+    }
+
+    try {
+        $team = los_tx($db, function () use ($db, $cid, $name) {
+            // Re-read under the write lock: two creates from one token in
+            // flight at once must not both succeed.
+            $cur = $db->prepare('SELECT team_id FROM contributors WHERE id = ?');
+            $cur->execute(array($cid));
+            $row = $cur->fetch();
+            $cur->closeCursor();
+            if ($row !== false && $row['team_id'] !== null && (int) $row['team_id'] > 0) {
+                throw new LosRefusal('already_in_team', 'Leave the current team before creating another.', 409);
+            }
+
+            // INSERT OR IGNORE + rowCount: a UNIQUE collision on the code is
+            // an ignored row, never an exception, and the loop draws again.
+            // Under BEGIN IMMEDIATE nobody else can take the code in between.
+            $ins = $db->prepare('INSERT OR IGNORE INTO teams(code, name, created_by, created_at) VALUES(?, ?, ?, ?)');
+            $now = time();
+            $id  = 0;
+            for ($attempt = 0; $attempt < 16; $attempt++) {
+                $code = los_team_code();
+                $ins->execute(array($code, $name, $cid, $now));
+                if ($ins->rowCount() === 1) {
+                    $id = (int) $db->lastInsertId();
+                    break;
+                }
+            }
+            if ($id <= 0) {
+                throw new RuntimeException('team code space exhausted');   // 500; astronomically unlikely
+            }
+            $db->prepare('UPDATE contributors SET team_id = ? WHERE id = ?')->execute(array($id, $cid));
+            return los_team_by_id($db, $id);
+        });
+    } catch (LosRefusal $e) {
+        los_team_refused($e);
+    }
+
+    los_out(array('team' => los_team_wire($db, $team, false)));
+}
+
+/**
+ * POST ?a=team_join {token, code} -> {team:{id, code, name, members, units, credits}}
+ *
+ * Joining the team you already stand in is a success that changes nothing;
+ * joining a different one switches you (and sweeps the team you left if it is
+ * now empty). A team holds LOS_TEAM_CAP visible members (409 team_full). The
+ * per-IP bucket is the code-guessing limit: an unauthenticated storm burns it
+ * before any token is even looked up.
+ */
+function action_team_join(PDO $db)
+{
+    if (!los_rate($db, 'team_join', 120, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+    $me  = los_team_actor($db);
+    $cid = (int) $me['id'];
+    if (!los_rate_contrib($db, 'team_join', $cid, 60, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+
+    $code = los_clean_code(los_param('code', ''));
+    if ($code === null) {
+        los_fail('bad_code', 400, array('message' => 'A join code is 8 letters or digits.'));
+    }
+
+    try {
+        $team = los_tx($db, function () use ($db, $cid, $code) {
+            $team = los_team_by_code($db, $code);
+            if ($team === null) {
+                throw new LosRefusal('unknown_team', 'No team has that code.', 404);
+            }
+            $tid = (int) $team['id'];
+
+            $cur = $db->prepare('SELECT team_id FROM contributors WHERE id = ?');
+            $cur->execute(array($cid));
+            $row  = $cur->fetch();
+            $cur->closeCursor();
+            $from = ($row !== false && $row['team_id'] !== null) ? (int) $row['team_id'] : 0;
+            if ($from === $tid) {
+                return $team;                   // idempotent: already here
+            }
+
+            // The cap is checked under the write lock, so 500 simultaneous
+            // joins cannot each see 499 and all get in.
+            $n = los_count($db, 'SELECT COUNT(*) FROM contributors WHERE team_id = ? AND hidden = 0', array($tid));
+            if ($n >= LOS_TEAM_CAP) {
+                throw new LosRefusal('team_full', 'That team already has ' . LOS_TEAM_CAP . ' members.', 409);
+            }
+
+            $db->prepare('UPDATE contributors SET team_id = ? WHERE id = ?')->execute(array($tid, $cid));
+            los_team_sweep($db, $from);         // the team we left, if it is now empty
+            return $team;
+        });
+    } catch (LosRefusal $e) {
+        los_team_refused($e);
+    }
+
+    los_out(array('team' => los_team_wire($db, $team, false)));
+}
+
+/**
+ * POST ?a=team_leave {token} -> {ok:true}
+ *
+ * Idempotent: leaving when in no team is still ok. The team is swept in the
+ * same transaction when this was its last visible member.
+ */
+function action_team_leave(PDO $db)
+{
+    if (!los_rate($db, 'team_leave', 120, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+    $me = los_contributor($db, los_param('token', ''));
+    if ($me === null) {
+        los_fail('unknown_token', 401);
+    }
+    $cid = (int) $me['id'];
+
+    los_tx($db, function () use ($db, $cid) {
+        $cur = $db->prepare('SELECT team_id FROM contributors WHERE id = ?');
+        $cur->execute(array($cid));
+        $row  = $cur->fetch();
+        $cur->closeCursor();
+        $from = ($row !== false && $row['team_id'] !== null) ? (int) $row['team_id'] : 0;
+        $db->prepare('UPDATE contributors SET team_id = NULL WHERE id = ?')->execute(array($cid));
+        los_team_sweep($db, $from);
+    });
+
+    los_out(array('ok' => true));
+}
+
+/**
+ * GET ?a=team&code=X -> {team:{code, name, members, units, credits, created_at},
+ *                        board:[{name, units, credits}]}
+ *
+ * Public. The board is the top 20 visible members; a member who left the
+ * public record is on no board and in no total.
+ */
+function action_team(PDO $db)
+{
+    los_rate_read($db);
+    $code = los_clean_code(los_param('code', ''));
+    if ($code === null) {
+        los_fail('bad_code', 400);
+    }
+    $team = los_team_by_code($db, $code);
+    if ($team === null) {
+        los_fail('unknown_team', 404);
+    }
+
+    $st = $db->prepare('SELECT name, units, credits FROM contributors
+                         WHERE team_id = ? AND hidden = 0
+                      ORDER BY credits DESC, units DESC, id ASC LIMIT 20');
+    $st->execute(array((int) $team['id']));
+    $board = array();
+    $bytes = 0;
+    foreach ($st->fetchAll() as $r) {
+        $name   = los_clean_name($r['name']);
+        $bytes += strlen($name) + 48;
+        if ($board && $bytes > LOS_JSON_BUDGET) {
+            break;
+        }
+        $board[] = array('name' => $name, 'units' => (int) $r['units'], 'credits' => (int) $r['credits']);
+    }
+
+    los_out(array('team' => los_team_wire($db, $team, true), 'board' => $board));
+}
+
+/**
+ * A contributor id as the public record accepts it: a canonical positive
+ * decimal integer — no sign, no leading zero, no exponent, at most 12 digits.
+ * Anything else is a 400, never a lookup.
+ */
+function los_clean_contributor_id($raw)
+{
+    if (is_int($raw)) {
+        return $raw > 0 ? $raw : null;
+    }
+    if (is_string($raw) && preg_match('/^[1-9][0-9]{0,11}$/', $raw) === 1) {
+        return (int) $raw;
+    }
+    return null;
+}
+
+/**
+ * GET ?a=contributor&id=N -> {contributor:{id, name, units, credits, created_at, rank,
+ *                                          team:{code,name}|null}}
+ *
+ * Public. rank is 1 + the number of visible contributors with more credits.
+ * A contributor who left the public record is unknown here (404), exactly as
+ * if they had never been.
+ */
+function action_contributor(PDO $db)
+{
+    los_rate_read($db);
+    $id = los_clean_contributor_id(los_param('id', null));
+    if ($id === null) {
+        los_fail('bad_id', 400);
+    }
+    $st = $db->prepare('SELECT id, name, units, credits, created_at, team_id
+                          FROM contributors WHERE id = ? AND hidden = 0');
+    $st->execute(array($id));
+    $c = $st->fetch();
+    $st->closeCursor();
+    if ($c === false) {
+        los_fail('unknown_contributor', 404);
+    }
+    $rank = 1 + los_count($db, 'SELECT COUNT(*) FROM contributors WHERE hidden = 0 AND credits > ?',
+                          array((int) $c['credits']));
+
+    los_out(array('contributor' => array(
+        'id'         => (int) $c['id'],
+        'name'       => los_clean_name($c['name']),
+        'units'      => (int) $c['units'],
+        'credits'    => (int) $c['credits'],
+        'created_at' => (int) $c['created_at'],
+        'rank'       => $rank,
+        'team'       => los_team_ref($db, $c['team_id']),
+    )));
+}
+
+/**
+ * GET ?a=me&token=T -> {contributor:{id, name, units, credits, created_at, team:{code,name}|null}}
+ *
+ * The holder's own record. Works for a hidden contributor too — it is their
+ * token — and shows them what the public sees: 'departed', no team.
+ */
+function action_me(PDO $db)
+{
+    if (!los_rate($db, 'me', 900, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+    $me = los_contributor($db, los_param('token', ''));
+    if ($me === null) {
+        los_fail('unknown_token', 401);
+    }
+    los_out(array('contributor' => array(
+        'id'         => (int) $me['id'],
+        'name'       => los_clean_name($me['name']),
+        'units'      => (int) $me['units'],
+        'credits'    => (int) $me['credits'],
+        'created_at' => (int) $me['created_at'],
+        'team'       => los_team_ref($db, $me['team_id']),
+    )));
+}
+
+/**
+ * POST ?a=leave {token} -> {ok:true}
+ *
+ * The honest way out of the public record. The row is hidden, the name is
+ * replaced with 'departed', the team membership is dropped (and the team swept
+ * if that emptied it). After this the contributor is absent from ?a=stats
+ * (leaderboard AND totals.contributors), from every team board and total, and
+ * from ?a=contributor.
+ *
+ * What is NOT touched, on purpose: their results and issued rows. A unit two
+ * strangers agreed on stays verified — the agreement happened, and deleting
+ * one half of it would turn a verified hit back into one stranger's word.
+ * Their token also keeps working for ?a=work and ?a=submit: leaving the
+ * record is not leaving the swarm, and a contributor may go on screening
+ * anonymously for as long as they like. Idempotent.
+ */
+function action_leave(PDO $db)
+{
+    if (!los_rate($db, 'leave', 60, 3600)) {
+        los_fail('rate_limited', 429);
+    }
+    $me = los_contributor($db, los_param('token', ''));
+    if ($me === null) {
+        los_fail('unknown_token', 401);
+    }
+    $cid = (int) $me['id'];
+
+    los_tx($db, function () use ($db, $cid) {
+        $cur = $db->prepare('SELECT team_id FROM contributors WHERE id = ?');
+        $cur->execute(array($cid));
+        $row  = $cur->fetch();
+        $cur->closeCursor();
+        $from = ($row !== false && $row['team_id'] !== null) ? (int) $row['team_id'] : 0;
+        $db->prepare("UPDATE contributors SET hidden = 1, team_id = NULL, name = 'departed' WHERE id = ?")
+           ->execute(array($cid));
+        los_team_sweep($db, $from);
+    });
+
+    los_out(array('ok' => true));
+}
+
 /* ————————————————————————— dispatch ————————————————————————— */
 
 try {
@@ -1355,6 +1869,14 @@ try {
         case 'hits':   action_hits($db);   break;
         case 'ingest': action_ingest($db); break;
         case 'canary': action_canary($db); break;
+        /* 3.0 */
+        case 'team_create': action_team_create($db); break;
+        case 'team_join':   action_team_join($db);   break;
+        case 'team_leave':  action_team_leave($db);  break;
+        case 'team':        action_team($db);        break;
+        case 'contributor': action_contributor($db); break;
+        case 'me':          action_me($db);          break;
+        case 'leave':       action_leave($db);       break;
         default:
             los_fail('unknown_action', 404);
     }

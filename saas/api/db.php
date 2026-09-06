@@ -73,6 +73,14 @@ function los_schema(PDO $pdo)
 
         // Volunteers. The token itself is never stored — only its SHA-256, so a
         // stolen database cannot impersonate a contributor.
+        //
+        // 3.0: team_id (nullable) is the team a contributor stands in, hidden=1
+        // is a contributor who chose to leave the public record (?a=leave). A
+        // hidden row keeps its token, its credits and every result it ever
+        // agreed on — only its public face is gone. These two columns exist
+        // here for a FRESH install; an existing database gets them from
+        // los_migrate() below, because CREATE TABLE IF NOT EXISTS never touches
+        // a table that already exists.
         'CREATE TABLE IF NOT EXISTS contributors (
             id          INTEGER PRIMARY KEY,
             token_hash  TEXT UNIQUE,
@@ -81,7 +89,24 @@ function los_schema(PDO $pdo)
             units       INTEGER DEFAULT 0,
             flagged     INTEGER DEFAULT 0,
             created_at  INTEGER,
-            last_seen   INTEGER
+            last_seen   INTEGER,
+            team_id     INTEGER,
+            hidden      INTEGER NOT NULL DEFAULT 0
+        )',
+
+        // 3.0 teams. code is the 8-character join code (unambiguous alphabet,
+        // see los_team_code() in index.php); name is a cleaned display name.
+        // A team lives exactly as long as it has a visible member: the same
+        // transaction that takes the last non-hidden member out (team_leave,
+        // a switch to another team, or ?a=leave) deletes the row, so a daily
+        // live-QA create/join/leave never accumulates empty teams and the code
+        // is simply unknown afterwards.
+        'CREATE TABLE IF NOT EXISTS teams (
+            id          INTEGER PRIMARY KEY,
+            code        TEXT UNIQUE NOT NULL,
+            name        TEXT NOT NULL,
+            created_by  INTEGER,
+            created_at  INTEGER
         )',
 
         // Candidate molecules from the harvester.
@@ -173,10 +198,68 @@ function los_schema(PDO $pdo)
         'CREATE INDEX IF NOT EXISTS ix_hits_score   ON hits(score DESC)',
         'CREATE INDEX IF NOT EXISTS ix_contrib_cred ON contributors(credits DESC)',
         'CREATE INDEX IF NOT EXISTS ix_issued_c     ON issued(contributor)',
+        'CREATE INDEX IF NOT EXISTS ix_teams_code   ON teams(code)',
     );
 
     foreach ($sql as $stmt) {
         $pdo->exec($stmt);
+    }
+
+    // Columns added after 2.0 reach an EXISTING database only through the
+    // migration, and the index on one of them can only be created once the
+    // column is there — so this order is load-bearing.
+    los_migrate($pdo);
+    $pdo->exec('CREATE INDEX IF NOT EXISTS ix_contrib_team ON contributors(team_id)');
+}
+
+/** The real column set of the contributors table, as {name => true}. */
+function los_columns_contributors(PDO $pdo)
+{
+    $st = $pdo->query('PRAGMA table_info(contributors)');
+    $have = array();
+    foreach ($st->fetchAll() as $row) {
+        if (isset($row['name']) && is_string($row['name'])) {
+            $have[$row['name']] = true;
+        }
+    }
+    $st->closeCursor();
+    return $have;
+}
+
+/**
+ * Idempotent schema migration for a database that predates a column.
+ *
+ * The live los.sqlite already exists with the 2.0 shape, and
+ * CREATE TABLE IF NOT EXISTS is a no-op on an existing table, so a column that
+ * merely appears in los_schema() above never reaches the live host. This looks
+ * at the table's REAL columns (PRAGMA table_info) and ALTERs in only what is
+ * missing. It runs on every open and costs one PRAGMA when nothing is missing.
+ *
+ * Racing is safe: several PHP workers can open the database at the same moment
+ * after a deploy and each see the column missing. SQLite serialises the
+ * ALTERs; the losers get "duplicate column name", re-read the columns, and
+ * carry on when the column is now there. Only a column that is STILL missing
+ * after that is a genuine failure and is rethrown.
+ */
+function los_migrate(PDO $pdo)
+{
+    $want = array(
+        'team_id' => 'ALTER TABLE contributors ADD COLUMN team_id INTEGER',
+        'hidden'  => 'ALTER TABLE contributors ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0',
+    );
+    $have = los_columns_contributors($pdo);
+    foreach ($want as $col => $ddl) {
+        if (isset($have[$col])) {
+            continue;
+        }
+        try {
+            $pdo->exec($ddl);
+        } catch (PDOException $e) {
+            $have = los_columns_contributors($pdo);
+            if (!isset($have[$col])) {
+                throw $e;
+            }
+        }
     }
 }
 
