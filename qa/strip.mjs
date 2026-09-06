@@ -277,7 +277,7 @@ const P = await open(ctx, "P");
     const navY = (await P.locator("#nav").boundingBox()).y;
     if (stripY <= navY) onEvery = false;
   }
-  ok(onEvery && tabs === 6, "the strip is visible under #nav on all " + tabs + " tabs");
+  ok(onEvery && tabs === 7, "the strip is visible under #nav on all " + tabs + " tabs");
   ok(await P.evaluate(() => document.documentElement.getAttribute("data-dpr") !== null), "html[data-dpr] is set by index.html");
   ok(await P.evaluate(() => !!document.getElementById("seg7") || true), "the page booted");
   await P.locator("#nav .tab").first().click();

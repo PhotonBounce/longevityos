@@ -190,6 +190,26 @@ function los_schema(PDO $pdo)
             v TEXT
         )',
 
+        // 4.0 history: one row per UTC hour (hour = unix seconds at the top of
+        // the hour), written by ?a=stats behind a 60-second meta guard and
+        // pruned past 720 hours. Running totals (harvested, screened,
+        // verified, contributors, units_confirmed, results) are snapshots of
+        // the counters; active, units_open and conflicts are gauges. The
+        // Observatory differences the snapshots client-side, so a row is a
+        // reading, never an event.
+        'CREATE TABLE IF NOT EXISTS history (
+            hour             INTEGER PRIMARY KEY,
+            harvested        INTEGER NOT NULL DEFAULT 0,
+            screened         INTEGER NOT NULL DEFAULT 0,
+            verified         INTEGER NOT NULL DEFAULT 0,
+            contributors     INTEGER NOT NULL DEFAULT 0,
+            active           INTEGER NOT NULL DEFAULT 0,
+            units_open       INTEGER NOT NULL DEFAULT 0,
+            units_confirmed  INTEGER NOT NULL DEFAULT 0,
+            conflicts        INTEGER NOT NULL DEFAULT 0,
+            results          INTEGER NOT NULL DEFAULT 0
+        )',
+
         'CREATE INDEX IF NOT EXISTS ix_mol_state    ON molecules(state, id)',
         'CREATE INDEX IF NOT EXISTS ix_units_open   ON units(status, created_at)',
         'CREATE INDEX IF NOT EXISTS ix_units_canary ON units(canary_digest)',
@@ -199,6 +219,9 @@ function los_schema(PDO $pdo)
         'CREATE INDEX IF NOT EXISTS ix_contrib_cred ON contributors(credits DESC)',
         'CREATE INDEX IF NOT EXISTS ix_issued_c     ON issued(contributor)',
         'CREATE INDEX IF NOT EXISTS ix_teams_code   ON teams(code)',
+        // 4.0: totals.active_1h is COUNT(*) WHERE last_seen >= now - 3600,
+        // polled every 15 seconds by every open Observatory.
+        'CREATE INDEX IF NOT EXISTS ix_contrib_seen ON contributors(last_seen)',
     );
 
     foreach ($sql as $stmt) {
@@ -285,11 +308,38 @@ function los_meta_set(PDO $db, $k, $v)
     $st->execute(array($k, (string) $v));
 }
 
-/** Add to an integer meta counter. */
+/** Add to an integer meta counter. Read-then-write: safe only inside los_tx(). */
 function los_meta_add(PDO $db, $k, $n)
 {
     $cur = (int) los_meta_get($db, $k, '0');
     los_meta_set($db, $k, (string) ($cur + (int) $n));
+}
+
+/**
+ * Add to an integer meta counter in ONE statement, so it is safe outside a
+ * transaction: two PHP workers answering at once both land (los_meta_add
+ * outside los_tx() would have both read N and both written N+n — measured at
+ * 526 of 800 increments under four concurrent writers). UPSERT needs SQLite
+ * 3.24 (2018); an older library falls back to the serialised read-then-write.
+ */
+function los_meta_incr(PDO $db, $k, $n)
+{
+    $n = (int) $n;
+    try {
+        $st = $db->prepare('INSERT INTO meta(k, v) VALUES(?, ?)
+                            ON CONFLICT(k) DO UPDATE SET v = CAST(CAST(v AS INTEGER) + excluded.v AS TEXT)');
+        $st->execute(array($k, (string) $n));
+        return;
+    } catch (PDOException $e) {
+        // no UPSERT in this SQLite: serialise the read-then-write instead
+    }
+    if ($db->inTransaction()) {
+        los_meta_add($db, $k, $n);
+        return;
+    }
+    los_tx($db, function () use ($db, $k, $n) {
+        los_meta_add($db, $k, $n);
+    });
 }
 
 /**

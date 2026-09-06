@@ -106,9 +106,10 @@ const store = {
   stats: null,          // last good ?a=stats payload, verbatim (subscribers sanitize)
   hits: null,           // last good ?a=hits payload, verbatim
   history: null,        // last good ?a=history payload, verbatim
-  statsReachable: null, hitsReachable: null, historyReachable: null,
+  historyDay: null,     // last good ?a=history&bucket=day payload, verbatim
+  statsReachable: null, hitsReachable: null, historyReachable: null, historyDayReachable: null,
   historyMissing: false,
-  statsError: "", hitsError: "", historyError: "",
+  statsError: "", hitsError: "", historyError: "", historyDayError: "",
   quiet: false,
   lastOkAt: 0,
   paused: false,
@@ -135,8 +136,9 @@ const totalsOf = (stats) => {
 
 function snapshot() {
   return {
-    stats: store.stats, hits: store.hits, history: store.history,
+    stats: store.stats, hits: store.hits, history: store.history, historyDay: store.historyDay,
     statsReachable: store.statsReachable, hitsReachable: store.hitsReachable, historyReachable: store.historyReachable,
+    historyDayReachable: store.historyDayReachable,
     historyMissing: store.historyMissing,
     statsError: store.statsError, hitsError: store.hitsError, historyError: store.historyError,
     quiet: store.quiet, lastOkAt: store.lastOkAt, paused: store.paused, still: store.still,
@@ -234,13 +236,17 @@ async function apiGet(action, params, etag) {
 
 /* ————— the three endpoints ————— */
 
-function endpoint(name, baseMs, params) {
-  return { name, baseMs, params, etag: "", fails: 0, timer: null, inflight: null, lastAt: 0 };
+function endpoint(name, baseMs, params, action) {
+  return { name, action: action || name, baseMs, params, etag: "", fails: 0, timer: null, inflight: null, lastAt: 0 };
 }
+/* 4.0 integration: the strip is the app's ONLY poller, so it also carries what
+ * the Observatory needs — 49 hours (one more than drawn, so the SWEEP can
+ * difference its oldest hour), the daily bucket, and the bandwidth block. */
 const EP = {
   stats: endpoint("stats", STATS_MS, null),
-  hits: endpoint("hits", HITS_MS, { limit: 20 }),
-  history: endpoint("history", HISTORY_MS, { hours: 48 })
+  hits: endpoint("hits", HITS_MS, { limit: 50 }),
+  history: endpoint("history", HISTORY_MS, { hours: 49, bw: 1 }),
+  historyDay: endpoint("historyDay", HISTORY_MS, { bucket: "day", bw: 1 }, "history")
 };
 
 function nextDelay(ep) {
@@ -264,21 +270,21 @@ function poll(ep) {
 }
 
 async function doPoll(ep) {
-  const res = await apiGet(ep.name, ep.params, ep.etag);
+  const res = await apiGet(ep.action, ep.params, ep.etag);
   const now = Date.now();
   ep.lastAt = now;
   store.requests.push({ ep: ep.name, at: now, status: res.status });
   if (store.requests.length > 200) store.requests.splice(0, store.requests.length - 200);
 
-  if (ep.name === "history" && !res.ok && res.status === 404) {
+  if ((ep.name === "history" || ep.name === "historyDay") && !res.ok && res.status === 404) {
     /* an older server: no history yet — the link is fine */
     ep.fails = 0;
-    store.historyReachable = true;
+    store[ep.name + "Reachable"] = true;
     store.historyMissing = true;
-    store.historyError = "";
+    store[ep.name + "Error"] = "";
     store.lastOkAt = now;
     paintLamp();
-    notify({ kind: "history", changed: false });
+    notify({ kind: ep.name, changed: false });
     return;
   }
   if (!res.ok) {

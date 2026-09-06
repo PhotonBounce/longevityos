@@ -127,6 +127,7 @@ ok(full.lab.nodes <= BUDGET.labNodes, "Lab DOM within budget (" + full.lab.nodes
 ok(full.lab.lensNodes > 0 && full.lab.lensNodes <= BUDGET.lensNodes, "lens SVG within budget (" + full.lab.lensNodes + " ≤ " + BUDGET.lensNodes + ")");
 ok(full.lab.animMax <= BUDGET.animating, "≤ " + BUDGET.animating + " animations at any instant (" + full.lab.animMax + ")");
 ok(full.observatory.frames.median <= BUDGET.medianMs, "Observatory median frame ≤ " + BUDGET.medianMs + " ms (" + full.observatory.frames.median.toFixed(1) + ")");
+ok(full.observatory.longest <= BUDGET.longTaskMs, "no Observatory long task over " + BUDGET.longTaskMs + " ms — the mount and the first polls are budgeted across tasks (" + full.observatory.longest.toFixed(0) + ")");
 ok(full.observatory.nodes <= BUDGET.obsNodes, "Observatory DOM within budget (" + full.observatory.nodes + " ≤ " + BUDGET.obsNodes + ")");
 
 suite("perf 2 — prefers-reduced-motion: same DOM, fades only while a specimen builds, nothing between builds");
@@ -137,6 +138,7 @@ suite("perf 2 — prefers-reduced-motion: same DOM, fades only while a specimen 
  * (never a transform or a dash), samples between builds must show none. */
 const still = await run("still", { reducedMotion: "reduce" });
 ok(still.errors.length === 0, "zero page errors under reduced motion");
+ok(still.observatory.longest <= BUDGET.longTaskMs, "no Observatory long task over " + BUDGET.longTaskMs + " ms under reduced motion either (" + still.observatory.longest.toFixed(0) + ")");
 ok(Math.abs(still.lab.nodes - full.lab.nodes) <= 40, "reduced motion keeps the same Lab DOM (" + still.lab.nodes + " vs " + full.lab.nodes + ")");
 ok(still.lab.settledSamples >= 5, "the sampler caught the lens between builds (" + still.lab.settledSamples + " settled samples)");
 ok(still.lab.animMaxSettled === 0 || still.lab.animMaxSettled <= 1, "reduced motion runs (almost) no animations between builds (" + still.lab.animMaxSettled + ")");

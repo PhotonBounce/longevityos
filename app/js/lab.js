@@ -50,6 +50,7 @@ import { createSwarmClient } from "./swarm/client.js";
 import { viewLed, viewLedBar, viewPark } from "./view/led.js";
 import { viewTelemetry } from "./view/telemetry.js";
 import { viewLens } from "./view/lens.js";
+import { viewObservatory } from "./view/observatory.js";
 
 /* ————— style conventions, borrowed from app.js verbatim ————— */
 
@@ -654,6 +655,8 @@ function applyMe(m) {
   record.credits = c.credits;
   record.since = c.since;
   record.team = c.team;
+  /* 4.0: the Observatory pins this contributor's row on the boards from the same record */
+  viewObservatory.session({ type: "record", known: true, name: c.name, units: c.units, credits: c.credits, team: c.team });
   if (c.team && c.team.code) {
     if (!team.own || team.own.code !== c.team.code) {
       team.own = { code: c.team.code, name: c.team.name, members: null, units: null, credits: null, since: "" };
@@ -1038,6 +1041,8 @@ function onSwarmEvent(ev) {
   try {
     if (!ev || typeof ev.type !== "string") return;
     if (lens) lens.onEvent(ev);
+    /* 4.0: the Observatory's SESSION LEDGER and YOUR SCOPE read the same events */
+    viewObservatory.session(ev);
     if (ev.type === "spotlight") return;   // display only — the lens has it; nothing else changes
     if (ev.type === "joined") {
       /* A join can land AFTER the visitor pressed Stop — the request was

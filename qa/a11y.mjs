@@ -85,7 +85,8 @@ async function audit(tab, reduced) {
   const bad = rows.filter((r) => r.ratio < r.need);
   const leds = await page.$$eval("svg.led", (els) => els.map((s) => ({ twin: !!(s.nextElementSibling && s.nextElementSibling.classList.contains("led-text")), same: s.nextElementSibling ? s.nextElementSibling.textContent.trim().length > 0 : false })));
   const imgs = await page.$$eval("svg[role=img]", (els) => els.map((s) => !!s.querySelector("title")));
-  const buttons = await page.$$eval("button", (els) => els.filter((b) => b.offsetParent !== null).map((b) => { const r = b.getBoundingClientRect(); return { name: (b.getAttribute("aria-label") || b.textContent || "").trim(), h: r.height, w: r.width }; }));
+  /* every interactive target, not only <button>: a <summary> is a control too (the Observatory's fifteen "Read the numbers") */
+  const buttons = await page.$$eval("button, summary, [role=button], a.btn", (els) => els.filter((b) => b.offsetParent !== null).map((b) => { const r = b.getBoundingClientRect(); return { name: (b.getAttribute("aria-label") || b.textContent || b.getAttribute("name") || "").trim(), h: r.height, w: r.width, tag: b.tagName.toLowerCase() }; }));
   const autoplay = await page.$$eval("[autoplay]", (els) => els.length);
   const anims = await page.evaluate(() => document.getAnimations().length);
   const closed = await page.$$eval("#view figure details", (els) => els.filter((d) => !d.open).length);
@@ -102,9 +103,13 @@ for (const tab of ["Atlas", "What has evidence", "The Lab", "Observatory"]) {
   ok(r.bad.length === 0, "every text node clears its contrast target (" + r.bad.length + " below): " + JSON.stringify(r.bad.slice(0, 4)));
   ok(r.leds.every((l) => l.twin && l.same), "every LED has a visible text twin (" + r.leds.length + " LEDs)");
   ok(r.imgs.every(Boolean), "every image-role SVG carries a <title> (" + r.imgs.length + ")");
-  ok(r.buttons.every((b) => b.name.length > 0), "every visible button has a name");
+  ok(r.buttons.every((b) => b.name.length > 0), "every visible control has a name (" + r.buttons.length + " controls)");
   const small = r.buttons.filter((b) => b.h < 44 || b.w < 44);
-  ok(small.length === 0, "touch targets ≥ 44 px (" + small.length + " small): " + JSON.stringify(small.slice(0, 3).map((b) => b.name)));
+  ok(small.length === 0, "touch targets ≥ 44 px (" + small.length + " small): " + JSON.stringify(small.slice(0, 3).map((b) => b.tag + ":" + b.name)));
+  if (tab === "Observatory") {
+    const sums = r.buttons.filter((b) => b.tag === "summary");
+    ok(sums.length === 15 && sums.every((b) => b.h >= 44), "the fifteen 'Read the numbers' controls are each ≥ 44 px tall (" + sums.length + ", min " + Math.min(...sums.map((b) => b.h)).toFixed(0) + ")");
+  }
   ok(r.autoplay === 0, "no autoplay attribute anywhere");
   if (tab === "Observatory") ok(r.closed === 0, "no 'Read the numbers' table is closed");
 }

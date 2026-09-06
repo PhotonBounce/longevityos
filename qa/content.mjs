@@ -373,5 +373,93 @@ ok(!/animation[^;]*(score|amber)/.test(lensCss), "no animation is keyed to a sco
 ok(!/serviceWorker/.test(all) && fetches === 1, "app.js still fetches exactly one thing");
 
 }
+{ /* section 15 scope */
+/* ————— 13. the Observatory (4.0): fifteen figures, their tables open, their copy honest ————— */
+suite("content 15 — the Observatory: every figure named, every table open, nothing 'expired'");
+{
+  const stripSrc = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const obsPath = join(APP, "js", "view", "observatory.js");
+  const chartsPath = join(APP, "js", "view", "charts.js");
+  const obs = text[obsPath] || "";
+  const charts = text[chartsPath] || "";
+  ok(obs.length > 0 && charts.length > 0, "js/view/observatory.js and js/view/charts.js ship");
+  const FIGURES = ["SWEEP", "CONFIRMED PER DAY", "THE POOL", "SCORE SPECTRUM", "TARGET BOARD", "CONSENSUS METER", "WITNESSES", "INTEGRITY",
+                   "PEOPLE", "FRESHNESS CLOCKS", "FLAG LEDGER", "TEAM BOARD / CONTRIBUTOR BOARD", "YOUR SCOPE", "SESSION LEDGER", "BANDWIDTH"];
+  for (const f of FIGURES) ok(new RegExp('title: "' + f.replace(/[/]/g, "\\/") + '"').test(obs), `figure "${f}" exists in observatory.js`);
+  ok((obs.match(/\bn: (\d+), title: "/g) || []).length === 15, "exactly fifteen numbered figures are painted");
+  for (const s of ["No screening recorded in this window.", "The pool is empty — the harvest runs daily.", "No verified hits yet.", "No canary units answered yet."]) {
+    ok(obs.includes(s), `the empty state is verbatim: "${s}"`);
+  }
+  ok(/Two independent volunteers must produce the same fingerprint before a unit counts\./.test(obs), "the consensus sentence is verbatim");
+  ok(/MEASURED ON THIS DEVICE — LOCAL ONLY/.test(obs), "YOUR SCOPE says where its numbers come from");
+  ok(/IN PROGRESS/.test(charts) && /PARTIAL DAY/.test(obs), "the current hour and today are labelled in words");
+  ok(/"YOUR TEAM"/.test(obs) && /"you"/.test(obs), "the visitor's own rows are marked in words, not colour alone");
+  ok(/never by a score|count, not a ranking by score/.test(obs), "the target board says it counts, never ranks by score");
+  for (const [p, name] of [[obsPath, "observatory.js"], [chartsPath, "charts.js"]]) {
+    const src = text[p], code = stripSrc(src);
+    ok(!/\bexpired?\b/i.test(src), `${name} never says 'expired' — that is a word for a coupon`);
+    ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(code), `${name}: no HTML sinks — every server string is textContent`);
+    ok((name === "charts.js" ? /createElementNS/.test(code) : /createElement\(/.test(code)) && /textContent/.test(code), `${name} builds with createElement(NS) and writes with textContent`);
+    ok(!/\.start\s*\(/.test(code), `${name} never calls .start( — the Observatory reads, it cannot donate`);
+    ok(!/new\s+(Audio|AudioContext|webkitAudioContext)\b/.test(code), `${name} constructs no audio`);
+    ok(!/requestAnimationFrame/.test(code), `${name} has no rAF loop`);
+    ok(!/toLocaleString|Intl\./.test(code), `${name} formats numbers without the locale`);
+    ok(!/\b(mining|miner|mine)\b/i.test(src), `${name} never calls the activity mining`);
+    ok(!/\b(streak|combo|jackpot|level up|loot|rare find)\b/i.test(src), `${name}: no game-economy words`);
+    ok(!/\b(discover(y|ed|s)?|breakthrough)\b/i.test(src), `${name}: no discovery language`);
+    ok(!/✓|\bclean\b/.test(src), `${name}: no tick and no 'clean'`);
+    ok(!/one in (\d|five|ten|twenty|forty|a hundred)/i.test(src), `${name}: no fixed sampling ratio`);
+    for (const m of src.matchAll(/^\s*export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+      ok(/^view[A-Z]/.test(m[1]) || /^[A-Z][A-Z0-9_]*$/.test(m[1]), `${name}: export '${m[1]}' is prefixed view* or is UPPER_CASE data`);
+    }
+  }
+  /* no <details> is ever created closed: the one constructor sets open, and nothing unsets it */
+  ok(/el\("details"/.test(charts) && /det\.open = true/.test(charts) && /det\.setAttribute\("open", ""\)/.test(charts), "the only <details> constructor opens it");
+  ok(!/\.open = false|removeAttribute\("open"\)|\.open=false/.test(stripSrc(charts) + stripSrc(obs)), "nothing closes a <details>");
+  ok(!/createElement\("details"/.test(stripSrc(obs)), "observatory.js creates no <details> of its own");
+  /* 4.0 integration: the room has NO poller of its own — it subscribes to the
+   * telemetry store (the strip), which is the app's only poller; nothing in it
+   * may request anything, and nothing in it may reference a token */
+  const obsCode = stripSrc(obs);
+  ok(/import \{ viewTelemetry \} from "\.\/telemetry\.js"/.test(obs), "observatory.js imports the telemetry store");
+  ok(/viewTelemetry\.subscribe\(/.test(obsCode) && /viewTelemetry\.snapshot\(\)/.test(obsCode), "the room subscribes to the store and reads its snapshot");
+  ok((obsCode.match(/fetch\(/g) || []).length === 0 && !/XMLHttpRequest/.test(obsCode), "observatory.js never fetches — the strip is the only poller");
+  ok(!/(apiBase|API_BASE)\s*\+/.test(obsCode) && !/"\?a="\s*\+/.test(obsCode), "the room builds no request URL of any kind (work, join, me or otherwise)");
+  ok(!/\.start\s*\(/.test(obsCode), "nothing in observatory.js starts the client");
+  ok(!/fetch\(/.test(stripSrc(charts)), "charts.js draws; it never polls");
+  /* the stylesheet: nothing that costs a frame, and reduced motion honoured */
+  const css = (text[join(APP, "css", "charts.css")] || "").replace(/\/\*[\s\S]*?\*\//g, "");
+  ok(css.length > 0, "charts.css ships");
+  ok(!/(^|[^-])filter\s*:|backdrop-filter|mix-blend-mode|text-shadow/.test(css), "charts.css uses no filter, backdrop-filter, mix-blend-mode or text-shadow");
+  for (const m of css.matchAll(/transition\s*:\s*([^;]+);/g)) {
+    ok(!/\b(width|height|top|left|right|bottom|margin|padding)\b/.test(m[1]), "no transition animates layout: " + m[1].trim());
+  }
+  ok(!/@keyframes/.test(css), "charts.css declares no keyframes — nothing on the Observatory moves unless a number changed");
+  ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*transition: none/.test(css) && /html\[data-still\][\s\S]*transition: none/.test(css), "reduced motion and 'hold the instruments still' stop the one transition");
+  ok(/\.obs-ledbar-fill\s*\{[^}]*transition:\s*transform 320ms/.test(css) && /void list\.offsetWidth/.test(stripSrc(charts)) && /was\[labelText\]/.test(stripSrc(charts)), "the LED-bar fill's 320 ms slide is real: charts.js carries the old scale across a rebuild and flushes once before setting the new one");
+  ok(/min-height: 44px/.test(css.slice(css.indexOf(".obs-numbers-sum"), css.indexOf("}", css.indexOf(".obs-numbers-sum")))), "the 'Read the numbers' summary is a 44 px target");
+  ok(!/animation[^;]*(score|amber)/.test(css), "no animation is keyed to a score");
+  /* the wiring: the tab, the dist order, the Lab's hooks; app.js still fetches exactly one thing */
+  ok(/\["observatory", "Observatory"\]/.test(app) && /viewObservatory\(root/.test(app), "app.js has the Observatory tab and renders it through viewObservatory");
+  ok(fetches === 1, "app.js still fetches exactly one thing (the Observatory's reads live in js/view/)");
+  ok(/viewObservatory\.session\(ev\)/.test(lab) && /type: "record"/.test(lab), "lab.js feeds the client's events and the ?a=me record to the Observatory");
+  const dist = readFileSync(join(HERE, "..", "tools", "dist.mjs"), "utf8");
+  const order = dist.slice(dist.indexOf("const ORDER"), dist.indexOf("];", dist.indexOf("const ORDER")));
+  ok(order.indexOf("js/chem/score.js") < order.indexOf("js/view/charts.js") && order.indexOf("js/view/charts.js") < order.indexOf("js/view/observatory.js") && order.indexOf("js/view/observatory.js") < order.indexOf("js/lab.js"),
+     "dist.mjs bundles charts.js then observatory.js after the engine and before lab.js");
+  ok(/duplicate export/.test(dist), "dist.mjs fails hard on a duplicate export");
+  ok(/css\/charts\.css/.test(dist) && /css\/charts\.css/.test(index), "charts.css is linked and bundled");
+  /* the server side of the same feature */
+  const php = existsSync(join(apiDir, "index.php")) ? readFileSync(join(apiDir, "index.php"), "utf8") : "";
+  ok(/case 'history':\s*action_history/.test(php) && /function action_history/.test(php), "the server dispatches ?a=history");
+  ok(/los_bw_count\(strlen\(\$json\)\)/.test(php), "every JSON body is counted by the bandwidth meter");
+  ok(/los_meta_incr\(\$db, 'bw:day:'/.test(php) && /function los_meta_incr/.test(readFileSync(join(apiDir, "db.php"), "utf8")), "the meter increments atomically (los_meta_incr) — it runs outside any transaction");
+  ok(/\$flags = null;[\s\S]{0,1500}'flags'\s*=>\s*\$flags/.test(php), "?a=hits sends null, not [], for a flags value it cannot read");
+  ok(/define\('LOS_BW_BUDGET', 2147483648\)/.test(php), "the daily bandwidth budget defaults to 2 GB");
+  ok(/'canary:ok'/.test(php) && /'canary:bad'/.test(php), "canary counters are incremented in submit");
+  ok(/CREATE TABLE IF NOT EXISTS history/.test(readFileSync(join(apiDir, "db.php"), "utf8")) && /ix_contrib_seen/.test(readFileSync(join(apiDir, "db.php"), "utf8")), "db.php creates the history table and the last_seen index idempotently");
+}
+
+}
 console.log(failed ? "content: " + failed + " FAILED of " + checks : "content: " + checks + " checks passed ✓");
 process.exit(failed ? 1 : 0);

@@ -28,6 +28,8 @@ const ORDER = [
   "js/chem/score.js",
   "js/view/layout.js",
   "js/view/lens.js",
+  "js/view/charts.js",
+  "js/view/observatory.js",
   "js/swarm/client.js",
   "js/data.js",
   "js/grades.js",
@@ -133,7 +135,7 @@ if (missing.length) {
  * anything running afterwards (the app's own entry code) sees a normal scope */
 const js = "const __M = {};\n" + parts.join("\n") +
   `\nconst { ${[...allExports].join(", ")} } = __M;\n`;
-const cssFiles = ["css/style.css", "css/lab.css", "css/observatory.css", "css/lens.css"].filter((f) => existsSync(join(APP, f)));
+const cssFiles = ["css/style.css", "css/lab.css", "css/observatory.css", "css/lens.css", "css/charts.css"].filter((f) => existsSync(join(APP, f)));
 const css = cssFiles.map((f) => readFileSync(join(APP, f), "utf8")).join("\n");
 
 let html = readFileSync(join(APP, "index.html"), "utf8");
@@ -146,7 +148,7 @@ html = html.replace("los-3.0.0", "los-3.0.0-dist");
 writeFileSync(join(OUTDIR, "longevityos.html"), html);
 
 /* a build that silently lost a module is worse than a failed build */
-for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab", "function viewTelemetry", "function viewLed", "function viewLayoutMolecule", "function viewLens"]) {
+for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab", "function viewTelemetry", "function viewLed", "function viewLayoutMolecule", "function viewLens", "function viewObservatory", "function viewChartStepArea"]) {
   if (!html.includes(marker)) { console.error(`dist: '${marker}' is missing from the bundle — inlining broke`); process.exit(1); }
 }
 if (/^\s*import\s/m.test(html)) { console.error("dist: an ES import survived into the bundle"); process.exit(1); }

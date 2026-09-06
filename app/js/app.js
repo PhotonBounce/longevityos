@@ -4,6 +4,7 @@ import { EVIDENCE_HEADLINE, EVIDENCE_NOTE, EVIDENCE_RUNGS, HUMAN_EVIDENCE, stron
 import { FEED_URL, parseFeed, feedFreshness } from "./feed.js";
 import { renderLab } from "./lab.js";
 import { viewTelemetry } from "./view/telemetry.js";
+import { viewObservatory } from "./view/observatory.js";
 
 /* The Lab talks to the swarm server that ships beside the app. A page served
  * from photon-bounce.com/longevityos/ finds it at ./api/; QA overrides it. */
@@ -301,7 +302,7 @@ function renderEvidence(root) {
 /* ————— shell ————— */
 
 const TABS = [
-  ["atlas", "Atlas"], ["evidence", "What has evidence"], ["lab", "The Lab"], ["ladder", "The Ladder"],
+  ["atlas", "Atlas"], ["evidence", "What has evidence"], ["lab", "The Lab"], ["observatory", "Observatory"], ["ladder", "The Ladder"],
   ["feed", "Fresh findings"], ["sources", "Sources"]
 ];
 
@@ -320,6 +321,7 @@ function render() {
   else if (state.tab === "dossier") renderDossier(root);
   else if (state.tab === "evidence") renderEvidence(root);
   else if (state.tab === "lab") renderLab(root, { apiBase: API_BASE });
+  else if (state.tab === "observatory") viewObservatory(root, { apiBase: API_BASE });
   else if (state.tab === "ladder") renderLadder(root);
   else if (state.tab === "feed") renderFeed(root);
   else if (state.tab === "sources") renderSources(root);

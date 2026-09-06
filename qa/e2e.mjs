@@ -140,7 +140,7 @@ await page.screenshot({ path: join(SHOTS, "05-sources.png"), fullPage: true });
 /* ————— 6b. the 3.0 surface is wired: the ledger tab and the Lab's new sections ————— */
 suite("e2e 6b — the 3.0 surface");
 const tabLabels = await page.locator("#nav .tab").allTextContents();
-ok(tabLabels.length === 6 && tabLabels[1] === "What has evidence", "six tabs, the ledger second (" + tabLabels.join(" | ") + ")");
+ok(tabLabels.length === 7 && tabLabels[1] === "What has evidence" && tabLabels[3] === "Observatory", "seven tabs, the ledger second and the Observatory right after the Lab (" + tabLabels.join(" | ") + ")");
 await page.locator("#nav .tab", { hasText: "The Lab" }).click();
 await page.waitForTimeout(600);
 const labText30 = await page.locator("#view").textContent();

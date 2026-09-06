@@ -1,0 +1,207 @@
+/* charts.css — the Observatory tab and its figures (js/view/charts.js,
+ * js/view/observatory.js). Classes are prefixed .obs-.
+ *
+ * Uses the 4.0 instrument tokens (observatory.css) with fallbacks to the same
+ * values, so the figures render identically whether or not that sheet has
+ * loaded yet, and style.css's palette for prose.
+ *
+ * WHAT THIS FILE MAY NOT CONTAIN (qa/content.mjs lints it): filter,
+ * backdrop-filter, mix-blend-mode, text-shadow, and any transition or
+ * keyframe on width/height/top/left. The one thing that moves is an LED-bar
+ * fill, by transform, and only when its number changed (charts.js carries the
+ * old scale across a rebuild so there is a start to slide from); under reduced
+ * motion (the media query, and html[data-still]) it does not move at all.
+ * Nothing on this tab animates while nothing changes. */
+
+.obs { display: flex; flex-direction: column; gap: 12px; }
+.obs-head { display: flex; flex-direction: column; gap: 6px; }
+.obs-lede { margin: 0; }
+
+.obs-key { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.obs-key-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dim); }
+.obs-key-word { font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); letter-spacing: .02em; }
+
+.obs-link {
+  margin: 0; font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 12.5px; letter-spacing: .06em; color: var(--dim);
+  border: 1px solid var(--bezel, #1c2836); border-radius: 4px; padding: 6px 10px;
+  background: var(--instr-well, #070c11);
+}
+.obs-link-live { color: var(--phosphor, #6ff0c0); }
+.obs-link-quiet { color: var(--amber, #ffb454); }
+.obs-link-no-link { color: var(--ink); border-color: var(--rose, #ff7a90); }
+
+/* ————— the grid of instruments ————— */
+
+.obs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .obs-grid { grid-template-columns: minmax(0, 1fr); } }
+.obs-slot { min-width: 0; }
+.obs-slot-sweep, .obs-slot-boards, .obs-slot-bandwidth { grid-column: 1 / -1; }
+
+/* ————— a figure = a console panel ————— */
+
+.obs-fig {
+  margin: 0; min-width: 0;
+  background: linear-gradient(180deg, var(--instr-face, #0f1720), #0c141c);
+  border: 1px solid var(--bezel, #1c2836); border-radius: 4px;
+  box-shadow: inset 0 1px 0 var(--bezel-hi, rgba(255, 255, 255, .045)), 0 1px 0 rgba(0, 0, 0, .5);
+  padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px;
+  position: relative;
+}
+.obs-fig::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 4px;
+  background:
+    radial-gradient(circle at 6px 6px, var(--bezel, #1c2836) 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) 6px, var(--bezel, #1c2836) 1.5px, transparent 2px),
+    radial-gradient(circle at 6px calc(100% - 6px), var(--bezel, #1c2836) 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), var(--bezel, #1c2836) 1.5px, transparent 2px);
+}
+.obs-tone-amber.obs-fig { border-color: var(--amber, #ffb454); }
+
+.obs-cap { display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 4px 10px; }
+/* the figure number, from data-n: a pseudo-element, so it costs no DOM node */
+.obs-cap[data-n]::before {
+  content: attr(data-n);
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  color: var(--phosphor, #6ff0c0); font-size: 13px; font-variant-numeric: tabular-nums;
+}
+.obs-cap-title {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .14em; color: var(--dim);
+}
+.obs-cap-headline { grid-column: 1 / -1; font-size: 14px; color: var(--ink); line-height: 1.4; }
+
+/* ————— the well: the drawing, on a graticule ————— */
+
+.obs-well {
+  background:
+    repeating-linear-gradient(90deg, var(--grid, rgba(122, 184, 255, .06)) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(180deg, var(--grid, rgba(122, 184, 255, .06)) 0 1px, transparent 1px 24px),
+    var(--instr-well, #070c11);
+  border: 1px solid var(--bezel, #1c2836); border-radius: 3px; padding: 8px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+}
+.obs-svg { display: block; width: 100%; height: auto; max-height: 180px; overflow: visible; }
+.obs-grid line { stroke: var(--grid, rgba(122, 184, 255, .12)); stroke-width: 1; }
+.obs-baseline { stroke: var(--bezel, #1c2836); stroke-width: 1; }
+.obs-svg-label {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 8px; letter-spacing: .12em; fill: var(--dim);
+}
+.obs-svg-big {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 16px; font-weight: 600; fill: var(--phosphor, #6ff0c0); font-variant-numeric: tabular-nums;
+}
+.obs-svg-big.obs-tone-amber { fill: var(--amber, #ffb454); }
+
+/* tones: a fill and a stroke per word in the legend */
+.obs-tone-phosphor { --obs-c: var(--phosphor, #6ff0c0); }
+.obs-tone-trace { --obs-c: var(--trace, #7ab8ff); }
+.obs-tone-amber { --obs-c: var(--amber, #ffb454); }
+.obs-tone-rose { --obs-c: var(--rose, #ff7a90); }
+.obs-tone-violet { --obs-c: var(--violet, #c39bff); }
+.obs-tone-dim { --obs-c: var(--dim); }
+
+.obs-area { fill: var(--obs-c); fill-opacity: .28; stroke: var(--obs-c); stroke-width: 1.2; }
+.obs-area-partial { fill: var(--obs-c); fill-opacity: .1; stroke: var(--obs-c); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.obs-bar { fill: var(--obs-c); fill-opacity: .8; }
+.obs-bar-zero { fill-opacity: .5; }
+.obs-bar-partial { fill: none; stroke: var(--obs-c); stroke-width: 1.2; stroke-dasharray: 2 2; }
+.obs-slice { fill: var(--obs-c); fill-opacity: .85; stroke: var(--instr-well, #070c11); stroke-width: 1; }
+.obs-seg { fill: var(--obs-c); fill-opacity: .8; }
+.obs-seg-dim { fill-opacity: .3; }
+.obs-line { stroke: var(--obs-c); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.obs-budget-line { stroke: var(--obs-c); stroke-width: 1.2; stroke-dasharray: 4 3; }
+
+.obs-empty {
+  margin: 0; font-size: 13.5px; color: var(--dim); font-style: italic;
+}
+.obs-note { margin: 0; font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.obs-word {
+  margin: 0; font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 18px; letter-spacing: .2em; color: var(--obs-c);
+}
+
+/* ————— the donut and the legends ————— */
+
+.obs-donut-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.obs-donut-row .obs-svg { width: 120px; height: 120px; flex: 0 0 auto; }
+.obs-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.obs-legend-row { flex-direction: row; flex-wrap: wrap; gap: 4px 14px; }
+.obs-legend-item { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: var(--ink); }
+.obs-legend-dim { color: var(--dim); font-style: italic; }
+.obs-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: var(--obs-c); flex: 0 0 auto; align-self: center; }
+.obs-legend-n { color: var(--dim); }
+
+/* ————— LED-bar rows ————— */
+
+.obs-ledrows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.obs-ledrow {
+  display: grid; grid-template-columns: minmax(80px, 160px) 1fr auto; align-items: center; gap: 4px 10px;
+  font-size: 12.5px; color: var(--ink); min-height: 22px;
+}
+.obs-ledrow-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-ledrow-dim .obs-ledrow-label { color: var(--dim); font-style: italic; }
+.obs-ledrow-dim .obs-ledbar-fill { opacity: .35; }
+.obs-ledrow-pinned { color: var(--phosphor, #6ff0c0); }
+.obs-ledbar {
+  position: relative; height: 12px; border-radius: 2px; overflow: hidden;
+  background: repeating-linear-gradient(90deg, var(--phosphor-dim, rgba(111, 240, 192, .11)) 0 6px, transparent 6px 9px);
+}
+.obs-ledbar-fill {
+  position: absolute; inset: 0; transform-origin: 0 50%;
+  background: repeating-linear-gradient(90deg, var(--obs-c) 0 6px, transparent 6px 9px);
+  transition: transform 320ms ease-out;
+}
+.obs-ledrow-value { text-align: right; min-width: 5ch; }
+.obs-ledrow-word, .obs-ledrow-note { grid-column: 1 / -1; font-size: 11px; color: var(--dim); letter-spacing: .04em; }
+.obs-ledrow-word { color: var(--phosphor, #6ff0c0); text-transform: uppercase; letter-spacing: .12em; }
+
+/* ————— readouts ————— */
+
+.obs-readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.obs-readout {
+  display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; min-width: 0;
+  border: 1px solid var(--bezel, #1c2836); border-radius: 3px; background: rgba(0, 0, 0, .25);
+}
+.obs-readout-big .obs-readout-value, .obs-readouts-big .obs-readout-value { font-size: 22px; }
+.obs-readout-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); }
+.obs-readout-value {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 15px; color: var(--obs-c); font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+}
+/* rose marks conflict or null as a border beside ink text — never as the text colour */
+.obs-readout.obs-tone-rose { border-color: var(--rose, #ff7a90); }
+.obs-readout.obs-tone-rose .obs-readout-value { color: var(--ink); }
+.obs-word.obs-tone-rose { color: var(--ink); border-bottom: 2px solid var(--rose, #ff7a90); }
+.obs-readout-note { font-size: 11.5px; color: var(--dim); }
+.obs-readout-word { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber, #ffb454); }
+
+/* ————— read the numbers ————— */
+
+.obs-numbers { border-top: 1px solid var(--bezel, #1c2836); padding-top: 6px; }
+/* a control: 44 px tall like every other target on the page (spec §10) */
+.obs-numbers-sum {
+  cursor: pointer; font-size: 10.5px; text-transform: uppercase; letter-spacing: .14em; color: var(--dim);
+  padding: 4px 0; min-height: 44px; display: flex; align-items: center; box-sizing: border-box;
+}
+.obs-numbers-sum:focus-visible { outline: 2px solid var(--trace, #7ab8ff); outline-offset: 2px; }
+.obs-table {
+  width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-variant-numeric: tabular-nums;
+}
+.obs-table th, .obs-table td { text-align: left; padding: 3px 6px 3px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); vertical-align: top; overflow-wrap: anywhere; }
+.obs-table thead th { color: var(--dim); font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; }
+.obs-table tbody th { font-weight: 500; color: var(--ink); }
+.obs-table td { color: var(--dim); }
+.obs-td-none { font-style: italic; }
+.obs-row-pinned th, .obs-row-pinned td { color: var(--phosphor, #6ff0c0); }
+.obs-numbers .obs-table { max-height: 260px; overflow: auto; display: block; }
+
+.obs-foot { margin: 4px 0 0; font-size: 12.5px; color: var(--dim); }
+
+/* ————— motion: nothing moves unless a number changed, and not even then when asked to hold still ————— */
+
+@media (prefers-reduced-motion: reduce) {
+  .obs-ledbar-fill { transition: none; }
+}
+html[data-still] .obs-ledbar-fill { transition: none; }

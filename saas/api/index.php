@@ -37,6 +37,21 @@
  *   POST ?a=leave       {token}       -> { ok:true }   (hide the public record; work is never deleted)
  *   ?a=stats additionally carries teams: [{code, name, members, units, credits}] (top 10).
  *
+ * 4.0 — history, the instrument fields, and the bandwidth meter (integers only):
+ *   GET  ?a=history&hours=48         -> { bucket:"hour", hours, now, hour:[...], harvested:[...],
+ *                                        screened:[...], verified:[...], contributors:[...],
+ *                                        active:[...], units_open:[...], units_confirmed:[...],
+ *                                        conflicts:[...], results:[...], rows, trimmed }
+ *        &bucket=day                 -> 30 dense daily rows (MAX per column, plus rows:[n per day])
+ *        &bw=1                       -> + bandwidth:{days:[{day,bytes}], budget_bytes, today_bytes, quiet}
+ *   ?a=stats additionally carries totals.pending/issued/conflict/active_1h,
+ *        units{open,confirmed,conflict,stale}, canary{ok,bad}, spectrum[10],
+ *        targets[<=12]{id,count}, witnesses[3], clocks{harvest,verified,issued}, quiet.
+ *   ?a=health additionally carries bandwidth{today_bytes, budget_bytes, quiet}.
+ *   Every JSON body's length is added to the meta counters bw:day:<day> and
+ *   bw:act:<day>:<action>; quiet = today's bytes exceed the daily budget, and
+ *   every client slows its polling when it sees it.
+ *
  * PHP 8 + pdo_sqlite. No framework, no cookies, no sessions, no dependencies.
  */
 
@@ -61,6 +76,14 @@ define('LOS_CREDIT_CONFIRMED', 10);
 define('LOS_TEAM_CAP', 500);      // visible members a team may hold
 define('LOS_TEAM_CODE_LEN', 8);   // join-code length
 define('LOS_TEAM_ALPHABET', 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'); // 32 symbols, no 0/O, no 1/I
+/* 4.0 */
+define('LOS_HISTORY_HOURS', 720);       // history rows kept (30 days of hours)
+define('LOS_HISTORY_GUARD', 60);        // seconds between history writes
+define('LOS_HISTORY_DAYS', 30);         // daily buckets served by ?a=history&bucket=day
+define('LOS_BW_BUDGET', 2147483648);    // bytes of JSON per UTC day before the host asks for quiet (2 GB)
+define('LOS_BW_KEEP_DAYS', 14);         // bandwidth counters kept
+define('LOS_SPECTRUM_BINS', 10);        // hits.score / 100
+define('LOS_TARGETS_MAX', 12);          // rows in ?a=stats targets
 
 /* ————————————————————————— response plumbing ————————————————————————— */
 
@@ -137,6 +160,7 @@ function los_out(array $data, $status = 200)
             }
         }
     }
+    los_bw_count(strlen($json));        // 4.0: the bandwidth meter, one line
     http_response_code((int) $status);
     echo $json;
     exit;
@@ -538,6 +562,154 @@ function los_retire_old_units(PDO $db, $current)
     });
 }
 
+/* ————————————————————————— 4.0: the bandwidth meter ————————————————————————— */
+
+/**
+ * The owner's rule: watch the host's bandwidth. Every JSON body that leaves
+ * los_out() adds its length to two meta counters — bw:day:<YYYY-MM-DD> and
+ * bw:act:<YYYY-MM-DD>:<action> — so ?a=health can say how many bytes today
+ * has cost against a daily budget, and ?a=stats can carry a `quiet` flag that
+ * every client honours by slowing its polling. Counters older than
+ * LOS_BW_KEEP_DAYS are pruned once a day. The meter is never allowed to break
+ * a response: every failure inside it is swallowed.
+ */
+function los_bw_day($t = null)
+{
+    return gmdate('Y-m-d', $t === null ? time() : (int) $t);
+}
+
+/**
+ * The daily budget in bytes. LOS_BW_BUDGET unless the operator has written a
+ * positive integer to the meta key bw:budget (by hand, or by QA — never by a
+ * request; no action writes that key).
+ */
+function los_bw_budget(PDO $db)
+{
+    $v = los_meta_get($db, 'bw:budget', '');
+    if (is_string($v) && preg_match('/^[1-9][0-9]{0,15}$/', $v) === 1) {
+        return (int) $v;
+    }
+    return LOS_BW_BUDGET;
+}
+
+function los_bw_today(PDO $db)
+{
+    return (int) los_meta_get($db, 'bw:day:' . los_bw_day(), '0');
+}
+
+function los_bw_quiet(PDO $db)
+{
+    return los_bw_today($db) > los_bw_budget($db);
+}
+
+/** The wire form for ?a=health and ?a=history&bw=1. */
+function los_bw_wire(PDO $db)
+{
+    $today  = los_bw_today($db);
+    $budget = los_bw_budget($db);
+    return array(
+        'today_bytes'  => $today,
+        'budget_bytes' => $budget,
+        'quiet'        => $today > $budget,
+    );
+}
+
+/** Up to LOS_BW_KEEP_DAYS daily totals, oldest first: [{day, bytes}]. */
+function los_bw_days(PDO $db)
+{
+    $st = $db->prepare("SELECT k, v FROM meta WHERE k LIKE 'bw:day:%' ORDER BY k DESC LIMIT ?");
+    $st->bindValue(1, LOS_BW_KEEP_DAYS, PDO::PARAM_INT);
+    $st->execute();
+    $rows = $st->fetchAll();
+    $st->closeCursor();
+    $out = array();
+    foreach (array_reverse($rows) as $r) {
+        $day = substr((string) $r['k'], 7);
+        if (preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $day) !== 1) {
+            continue;
+        }
+        $out[] = array('day' => $day, 'bytes' => (int) $r['v']);
+    }
+    return $out;
+}
+
+/** Add one response's length to today's counters. Called once, by los_out(). */
+function los_bw_count($bytes)
+{
+    static $counted = false;
+    if ($counted) {
+        return;
+    }
+    $counted = true;
+    try {
+        $db  = los_db();
+        $day = los_bw_day();
+        $a   = isset($_GET['a']) && is_scalar($_GET['a']) ? (string) $_GET['a'] : '';
+        if (preg_match('/^[a-z_]{1,24}$/', $a) !== 1) {
+            $a = 'none';
+        }
+        /* one atomic statement each: this runs outside any transaction, and a
+           read-then-write here loses increments exactly when the host is busiest */
+        los_meta_incr($db, 'bw:day:' . $day, (int) $bytes);
+        los_meta_incr($db, 'bw:act:' . $day . ':' . $a, (int) $bytes);
+        if (los_meta_get($db, 'bw:pruned', '') !== $day) {
+            // substr(k, 8, 10) is the date in both key shapes ('bw:day:' and
+            // 'bw:act:' are seven characters); ISO dates compare as strings.
+            $cut = los_bw_day(time() - LOS_BW_KEEP_DAYS * 86400);
+            $db->prepare("DELETE FROM meta WHERE (k LIKE 'bw:day:%' OR k LIKE 'bw:act:%') AND substr(k, 8, 10) < ?")
+               ->execute(array($cut));
+            los_meta_set($db, 'bw:pruned', $day);
+        }
+    } catch (Throwable $e) {
+        // the meter never costs a volunteer their response
+    }
+}
+
+/* ————————————————————————— 4.0: history ————————————————————————— */
+
+/** The history columns, in wire order. */
+function los_history_cols()
+{
+    return array('harvested', 'screened', 'verified', 'contributors', 'active',
+                 'units_open', 'units_confirmed', 'conflicts', 'results');
+}
+
+/**
+ * Write the current hour's row from the figures ?a=stats just computed, at
+ * most once every LOS_HISTORY_GUARD seconds, and prune rows older than
+ * LOS_HISTORY_HOURS. INSERT OR IGNORE creates the hour, UPDATE refreshes it:
+ * a row is the latest reading in its hour, never a sum of readings, so two
+ * simultaneous writers are idempotent. The clock is used only to name the
+ * hour — nothing here is on the screening path.
+ */
+function los_history_write(PDO $db, array $row)
+{
+    $now  = time();
+    $last = (int) los_meta_get($db, 'history:last', '0');
+    if ($now - $last < LOS_HISTORY_GUARD && $now >= $last) {
+        return false;
+    }
+    $hour = $now - ($now % 3600);
+    $cols = los_history_cols();
+    $vals = array();
+    foreach ($cols as $c) {
+        $vals[] = isset($row[$c]) ? (int) $row[$c] : 0;
+    }
+    los_tx($db, function () use ($db, $hour, $cols, $vals, $now) {
+        $db->prepare('INSERT OR IGNORE INTO history(hour) VALUES(?)')->execute(array($hour));
+        $set = array();
+        foreach ($cols as $c) {
+            $set[] = $c . ' = ?';
+        }
+        $args   = $vals;
+        $args[] = $hour;
+        $db->prepare('UPDATE history SET ' . implode(', ', $set) . ' WHERE hour = ?')->execute($args);
+        $db->prepare('DELETE FROM history WHERE hour < ?')->execute(array($hour - LOS_HISTORY_HOURS * 3600));
+        los_meta_set($db, 'history:last', (string) $now);
+    });
+    return true;
+}
+
 /* ————————————————————————— shared queries ————————————————————————— */
 
 function los_count(PDO $db, $sql, array $args = array())
@@ -670,6 +842,9 @@ function action_health(PDO $db)
         'contributors'   => los_count($db, 'SELECT COUNT(*) FROM contributors WHERE hidden = 0'),
         // A boolean, never the key, never the path it lives at.
         'ingest_armed'   => los_ingest_key() !== null,
+        // 4.0: the host's own meter. quiet = today's JSON has cost more than
+        // the daily budget, and every client slows its polling on seeing it.
+        'bandwidth'      => los_bw_wire($db),
     ));
 }
 
@@ -932,6 +1107,7 @@ function action_submit(PDO $db)
     }
     if (is_string($canary) && $canary !== '' && !hash_equals($canary, $digest)) {
         los_tx($db, function () use ($db, $cid) {
+            los_meta_incr($db, 'canary:bad', 1);   // 4.0: the Observatory's INTEGRITY figure
             $db->prepare('UPDATE contributors SET flagged = 1 WHERE id = ?')->execute(array($cid));
             // Discard everything of theirs that is not already part of a
             // confirmed unit: work from a proven fabricator is worthless.
@@ -1048,6 +1224,7 @@ function action_submit(PDO $db)
         // A canary that matches is real work, correctly done — credit it, but it
         // never writes hits and never moves a molecule.
         if ($isCanary) {
+            los_meta_incr($db, 'canary:ok', 1);    // 4.0: the Observatory's INTEGRITY figure
             $db->prepare('UPDATE contributors SET credits = credits + ?, units = units + 1 WHERE id = ?')
                ->execute(array(LOS_CREDIT_CONFIRMED - LOS_CREDIT_PENDING, $cid));
             return array('accepted' => true, 'credited' => LOS_CREDIT_CONFIRMED, 'status' => 'confirmed');
@@ -1169,16 +1346,122 @@ function action_submit(PDO $db)
     los_out($outcome);
 }
 
+/** {state => n} over one GROUP BY, every key present and integer. */
+function los_group_counts(PDO $db, $sql, array $keys)
+{
+    $st = $db->prepare($sql);
+    $st->execute();
+    $rows = $st->fetchAll();
+    $st->closeCursor();
+    $out = array();
+    foreach ($keys as $k) {
+        $out[$k] = 0;
+    }
+    foreach ($rows as $r) {
+        $k = isset($r['k']) ? (string) $r['k'] : '';
+        if (isset($out[$k])) {
+            $out[$k] = (int) $r['n'];
+        }
+    }
+    return $out;
+}
+
 function action_stats(PDO $db)
 {
     los_rate_read($db);
+    $now  = time();
+    $mol  = los_group_counts($db, 'SELECT state AS k, COUNT(*) AS n FROM molecules GROUP BY state',
+                             array('pending', 'issued', 'verified', 'conflict'));
+    // Real work only: canaries have a known answer and are not units of the
+    // pool. Every status the schema names is present, at 0 when empty.
+    $units = los_group_counts($db, "SELECT status AS k, COUNT(*) AS n FROM units
+                                     WHERE canary_digest IS NULL GROUP BY status",
+                              array('open', 'confirmed', 'conflict', 'stale'));
     $totals = array(
         'harvested'    => los_count($db, 'SELECT COUNT(*) FROM molecules'),
         'screened'     => (int) los_meta_get($db, 'screened', '0'),
-        'verified'     => los_count($db, "SELECT COUNT(*) FROM molecules WHERE state = 'verified'"),
+        'verified'     => $mol['verified'],
         'contributors' => los_count($db, 'SELECT COUNT(*) FROM contributors WHERE hidden = 0'),
-        'units_open'   => los_count($db, "SELECT COUNT(*) FROM units
-                                           WHERE canary_digest IS NULL AND status IN ('open','conflict')"),
+        'units_open'   => $units['open'] + $units['conflict'],
+        /* 4.0 — integers only, every one a count the server holds */
+        'pending'      => $mol['pending'],
+        'issued'       => $mol['issued'],
+        'conflict'     => $mol['conflict'],
+        // Seen in the last hour, on the public record (a departed contributor
+        // is counted nowhere public, here included). ix_contrib_seen.
+        'active_1h'    => los_count($db, 'SELECT COUNT(*) FROM contributors WHERE hidden = 0 AND last_seen >= ?',
+                                    array($now - 3600)),
+    );
+
+    /* ——— 4.0: the history row for this hour, behind the 60-second guard ——— */
+    los_history_write($db, array(
+        'harvested'       => $totals['harvested'],
+        'screened'        => $totals['screened'],
+        'verified'        => $totals['verified'],
+        'contributors'    => $totals['contributors'],
+        'active'          => $totals['active_1h'],
+        'units_open'      => $totals['units_open'],
+        'units_confirmed' => $units['confirmed'],
+        'conflicts'       => $units['conflict'],
+        'results'         => los_count($db, 'SELECT COUNT(*) FROM results'),
+    ));
+
+    /* ——— 4.0: the instrument fields ——— */
+
+    // SCORE SPECTRUM: hits by score/100, ten bins; a score of 1000 sits in the
+    // last one. Counts only — nothing here ranks a molecule.
+    $spectrum = array_fill(0, LOS_SPECTRUM_BINS, 0);
+    $st = $db->prepare('SELECT CASE WHEN score >= 900 THEN 9 WHEN score < 0 THEN 0 ELSE score / 100 END AS k,
+                               COUNT(*) AS n FROM hits GROUP BY k');
+    $st->execute();
+    foreach ($st->fetchAll() as $r) {
+        $k = (int) $r['k'];
+        if ($k >= 0 && $k < LOS_SPECTRUM_BINS) {
+            $spectrum[$k] = (int) $r['n'];
+        }
+    }
+    $st->closeCursor();
+
+    // TARGET BOARD: hits GROUP BY best_target, count only. The id is a
+    // volunteer-submitted string; the client maps it to a name from
+    // targets.js and shows anything unknown dim and unlabelled.
+    $targets = array();
+    $st = $db->prepare('SELECT best_target AS id, COUNT(*) AS n FROM hits
+                     GROUP BY best_target ORDER BY n DESC, id ASC LIMIT ?');
+    $st->bindValue(1, LOS_TARGETS_MAX, PDO::PARAM_INT);
+    $st->execute();
+    foreach ($st->fetchAll() as $r) {
+        $targets[] = array('id' => los_clean_short((string) $r['id'], 40), 'count' => (int) $r['n']);
+    }
+    $st->closeCursor();
+
+    // WITNESSES: how many independent browsers agreed on each verified hit —
+    // exactly two, three, or four and more.
+    $witnesses = array(0, 0, 0);
+    $st = $db->prepare('SELECT CASE WHEN verified_by >= 4 THEN 2 WHEN verified_by = 3 THEN 1 ELSE 0 END AS k,
+                               COUNT(*) AS n FROM hits GROUP BY k');
+    $st->execute();
+    foreach ($st->fetchAll() as $r) {
+        $k = (int) $r['k'];
+        if ($k >= 0 && $k <= 2) {
+            $witnesses[$k] = (int) $r['n'];
+        }
+    }
+    $st->closeCursor();
+
+    // FRESHNESS CLOCKS: unix seconds of the latest molecule added, hit
+    // verified and unit issued; 0 when there has never been one.
+    $clocks = array(
+        'harvest'  => los_count($db, 'SELECT COALESCE(MAX(added_at), 0) FROM molecules'),
+        'verified' => los_count($db, 'SELECT COALESCE(MAX(verified_at), 0) FROM hits'),
+        'issued'   => los_count($db, 'SELECT COALESCE(MAX(issued_at), 0) FROM issued'),
+    );
+
+    // INTEGRITY: canary units answered correctly / incorrectly, incremented in
+    // action_submit. An unanswerable (mis-stored) canary counts for neither.
+    $canary = array(
+        'ok'  => (int) los_meta_get($db, 'canary:ok', '0'),
+        'bad' => (int) los_meta_get($db, 'canary:bad', '0'),
     );
 
     // Names and totals only — never a token, never a token hash, never an id.
@@ -1224,7 +1507,123 @@ function action_stats(PDO $db)
         );
     }
 
-    los_out(array('totals' => $totals, 'leaderboard' => $board, 'teams' => $teams));
+    los_out(array(
+        'totals'      => $totals,
+        'leaderboard' => $board,
+        'teams'       => $teams,
+        /* 4.0 */
+        'units'       => $units,
+        'canary'      => $canary,
+        'spectrum'    => $spectrum,
+        'targets'     => $targets,
+        'witnesses'   => $witnesses,
+        'clocks'      => $clocks,
+        'quiet'       => los_bw_quiet($db),
+    ));
+}
+
+/**
+ * GET ?a=history&hours=48 -> parallel integer arrays, one entry per stored
+ * hour inside the window (sparse: an hour nobody asked ?a=stats in has no
+ * row), oldest first, plus hour:[unix seconds at the top of each hour].
+ * hours is clamped to 1..LOS_HISTORY_HOURS. The reply is kept under the
+ * byte budget by dropping the OLDEST rows first and saying so (trimmed:true,
+ * rows:n) — a chart that reads 720 hours asks for &bucket=day instead.
+ *
+ * &bucket=day -> ceil(hours/24) dense daily rows (at most LOS_HISTORY_DAYS,
+ * today last), each column the MAX reading inside that UTC day (running
+ * totals are monotone, so MAX is the day's last reading; gauges give the
+ * day's peak) and rows:[hourly readings in that day] so a day with no
+ * reading (rows 0) can be carried forward rather than read as a drop to 0.
+ *
+ * &bw=1 -> bandwidth:{days:[{day, bytes}] (<= 14), budget_bytes, today_bytes, quiet}.
+ */
+function action_history(PDO $db)
+{
+    los_rate_read($db);
+    $daily = los_param('bucket', 'hour') === 'day';
+    $hours = los_int(los_param('hours', null));
+    if ($hours === null) {
+        $hours = $daily ? LOS_HISTORY_HOURS : 48;
+    }
+    $hours = max(1, min(LOS_HISTORY_HOURS, $hours));
+    $now   = time();
+    $cols  = los_history_cols();
+
+    $out = array('bucket' => $daily ? 'day' : 'hour', 'hours' => $hours, 'now' => $now, 'hour' => array());
+    foreach ($cols as $c) {
+        $out[$c] = array();
+    }
+
+    if ($daily) {
+        $days  = max(1, min(LOS_HISTORY_DAYS, (int) ceil($hours / 24)));
+        $today = $now - ($now % 86400);
+        $from  = $today - ($days - 1) * 86400;
+        $sel   = array();
+        foreach ($cols as $c) {
+            $sel[] = 'MAX(' . $c . ') AS ' . $c;
+        }
+        $st = $db->prepare('SELECT (hour / 86400) * 86400 AS day, COUNT(*) AS n, ' . implode(', ', $sel)
+                         . ' FROM history WHERE hour >= ? GROUP BY day ORDER BY day ASC');
+        $st->bindValue(1, $from, PDO::PARAM_INT);
+        $st->execute();
+        $byDay = array();
+        foreach ($st->fetchAll() as $r) {
+            $byDay[(int) $r['day']] = $r;
+        }
+        $st->closeCursor();
+        $out['rows'] = array();
+        for ($d = 0; $d < $days; $d++) {
+            $day = $from + $d * 86400;
+            $r   = isset($byDay[$day]) ? $byDay[$day] : null;
+            $out['hour'][] = $day;
+            $out['rows'][] = $r === null ? 0 : (int) $r['n'];
+            foreach ($cols as $c) {
+                $out[$c][] = $r === null ? 0 : (int) $r[$c];
+            }
+        }
+        $out['days'] = $days;
+    } else {
+        $from = ($now - ($now % 3600)) - ($hours - 1) * 3600;
+        $st = $db->prepare('SELECT hour, ' . implode(', ', $cols)
+                         . ' FROM history WHERE hour >= ? ORDER BY hour DESC');
+        $st->bindValue(1, $from, PDO::PARAM_INT);
+        $st->execute();
+        $rows = $st->fetchAll();
+        $st->closeCursor();
+        // Newest first, so the budget drops the oldest rows; 400 bytes are
+        // reserved for the envelope and the bandwidth block.
+        $bytes   = 400;
+        $kept    = array();
+        $trimmed = false;
+        foreach ($rows as $r) {
+            $cost = strlen((string) (int) $r['hour']) + 1;
+            foreach ($cols as $c) {
+                $cost += strlen((string) (int) $r[$c]) + 1;
+            }
+            if ($bytes + $cost > LOS_JSON_BUDGET) {
+                $trimmed = true;
+                break;
+            }
+            $bytes += $cost;
+            $kept[] = $r;
+        }
+        foreach (array_reverse($kept) as $r) {
+            $out['hour'][] = (int) $r['hour'];
+            foreach ($cols as $c) {
+                $out[$c][] = (int) $r[$c];
+            }
+        }
+        $out['rows']    = count($kept);
+        $out['trimmed'] = $trimmed;
+    }
+
+    if ((string) los_param('bw', '') === '1') {
+        $bw         = los_bw_wire($db);
+        $bw['days'] = los_bw_days($db);
+        $out['bandwidth'] = $bw;
+    }
+    los_out($out);
 }
 
 function action_hits(PDO $db)
@@ -1249,11 +1648,15 @@ function action_hits(PDO $db)
     $bytes = 0;
     foreach ($st->fetchAll() as $h) {
         $smiles = substr((string) $h['smiles'], 0, LOS_SMILES_MAX);
-        /* stored as a JSON list; a corrupt or oversized value degrades to an
-           empty list rather than breaking the response */
-        $flags = array();
+        /* stored as a JSON list. A value that does not decode as a list is
+           sent as null — "not reported" — never as an empty list: [] is the
+           claim that the volunteer's screen raised nothing, and a corrupt row
+           cannot make that claim (the Lab and the Observatory's FLAG LEDGER
+           both render null as their own band, null ≠ ""). */
+        $flags = null;
         $decoded = json_decode((string) $h['flags'], true);
         if (los_is_list($decoded)) {
+            $flags = array();
             foreach (array_slice($decoded, 0, 8) as $f) {
                 if (is_string($f) || is_numeric($f)) {
                     $flags[] = los_clean_short((string) $f, 32);
@@ -1261,7 +1664,7 @@ function action_hits(PDO $db)
             }
         }
         $bytes += strlen($smiles) + strlen((string) $h['cid']) + strlen((string) $h['formula'])
-                + strlen(implode(',', $flags)) + 100;
+                + ($flags === null ? 4 : strlen(implode(',', $flags))) + 100;
         if ($hits && $bytes > LOS_JSON_BUDGET) {
             break;
         }
@@ -1967,6 +2370,8 @@ try {
         case 'contributor': action_contributor($db); break;
         case 'me':          action_me($db);          break;
         case 'leave':       action_leave($db);       break;
+        /* 4.0 */
+        case 'history':     action_history($db);     break;
         default:
             los_fail('unknown_action', 404);
     }

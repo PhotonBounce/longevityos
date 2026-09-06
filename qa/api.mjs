@@ -11,7 +11,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { targetsDigest, ENGINE_VERSION } from "../app/js/chem/targets.js";
+import { targetsDigest, ENGINE_VERSION, TARGETS } from "../app/js/chem/targets.js";
 import { screenUnit, referenceSet } from "../app/js/chem/score.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -177,7 +177,7 @@ const dave = (await call("a=join", { name: "dave" })).json;
 const wC = await call("a=work&token=" + carol.token);
 if (wC.json.unit) {
   const u2 = wC.json.unit;
-  const r2 = u2.molecules.map((m) => ({ id: String(m.id), score: 100, best: "ampk", flags: [] }));
+  const r2 = u2.molecules.map((m) => ({ id: String(m.id), score: 100, best: "metabolic_ampk", flags: [] }));
   await call("a=submit", { token: carol.token, unit_id: u2.unit_id, digest: "b".repeat(64), results: r2 });
   const wD = await call("a=work&token=" + dave.token);
   if (wD.json.unit && wD.json.unit.unit_id === u2.unit_id) {
@@ -418,7 +418,7 @@ const drawWork = async (token, wantId) => {
   }
   return null;
 };
-const answer = (u, digest) => ({ unit_id: u.unit_id, digest, results: u.molecules.map((m) => ({ id: String(m.id), score: 321, best: "ampk", flags: [] })) });
+const answer = (u, digest) => ({ unit_id: u.unit_id, digest, results: u.molecules.map((m) => ({ id: String(m.id), score: 321, best: "metabolic_ampk", flags: [] })) });
 const ru = await drawWork(rec.token);
 let confirmed = null;
 if (ru && ru.unit_id === canaryUnitId) {
@@ -601,6 +601,10 @@ suite("api 14 — the cache split: ETag + 304 on reads, no-store on work");
     ok(/^"[0-9a-f]{40}"$/.test(first.etag), `${qs} carries a strong sha1 ETag (got '${first.etag}')`);
     const { createHash } = await import("node:crypto");
     ok(first.etag === '"' + createHash("sha1").update(first.text).digest("hex") + '"', `${qs}'s ETag is the sha1 of the exact body`);
+    /* 4.0: health carries the live bandwidth meter, which every answered
+     * request advances — its body legitimately differs on every call, so a
+     * 304 can never be expected of it; the cacheable reads are stats and hits */
+    if (qs === "a=health") { ok(/bandwidth/.test(first.text), "health carries the bandwidth meter (so it never matches its own ETag)"); continue; }
     const again = await raw(qs, { "if-none-match": first.etag });
     ok(again.status === 304 && again.text === "", `${qs} with a matching If-None-Match answers 304 with no body (got ${again.status}, ${again.text.length} bytes)`);
     const weak = await raw(qs, { "if-none-match": "W/" + first.etag });
@@ -636,6 +640,271 @@ suite("api 14 — the cache split: ETag + 304 on reads, no-store on work");
   const php = readFileSync(join(API, "index.php"), "utf8");
   ok(/THE CACHE SPLIT/.test(php) && php.indexOf("THE CACHE SPLIT") < php.indexOf("header('Cache-Control"), "the cache split is explained above the header code");
   ok(/two volunteers the same|two "independent" volunteers/.test(php), "and it says why work units are never stored");
+}
+
+/* ————— 15. history (4.0): one row per hour, guarded, pruned, bucketed ————— */
+suite("api 15 — history: a row per hour, written once a minute at most, pruned past 720 hours");
+{
+  const HOUR = 3600;
+  const nowS = () => Math.floor(Date.now() / 1000);
+  const thisHour = () => nowS() - (nowS() % HOUR);
+  const HIST_COLS = ["harvested", "screened", "verified", "contributors", "active", "units_open", "units_confirmed", "conflicts", "results"];
+  ok(sql("SELECT name FROM sqlite_master WHERE type='table' AND name='history'").length === 1, "the history table exists");
+  ok(sql("SELECT name FROM sqlite_master WHERE type='index' AND name='ix_contrib_seen'").length === 1, "ix_contrib_seen ON contributors(last_seen) exists");
+  ok(sql("PRAGMA table_info(history)").map((r) => r.name).join() === ["hour", ...HIST_COLS].join(), "history has exactly the nine columns beside hour, in order");
+  ok(count("history") === 1, `after the earlier stats calls there is exactly one history row (${count("history")})`);
+  sql(`UPDATE meta SET v = '0' WHERE k = 'history:last'`);   // lift the guard so this call's reading is the row's
+  const s0 = await call("a=stats");
+  const row0 = sql("SELECT * FROM history")[0];
+  ok(Number(row0.hour) === thisHour(), `the row is this hour, as unix seconds at the top of the hour (${row0.hour})`);
+  ok(Number(row0.harvested) === s0.json.totals.harvested && Number(row0.screened) === s0.json.totals.screened
+     && Number(row0.verified) === s0.json.totals.verified && Number(row0.contributors) === s0.json.totals.contributors,
+     "the row carries the same running totals stats just reported");
+  ok(Number(row0.units_open) === s0.json.totals.units_open && Number(row0.active) === s0.json.totals.active_1h
+     && Number(row0.units_confirmed) === s0.json.units.confirmed && Number(row0.conflicts) === s0.json.units.conflict
+     && Number(row0.results) === count("results"), "…and the gauges: units_open, active, units_confirmed, conflicts, results");
+  await call("a=stats"); await call("a=stats");
+  ok(count("history") === 1, "two more stats calls within the minute write nothing new (the 60-second guard)");
+  const last = Number(sql("SELECT v FROM meta WHERE k = 'history:last'")[0].v);
+  ok(Math.abs(last - nowS()) < 120, "meta history:last is the time of the last write");
+  /* an ancient row, a mid-window row, and a forced re-write */
+  const old = thisHour() - 800 * HOUR, mid = thisHour() - 100 * HOUR;
+  sql(`INSERT INTO history(hour, harvested, screened, verified, contributors, active, units_open, units_confirmed, conflicts, results) VALUES (${old}, 1, 1, 1, 1, 1, 1, 1, 1, 1), (${mid}, 7, 70, 7, 7, 7, 7, 7, 7, 7)`,
+      `UPDATE history SET screened = 0 WHERE hour = ${thisHour()}`,
+      `UPDATE meta SET v = '0' WHERE k = 'history:last'`);
+  ok(count("history") === 3, "seeded: three rows");
+  const s1 = await call("a=stats");
+  ok(count(`history WHERE hour = ${old}`) === 0, "a row older than 720 hours is pruned by the next write");
+  ok(count(`history WHERE hour = ${mid}`) === 1, "a row inside the window stays");
+  ok(Number(sql(`SELECT screened FROM history WHERE hour = ${thisHour()}`)[0].screened) === s1.json.totals.screened,
+     "the current hour's row is UPDATED to the latest reading, not duplicated (INSERT OR IGNORE + UPDATE)");
+  /* the read endpoint */
+  const h48 = await call("a=history&hours=48");
+  ok(h48.status === 200 && h48.json.bucket === "hour" && h48.json.hours === 48, `?a=history&hours=48 answers with bucket hour (${h48.status})`);
+  ok(Array.isArray(h48.json.hour) && HIST_COLS.every((c) => Array.isArray(h48.json[c]) && h48.json[c].length === h48.json.hour.length),
+     "parallel integer arrays keyed by column, all the same length as hour");
+  ok(h48.json.hour.includes(thisHour()) && !h48.json.hour.includes(mid), "48 hours holds this hour and not the row 100 hours back");
+  ok(HIST_COLS.every((c) => h48.json[c].every(Number.isInteger)) && h48.json.hour.every(Number.isInteger), "every value is an integer");
+  const i = h48.json.hour.indexOf(thisHour());
+  ok(h48.json.screened[i] === s1.json.totals.screened, "the current hour's screened reading equals stats.totals.screened");
+  ok(h48.json.rows === h48.json.hour.length && h48.json.trimmed === false, "rows counts the rows served; nothing was trimmed");
+  ok(typeof h48.json.now === "number" && Math.abs(h48.json.now - nowS()) < 60, "the reply carries the server's now");
+  ok((await call("a=history&hours=0")).json.hours === 1 && (await call("a=history&hours=-5")).json.hours === 1, "hours below 1 clamp to 1");
+  const h720 = await call("a=history&hours=99999");
+  ok(h720.json.hours === 720 && h720.json.hour.includes(mid), "hours above 720 clamp to 720, and 720 hours reaches the row 100 hours back");
+  ok((await call("a=history&hours=abc")).json.hours === 48, "a non-integer hours falls back to 48");
+  ok(h48.bytes < 9000 && h720.bytes < 9000, `history stays under 9,000 bytes (${h48.bytes}, ${h720.bytes})`);
+  /* bucket=day: MAX per column inside each UTC day, dense, rows per day */
+  const today = nowS() - (nowS() % 86400);
+  const d1 = today - 86400, d2 = today - 2 * 86400;
+  sql(`DELETE FROM history WHERE hour <> ${thisHour()}`,
+      `INSERT INTO history(hour, harvested, screened, verified, contributors, active, units_open, units_confirmed, conflicts, results) VALUES
+        (${d1 + 3 * HOUR}, 10, 100, 5, 3, 2, 4, 1, 0, 8), (${d1 + 9 * HOUR}, 12, 130, 9, 3, 6, 2, 3, 1, 9), (${d2 + 20 * HOUR}, 8, 80, 3, 2, 1, 5, 0, 0, 6)`);
+  const day = await call("a=history&bucket=day&hours=96");
+  ok(day.status === 200 && day.json.bucket === "day" && day.json.days === 4 && day.json.hour.length === 4, `bucket=day&hours=96 gives four dense days (${day.json.days}, ${day.json.hour && day.json.hour.length})`);
+  ok(day.json.hour.join() === [today - 3 * 86400, d2, d1, today].join(), "days are the UTC day starts, oldest first, today last");
+  ok(Array.isArray(day.json.rows) && day.json.rows.join() === [0, 1, 2, 1].join(), `rows counts the hourly readings in each day (${day.json.rows})`);
+  ok(day.json.verified.join() === [0, 3, 9, s1.json.totals.verified].join(), `verified is the MAX reading per day (${day.json.verified})`);
+  ok(day.json.screened[2] === 130 && day.json.active[2] === 6 && day.json.units_open[2] === 4 && day.json.harvested[1] === 8,
+     "every column aggregates as MAX inside its day (screened 130, active 6, units_open 4; day before 8 harvested)");
+  ok(day.json.harvested[0] === 0 && day.json.results[0] === 0, "a day with no reading is 0 with rows 0 — the client carries the previous reading forward");
+  const dayDefault = await call("a=history&bucket=day");
+  ok(dayDefault.json.days === 30 && dayDefault.json.hour.length === 30 && dayDefault.json.hours === 720, "bucket=day without hours is the full 30 days");
+  ok(dayDefault.bytes < 9000, `30 daily rows stay under 9,000 bytes (${dayDefault.bytes})`);
+  /* 720 hourly rows must never blow the budget: the oldest are dropped and the reply says so */
+  const many = [];
+  for (let k = 1; k <= 720; k++) { const age = 721 - k; many.push(`(${thisHour() - k * HOUR}, ${100000 + age}, ${9000000 + age * 977}, ${20000 + age}, ${1000 + age}, ${k % 50}, ${k % 30}, ${5000 + age}, ${k % 7}, ${70000 + age})`); }
+  sql(`DELETE FROM history WHERE hour <> ${thisHour()}`, "INSERT INTO history(hour, harvested, screened, verified, contributors, active, units_open, units_confirmed, conflicts, results) VALUES " + many.join(","));
+  ok(count("history") === 721, "seeded 720 hours of readings beside the current hour");
+  const full = await call("a=history&hours=720");
+  ok(full.status === 200 && full.bytes < 9000, `720 hours of history answers under 9,000 bytes (${full.bytes})`);
+  ok(full.json.trimmed === true && full.json.rows === full.json.hour.length && full.json.rows < 721 && full.json.rows > 60, `the oldest rows were dropped and the reply says trimmed (${full.json.rows} rows kept)`);
+  ok(full.json.hour[full.json.hour.length - 1] === thisHour() && full.json.hour.every((v, j) => j === 0 || v > full.json.hour[j - 1]), "what is kept is the newest, ascending");
+  const fullDay = await call("a=history&bucket=day&hours=720&bw=1");
+  ok(fullDay.bytes < 9000 && fullDay.json.hour.length === 30 && fullDay.json.rows.slice(1, 29).every((r) => r === 24), `the daily view of 720 rows is 30 days of 24 readings under 9,000 bytes (${fullDay.bytes})`);
+  ok(fullDay.json.screened.every((v, j) => j === 0 || v >= fullDay.json.screened[j - 1]), "a monotone counter aggregated by MAX stays monotone across days");
+  sql(`DELETE FROM history WHERE hour <> ${thisHour()}`);
+  ok((await call("a=history&hours=48")).status === 200 && (await call("a=health")).json.ok === true, "the server is healthy after the history pass");
+}
+
+/* ————— 16. the instrument fields on ?a=stats ————— */
+suite("api 16 — stats: integers only, every one a count the server holds");
+{
+  const st = (await call("a=stats")).json;
+  const isInt = (v) => Number.isInteger(v) && v >= 0;
+  for (const k of ["pending", "issued", "conflict", "active_1h"]) ok(isInt(st.totals[k]), `totals.${k} is a non-negative integer (${st.totals[k]})`);
+  ok(st.totals.pending === count("molecules WHERE state = 'pending'") && st.totals.issued === count("molecules WHERE state = 'issued'")
+     && st.totals.verified === count("molecules WHERE state = 'verified'") && st.totals.conflict === count("molecules WHERE state = 'conflict'"),
+     "totals.pending/issued/verified/conflict are the molecule state counts");
+  ok(st.totals.active_1h === count(`contributors WHERE hidden = 0 AND last_seen >= ${Math.floor(Date.now() / 1000) - 3600}`), `totals.active_1h counts visible contributors seen in the last hour (${st.totals.active_1h})`);
+  ok(Object.keys(st.units).sort().join() === "confirmed,conflict,open,stale" && Object.values(st.units).every(isInt), "units{open,confirmed,conflict,stale}, all integers");
+  ok(st.units.open === count("units WHERE canary_digest IS NULL AND status = 'open'") && st.units.confirmed === count("units WHERE canary_digest IS NULL AND status = 'confirmed'")
+     && st.units.stale === count("units WHERE canary_digest IS NULL AND status = 'stale'") && st.units.conflict === count("units WHERE canary_digest IS NULL AND status = 'conflict'"),
+     "units are counted over real work only — canaries are not units of the pool");
+  ok(st.totals.units_open === st.units.open + st.units.conflict, "totals.units_open is still open + conflict");
+  ok(Object.keys(st.canary).sort().join() === "bad,ok" && isInt(st.canary.ok) && isInt(st.canary.bad), "canary{ok,bad} integers");
+  ok(Array.isArray(st.spectrum) && st.spectrum.length === 10 && st.spectrum.every(isInt), "spectrum is ten integers");
+  const hitsN = count("hits");
+  ok(st.spectrum.reduce((a, b) => a + b, 0) === hitsN, `spectrum sums to the hits count (${hitsN})`);
+  ok(Array.isArray(st.witnesses) && st.witnesses.length === 3 && st.witnesses.reduce((a, b) => a + b, 0) === hitsN, "witnesses[3] sums to the hits count");
+  ok(Array.isArray(st.targets) && st.targets.length <= 12 && st.targets.every((t) => typeof t.id === "string" && isInt(t.count)), "targets is at most 12 {id, count} rows");
+  const TARGET_IDS = new Set(TARGETS.map((t) => t.id));
+  ok(st.targets.every((t) => TARGET_IDS.has(t.id)), `every target id is one targets.js knows (${st.targets.map((t) => t.id).join(",")})`);
+  ok(st.targets.reduce((a, t) => a + t.count, 0) === hitsN, "target counts sum to the hits count");
+  ok(Object.keys(st.clocks).sort().join() === "harvest,issued,verified" && Object.values(st.clocks).every(isInt), "clocks{harvest,verified,issued} integers");
+  ok(st.clocks.harvest === Number(sql("SELECT COALESCE(MAX(added_at), 0) AS v FROM molecules")[0].v) && st.clocks.verified === Number(sql("SELECT COALESCE(MAX(verified_at), 0) AS v FROM hits")[0].v)
+     && st.clocks.issued === Number(sql("SELECT COALESCE(MAX(issued_at), 0) AS v FROM issued")[0].v), "each clock is the latest timestamp of its table");
+  ok(typeof st.quiet === "boolean", "stats carries quiet as a boolean");
+  ok(JSON.stringify(st).split('"').every((chunk, j) => j % 2 === 0 || !/token/i.test(chunk)), "no token-shaped key in the new fields");
+  /* exact bucketing against seeded hits */
+  const before = { spectrum: st.spectrum.slice(), witnesses: st.witnesses.slice() };
+  sql(`INSERT INTO hits(cid, smiles, formula, score, best_target, flags, verified_by, verified_at) VALUES
+        ('qa-h0', 'C', '', 0, 'senolytic', '[]', 2, 1), ('qa-h99', 'C', '', 99, 'senolytic', '[]', 3, 1), ('qa-h100', 'C', '', 100, 'senolytic', '[]', 4, 1),
+        ('qa-h899', 'C', '', 899, 'nad_salvage', '[]', 7, 1), ('qa-h900', 'C', '', 900, 'nad_salvage', '[]', 2, 1), ('qa-h1000', 'C', '', 1000, 'nad_salvage', '[]', 2, 1)`);
+  const st2 = (await call("a=stats")).json;
+  const diff = st2.spectrum.map((v, j) => v - before.spectrum[j]);
+  ok(diff.join() === [2, 1, 0, 0, 0, 0, 0, 0, 1, 2].join(), `scores 0 and 99 bin 0; 100 bins 1; 899 bins 8; 900 and 1000 bin 9 (${diff})`);
+  const wd = st2.witnesses.map((v, j) => v - before.witnesses[j]);
+  ok(wd.join() === [3, 1, 2].join(), `verified_by 2 → first bucket, 3 → second, 4 and 7 → third (${wd})`);
+  const seno = st2.targets.find((t) => t.id === "senolytic"), nad = st2.targets.find((t) => t.id === "nad_salvage");
+  ok(seno && seno.count === 3 && nad && nad.count === 3, "targets GROUP BY best_target counts the seeded rows");
+  ok(st2.targets.every((t, j) => j === 0 || st2.targets[j - 1].count >= t.count), "targets are ordered by count desc");
+  ok(st2.clocks.verified >= st.clocks.verified, "the verified clock never goes backwards");
+  sql("DELETE FROM hits WHERE cid LIKE 'qa-h%'");
+  ok((await call("a=stats")).json.spectrum.join() === before.spectrum.join(), "removing the seeded hits restores the spectrum exactly");
+  /* clocks are monotone under real activity */
+  const t0 = Math.floor(Date.now() / 1000);
+  await call("a=ingest", { key: KEY, engine: ENGINE_VERSION, targets_digest: targetsDigest(), molecules: [{ cid: "clock-mol-1", smiles: "CCCCCCCCCCO", formula: "C10H22O", source: "qa" }] });
+  const st3 = (await call("a=stats")).json;
+  ok(st3.clocks.harvest >= t0 && st3.clocks.harvest >= st.clocks.harvest, `a fresh ingest moves the harvest clock forward (${st.clocks.harvest} → ${st3.clocks.harvest})`);
+  const zed = (await call("a=join", { name: "clock-z" })).json;
+  const wz = await call("a=work&token=" + zed.token);
+  const st4 = (await call("a=stats")).json;
+  ok(!wz.json.unit || (st4.clocks.issued >= t0 && st4.clocks.issued >= st3.clocks.issued), `a fresh issue moves the issued clock forward (${st3.clocks.issued} → ${st4.clocks.issued})`);
+  ok(st4.totals.active_1h >= 1, "the contributor who just drew work counts as active");
+}
+
+/* ————— 17. canary counters ————— */
+suite("api 17 — canary counters: ok on a matching digest, bad on a fabricated one");
+{
+  const c0 = (await call("a=stats")).json.canary;
+  ok(c0.bad >= 1, `the fabricated canary answer in suite 6 was counted (bad = ${c0.bad})`);
+  /* an honest answer: resolve, screen with the real engine, arm, then answer it */
+  const unitId = "canary-ok-" + PORT;
+  const CMOLS = [{ cid: "cnr-a", smiles: "CC(=O)OC1=CC=CC=C1C(=O)O", formula: "C9H8O4", source: "qa" }, { cid: "cnr-b", smiles: "CN1C=NC2=C1C(=O)N(C)C(=O)N2C", formula: "C8H10N4O2", source: "qa" }];
+  const resolved = await call("a=canary", { key: KEY, engine: ENGINE_VERSION, targets_digest: targetsDigest(), unit_id: unitId, molecules: CMOLS });
+  ok(resolved.status === 200 && resolved.json.armed === false && Array.isArray(resolved.json.molecules), "the canary resolves to its served molecules");
+  const answer = screenUnit(resolved.json, referenceSet());
+  const armed = await call("a=canary", { key: KEY, engine: ENGINE_VERSION, targets_digest: targetsDigest(), unit_id: unitId, digest: answer.digest, molecules: CMOLS });
+  ok(armed.status === 200 && armed.json.armed === true, "the canary is armed with the engine's own digest");
+  const honest = (await call("a=join", { name: "honest-h" })).json;
+  sql(`INSERT OR IGNORE INTO issued(unit_id, contributor, issued_at) VALUES ('${unitId}', ${honest.contributor}, ${Math.floor(Date.now() / 1000)})`);
+  const good = await call("a=submit", { token: honest.token, unit_id: unitId, digest: answer.digest, results: answer.results });
+  ok(good.status === 200 && good.json.status === "confirmed" && good.json.credited === 10, `an honest canary answer is confirmed and credited (${good.status} ${good.json && good.json.status})`);
+  const c1 = (await call("a=stats")).json.canary;
+  ok(c1.ok === c0.ok + 1 && c1.bad === c0.bad, `canary.ok rose by one and bad did not (${c0.ok}/${c0.bad} → ${c1.ok}/${c1.bad})`);
+  const liar = (await call("a=join", { name: "liar-l" })).json;
+  const wrong = await call("a=submit", { token: liar.token, unit_id: unitId, digest: "f".repeat(64), results: answer.results });
+  ok(wrong.json && wrong.json.status === "canary_failed", "a fabricated answer to the same canary is caught");
+  const c2 = (await call("a=stats")).json.canary;
+  ok(c2.bad === c1.bad + 1 && c2.ok === c1.ok, `canary.bad rose by one and ok did not (${c1.ok}/${c1.bad} → ${c2.ok}/${c2.bad})`);
+  ok(Number(sql("SELECT v FROM meta WHERE k = 'canary:ok'")[0].v) === c2.ok && Number(sql("SELECT v FROM meta WHERE k = 'canary:bad'")[0].v) === c2.bad, "the counters live in meta as canary:ok / canary:bad");
+}
+
+/* ————— 18. the bandwidth meter ————— */
+suite("api 18 — the bandwidth meter: every body counted, daily keys, pruned, quiet past the budget");
+{
+  const today = new Date().toISOString().slice(0, 10);
+  const metaInt = (k) => { const r = sql(`SELECT v FROM meta WHERE k = '${k}'`); return r.length ? Number(r[0].v) : 0; };
+  const dayBefore = metaInt("bw:day:" + today), actBefore = metaInt("bw:act:" + today + ":stats");
+  const r = await call("a=stats");
+  ok(metaInt("bw:day:" + today) === dayBefore + r.bytes, `bw:day:<today> grew by exactly the response length (${r.bytes} bytes)`);
+  ok(metaInt("bw:act:" + today + ":stats") === actBefore + r.bytes, "bw:act:<today>:stats grew by the same amount");
+  const hBefore = metaInt("bw:act:" + today + ":health");
+  const hr = await call("a=health");
+  const dayAfterHealth = metaInt("bw:day:" + today);
+  ok(metaInt("bw:act:" + today + ":health") === hBefore + hr.bytes, "each action has its own daily counter");
+  const eBefore = metaInt("bw:act:" + today + ":none");
+  const err = await call("a=");
+  ok(err.status === 404 && metaInt("bw:act:" + today + ":none") === eBefore + err.bytes, "even an error body is counted, under the action 'none'");
+  ok(hr.json.bandwidth && hr.json.bandwidth.today_bytes === dayAfterHealth - hr.bytes && hr.json.bandwidth.budget_bytes === 2147483648 && hr.json.bandwidth.quiet === false,
+     `health.bandwidth = {today_bytes (before its own body), budget_bytes 2 GB, quiet false} (${JSON.stringify(hr.json.bandwidth)})`);
+  /* the daily series on ?a=history&bw=1 */
+  const plain = await call("a=history&hours=24");
+  ok(plain.json.bandwidth === undefined, "history without &bw=1 carries no bandwidth block");
+  const bwBefore = metaInt("bw:day:" + today);
+  const withBw = await call("a=history&hours=24&bw=1");
+  const bw = withBw.json.bandwidth;
+  ok(bw && Array.isArray(bw.days) && bw.days.length >= 1 && bw.days.length <= 14, `history&bw=1 carries bandwidth.days (${bw && bw.days && bw.days.length})`);
+  const todayRow = bw && bw.days.find((d) => d.day === today);
+  ok(todayRow && todayRow.bytes === bwBefore, "today's row is the counter as it stood before this response's own body");
+  ok(bw.today_bytes === bwBefore && bw.budget_bytes === 2147483648 && bw.quiet === false, "…with today_bytes, budget_bytes and quiet beside it");
+  ok(bw.days.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.day) && Number.isInteger(d.bytes)), "every day row is {day: YYYY-MM-DD, bytes: int}");
+  /* pruning: counters older than 14 days go once a day */
+  sql("INSERT OR REPLACE INTO meta(k, v) VALUES ('bw:day:2000-01-01', '5'), ('bw:act:2000-01-01:stats', '5'), ('bw:pruned', 'never')");
+  await call("a=health");
+  ok(metaInt("bw:day:2000-01-01") === 0 && metaInt("bw:act:2000-01-01:stats") === 0, "counters older than 14 days are pruned");
+  ok(metaInt("bw:day:" + today) > 0 && sql("SELECT v FROM meta WHERE k = 'bw:pruned'")[0].v === today, "today's counter survives and bw:pruned records the sweep");
+  const seen = (await call("a=history&bw=1")).json.bandwidth.days.map((d) => d.day);
+  ok(!seen.includes("2000-01-01") && seen[seen.length - 1] === today, "the series no longer lists the pruned day and ends on today");
+  /* quiet: the budget is exceeded */
+  sql("INSERT OR REPLACE INTO meta(k, v) VALUES ('bw:budget', '1')");
+  const q = await call("a=health");
+  ok(q.json.bandwidth.quiet === true && q.json.bandwidth.budget_bytes === 1, "over the budget, health says quiet");
+  ok((await call("a=stats")).json.quiet === true, "…and stats carries quiet:true so clients slow their polling");
+  ok((await call("a=history&bw=1")).json.bandwidth.quiet === true, "…and so does history's bandwidth block");
+  sql("DELETE FROM meta WHERE k = 'bw:budget'");
+  ok((await call("a=health")).json.bandwidth.quiet === false && (await call("a=stats")).json.quiet === false, "with the override gone, quiet is false again");
+  sql("INSERT OR REPLACE INTO meta(k, v) VALUES ('bw:budget', 'not a number')");
+  ok((await call("a=health")).json.bandwidth.budget_bytes === 2147483648, "a garbage override is ignored in favour of the default");
+  sql("DELETE FROM meta WHERE k = 'bw:budget'");
+  ok((await call("a=work&token=" + alice.token)).status !== 500, "the meter never breaks a response");
+  /* the counters are incremented ATOMICALLY: los_bw_count() runs outside any transaction, and a
+     read-then-write there lost 274 of 800 increments under four concurrent PHP workers (php -S is
+     single-threaded, which is why only real parallel processes can see it) */
+  sql("DELETE FROM meta WHERE k = 'qa:race'");
+  const hammer = `require ${JSON.stringify(join(API, "db.php"))}; $db = los_db(); $db->exec('PRAGMA busy_timeout = 5000'); for ($i = 0; $i < 200; $i++) { los_meta_incr($db, 'qa:race', 1); }`;
+  const workers = [1, 2, 3, 4].map(() => new Promise((resolve) => { const w = spawn("php", ["-r", hammer], { stdio: ["ignore", "ignore", "pipe"] }); let err = ""; w.stderr.on("data", (d) => { err += d; }); w.on("close", (code) => resolve({ code, err })); }));
+  const done = await Promise.all(workers);
+  ok(done.every((w) => w.code === 0), "four concurrent PHP workers each ran 200 increments without error: " + JSON.stringify(done.filter((w) => w.code !== 0).map((w) => w.err.slice(0, 120))));
+  ok(metaInt("qa:race") === 800, `los_meta_incr landed every increment under four concurrent writers (${metaInt("qa:race")} of 800)`);
+  sql("DELETE FROM meta WHERE k = 'qa:race'");
+  const bwSrc = readFileSync(join(API, "index.php"), "utf8");
+  const bwFn = bwSrc.slice(bwSrc.indexOf("function los_bw_count"), bwSrc.indexOf("4.0: history"));
+  ok(/los_meta_incr\(\$db, 'bw:day:'/.test(bwFn) && /los_meta_incr\(\$db, 'bw:act:'/.test(bwFn) && !/los_meta_add\(/.test(bwFn), "los_bw_count() uses the atomic increment for both keys, never the read-then-write");
+  ok(/INSERT INTO meta\(k, v\) VALUES\(\?, \?\)\s*ON CONFLICT\(k\) DO UPDATE SET v = /.test(readFileSync(join(API, "db.php"), "utf8")), "los_meta_incr is one UPSERT statement");
+}
+
+/* ————— 18b. flags on the wire: a list, or null — never an empty list standing in for a record that could not be read ————— */
+suite("api 18b — hits.flags is the stored list, or null when the stored value is not a list");
+{
+  sql(`INSERT INTO hits(cid, smiles, formula, score, best_target, flags, verified_by, verified_at) VALUES
+        ('qa-fl-none', 'C', '', 998, 'mtor', '[]', 2, 1), ('qa-fl-some', 'C', '', 997, 'mtor', '["nitro_aromatic"]', 2, 1),
+        ('qa-fl-corrupt', 'C', '', 996, 'mtor', 'not json', 2, 1), ('qa-fl-object', 'C', '', 995, 'mtor', '{"a":1}', 2, 1), ('qa-fl-null', 'C', '', 994, 'mtor', NULL, 2, 1)`);
+  const h = (await call("a=hits&limit=50")).json.hits;
+  const by = (cid) => h.find((x) => x.cid === cid);
+  ok(by("qa-fl-none") && Array.isArray(by("qa-fl-none").flags) && by("qa-fl-none").flags.length === 0, "a stored [] arrives as [] — the record lists no flag");
+  ok(by("qa-fl-some") && by("qa-fl-some").flags.join() === "nitro_aromatic", "a stored list arrives intact");
+  ok(by("qa-fl-corrupt") && by("qa-fl-corrupt").flags === null, "a stored value that is not JSON arrives as null — not reported, never 'none'");
+  ok(by("qa-fl-object") && by("qa-fl-object").flags === null, "a stored JSON object (not a list) arrives as null");
+  ok(by("qa-fl-null") && by("qa-fl-null").flags === null, "a NULL column arrives as null");
+  ok(h.filter((x) => /^qa-fl-/.test(x.cid)).every((x) => "flags" in x), "every hit carries the flags key, so null is a value the server sent, not an omission");
+  sql("DELETE FROM hits WHERE cid LIKE 'qa-fl-%'");
+}
+
+/* ————— 19. the byte budget with everything on ————— */
+suite("api 19 — every response under 9,000 bytes with full boards and every 4.0 field");
+{
+  const fat = await call("a=stats");
+  ok(fat.json.leaderboard.length === 20 && fat.json.teams.length === 10, "the boards are still full from suite 12");
+  ok(fat.bytes < 9000, `stats with 20 + 10 board rows, spectrum, targets, witnesses, clocks, units, canary and quiet stays under 9,000 bytes (${fat.bytes})`);
+  for (const qs of ["a=hits&limit=50", "a=history&hours=48&bw=1", "a=history&hours=720&bw=1", "a=history&bucket=day&bw=1", "a=health", "a=team&code=" + capTeam.code]) {
+    const r = await call(qs);
+    ok(r.status === 200 && r.bytes < 9000, `${qs}: ${r.status}, ${r.bytes} bytes`);
+  }
+  ok((await call("a=history")).status === 200, "history uses the read bucket and is not rate-limited by the pass");
+  const lint2 = spawnSync(process.execPath, [join(HERE, "content.mjs")], { encoding: "utf8" });
+  ok(lint2.status === 0, `node content.mjs is still green after the 4.0 server changes (exit ${lint2.status})`);
 }
 
 cleanup();
