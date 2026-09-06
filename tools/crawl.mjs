@@ -22,7 +22,7 @@ const TOPICS = [
   { topic: "NAD+", term: "(nicotinamide riboside OR nicotinamide mononucleotide) AND aging AND trial" },
   { topic: "metformin", term: "metformin AND aging AND (trial OR lifespan)" },
   { topic: "taurine", term: "taurine AND aging" },
-  { topic: "glycine", term: "glycine AND lifespan" },
+  { topic: "glycine", term: "glycine supplementation AND (lifespan OR aging) NOT \"Glycine max\"" },
   { topic: "spermidine", term: "spermidine AND (aging OR autophagy) AND (trial OR lifespan)" }
 ];
 

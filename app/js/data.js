@@ -163,14 +163,14 @@ export const COMPOUNDS = [
         finding: "Supplementation from middle age increased median lifespan (~10-12%) and healthspan measures in mice, and improved health markers in aged rhesus monkeys.",
         organism: "mouse", outcome: "lifespan", year: 2023,
         cite: "Singh P et al., Science 380:eabn9257",
-        url: "https://www.science.org/doi/10.1126/science.abn9257",
+        url: "https://pubmed.ncbi.nlm.nih.gov/37289866/",
         titleCheck: "Taurine deficiency as a driver of aging"
       },
       {
         finding: "Longitudinal human, primate and mouse cohorts found circulating taurine RISES or stays flat with age and tracks health outcomes inconsistently — evidence against taurine deficiency as a driver of human aging.",
         organism: "human-obs", outcome: "null", year: 2025,
         cite: "Aging Cell 24 (2025)",
-        url: "https://onlinelibrary.wiley.com/doi/10.1111/acel.70191",
+        url: "https://pubmed.ncbi.nlm.nih.gov/41061678/",
         titleCheck: "Experimental Evidence Against Taurine Deficiency as a Driver of Aging in Humans"
       },
       {
@@ -323,7 +323,7 @@ export const COMPOUNDS = [
         finding: "First-in-human senolytic pilot (idiopathic pulmonary fibrosis, n=14, open-label): physical function improved; no placebo arm, so a pilot signal only.",
         organism: "human-rct", outcome: "trial", year: 2019,
         cite: "Justice JN et al., EBioMedicine 40:554-563",
-        url: "https://pubmed.ncbi.nlm.nih.gov/30872196/",
+        url: "https://pubmed.ncbi.nlm.nih.gov/30616998/",
         titleCheck: "Senolytics in idiopathic pulmonary fibrosis"
       }
     ],
@@ -407,7 +407,7 @@ export const COMPOUNDS = [
         finding: "ASPREE randomized trial (~19,000 healthy adults ≥70): daily low-dose aspirin did NOT prolong disability-free survival and caused more major hemorrhage than placebo.",
         organism: "human-rct", outcome: "null", year: 2018,
         cite: "McNeil JJ et al., NEJM 379:1499-1508 (ASPREE)",
-        url: "https://www.nejm.org/doi/full/10.1056/NEJMoa1800722",
+        url: "https://pubmed.ncbi.nlm.nih.gov/30221596/",
         titleCheck: "Effect of Aspirin on Disability-free Survival in the Healthy Elderly"
       }
     ],
@@ -428,7 +428,7 @@ export const COMPOUNDS = [
         finding: "First-in-human RCT: safe, and induced a molecular signature of improved mitochondrial health in muscle of sedentary elderly adults.",
         organism: "human-rct", outcome: "biomarker", year: 2019,
         cite: "Andreux PA et al., Nature Metabolism 1:595-603",
-        url: "https://www.nature.com/articles/s42255-019-0073-4",
+        url: "https://pubmed.ncbi.nlm.nih.gov/32694802/",
         titleCheck: "urolithin A is safe and induces a molecular signature of improved mitochondrial and cellular health in humans"
       }
     ],
