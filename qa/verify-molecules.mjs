@@ -75,7 +75,11 @@ for (const r of rows) {
   if (!p) { unverified++; console.log(`  ? ${r.target}/${r.name} · UNVERIFIED (CID ${r.cid} not returned)`); continue; }
 
   const ours = molFromSmiles(r.smiles);
-  const theirs = molFromSmiles(p.CanonicalSMILES || p.SMILES || "");
+  // PubChem renamed its SMILES columns in 2025: a request for CanonicalSMILES
+  // now comes back under ConnectivitySMILES (and the stereo-bearing column is
+  // SMILES). Read every spelling, as the harvester does — the first CI run of
+  // this job reported all 27 actives "did not parse" for exactly this reason.
+  const theirs = molFromSmiles(p.SMILES || p.ConnectivitySMILES || p.CanonicalSMILES || "");
   if (!ours) { mismatched++; console.error(`  ✗ ${r.target}/${r.name} · OUR SMILES DOES NOT PARSE`); continue; }
   if (!theirs) { unverified++; console.log(`  ? ${r.target}/${r.name} · PubChem's SMILES did not parse in our engine`); continue; }
 

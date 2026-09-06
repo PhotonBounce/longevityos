@@ -447,7 +447,7 @@ export const HUMAN_EVIDENCE = [
         effect: "no reduction in all-cause mortality — the confidence interval spanned a 7% reduction to an 18% increase; cancer mortality HR 1.15 (95% CI 0.96–1.39)",
         year: 2022,
         cite: "Lancet Diabetes Endocrinol 10:120–128 — Neale RE et al. (D-Health) 2022",
-        url: "https://pubmed.ncbi.nlm.nih.gov/35090619/",
+        url: "https://pubmed.ncbi.nlm.nih.gov/35026158/",
         titleCheck: "The D-Health Trial: a randomised controlled trial of the effect of vitamin D on mortality"
       }
     ]
