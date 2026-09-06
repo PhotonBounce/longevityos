@@ -2,6 +2,7 @@
 import { COMPOUNDS, HEADLINE, DISCLAIMER } from "../app/js/data.js";
 import { strongest, hasRigorousNull, RUNGS } from "../app/js/grades.js";
 import { parseFeed, feedFreshness } from "../app/js/feed.js";
+import { HUMAN_EVIDENCE, EVIDENCE_HEADLINE, EVIDENCE_NOTE, EVIDENCE_RUNGS, strongestHuman, hasHumanNull, rungLabelHuman } from "../app/js/evidence.js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -93,6 +94,103 @@ ok(fr.stale === true && /STALE/.test(fr.label), "a 20-day-old sweep calls itself
 suite("unit 5 — the headline");
 ok(/No drug has ever been shown to extend human lifespan/.test(HEADLINE), "the headline states the truth of the field");
 ok(/not medical advice/i.test(DISCLAIMER), "the disclaimer says what this is not");
+
+/* ————— 6. the human-evidence ledger is sourced exactly like the atlas ————— */
+suite("unit 6 — what has evidence in people: every row carries its source");
+const EV_KEYS = ["id", "name", "kind", "what", "who", "caveat", "rows"].sort().join();
+const EV_ROW_KEYS = ["finding", "design", "outcome", "effect", "year", "cite", "url", "titleCheck"].sort().join();
+const EV_KINDS = ["behaviour", "medical", "diet", "supplement", "environment", "procedure"];
+const EV_DESIGNS = ["rct", "meta-rct", "cohort", "meta-cohort", "controlled"];
+const EV_OUTS = ["mortality", "events", "null", "harm"];
+ok(HUMAN_EVIDENCE.length >= 18 && HUMAN_EVIDENCE.length <= 24,
+  "the ledger opens with a real corpus of 18–24 items (" + HUMAN_EVIDENCE.length + ")");
+const evIds = new Set();
+for (const it of HUMAN_EVIDENCE) {
+  ok(Object.keys(it).sort().join() === EV_KEYS, it.id + ": exactly the item keys — none missing, none extra");
+  ok(typeof it.id === "string" && /^[a-z0-9]+$/.test(it.id), it.id + ": id is a slug");
+  ok(!evIds.has(it.id), it.id + ": id is unique");
+  evIds.add(it.id);
+  ok(typeof it.name === "string" && it.name.length > 2, it.id + ": name present");
+  ok(EV_KINDS.includes(it.kind), it.id + ": kind '" + it.kind + "' is a known kind");
+  for (const k of ["what", "who", "caveat"]) {
+    ok(typeof it[k] === "string" && it[k].length > 10, it.id + ": " + k + " is substantive");
+  }
+  ok(Array.isArray(it.rows) && it.rows.length >= 1, it.id + ": has at least one row");
+  for (const r of it.rows) {
+    ok(Object.keys(r).sort().join() === EV_ROW_KEYS, it.id + ": row carries exactly the row keys");
+    ok(typeof r.finding === "string" && r.finding.length > 20, it.id + ": finding is substantive");
+    ok(EV_DESIGNS.includes(r.design), it.id + ": design '" + r.design + "' is a known design");
+    ok(EV_OUTS.includes(r.outcome), it.id + ": outcome '" + r.outcome + "' is a known outcome");
+    ok(typeof r.effect === "string" && r.effect.trim().length > 0, it.id + ": effect is stated as reported (never empty)");
+    ok(Number.isInteger(r.year) && r.year >= 1990 && r.year <= 2027, it.id + ": year sane");
+    ok(typeof r.cite === "string" && r.cite.length > 8, it.id + ": citation text present");
+    ok(typeof r.titleCheck === "string" && r.titleCheck.length >= 6, it.id + ": titleCheck present for CI verification");
+    ok(typeof r.url === "string" && r.url.startsWith("https://"), it.id + ": url is https");
+    let host = "";
+    try { host = new URL(r.url).host; } catch (_) { /* fails below */ }
+    ok(DOMAINS.includes(host), it.id + ": url host '" + host + "' is an allowlisted primary source");
+    ok(/^https:\/\/pubmed\.ncbi\.nlm\.nih\.gov\/\d+\/$/.test(r.url) || /^https:\/\/clinicaltrials\.gov\/study\/NCT\d+$/.test(r.url),
+      it.id + ": url is a PubMed record or a CT.gov study — the two tiers CI can verify against an API");
+  }
+}
+
+/* ————— 7. the human rungs compute, never assert ————— */
+suite("unit 7 — the human-evidence rungs");
+ok(EVIDENCE_RUNGS.map((r) => r.key).join() === "E3,E2,E1,E0", "rung order is E3 → E2 → E1 → E0");
+ok(EVIDENCE_RUNGS.every((r) => typeof r.label === "string" && typeof r.blurb === "string" && r.blurb.length > 20),
+  "every rung has a label and a blurb");
+ok(rungLabelHuman("E3") === "Randomised trial: fewer deaths" && rungLabelHuman("E0") === "Rigorous null or harm",
+  "rung labels say what the rung is");
+ok(strongestHuman({ rows: [] }) === "E0", "an item with no positive row computes to E0");
+ok(strongestHuman({ rows: [{ design: "cohort", outcome: "mortality" }, { design: "rct", outcome: "null" }] }) === "E1",
+  "an RCT null never lifts a rung; a cohort mortality row alone is E1");
+ok(strongestHuman({ rows: [{ design: "rct", outcome: "events" }, { design: "meta-cohort", outcome: "mortality" }] }) === "E2",
+  "randomised events outrank observational deaths");
+const evById = Object.fromEntries(HUMAN_EVIDENCE.map((it) => [it.id, it]));
+for (const [id, rung] of [
+  ["bloodpressure", "E3"], ["statins", "E3"], ["empagliflozin", "E3"], ["saltsubstitute", "E3"],
+  ["semaglutide", "E2"], ["colonoscopy", "E2"], ["exercise", "E1"], ["bariatric", "E1"],
+  ["vitamind", "E0"], ["aspirinelderly", "E0"], ["intensiveglucose", "E0"]
+]) {
+  ok(evById[id] && strongestHuman(evById[id]) === rung, id + ": computes to " + rung);
+}
+const nullRows = HUMAN_EVIDENCE.flatMap((it) => it.rows).filter((r) => r.outcome === "null" || r.outcome === "harm");
+ok(nullRows.length >= 7, "at least 7 null/harm rows across the ledger (" + nullRows.length + ")");
+const e3 = HUMAN_EVIDENCE.filter((it) => strongestHuman(it) === "E3");
+ok(e3.length >= 4, "at least 4 items reach E3 — randomised, fewer deaths (" + e3.length + ")");
+const allNull = HUMAN_EVIDENCE.filter((it) => it.rows.every((r) => r.outcome === "null" || r.outcome === "harm"));
+ok(allNull.length >= 1, "at least one item's ONLY human evidence is null or harm (" + allNull.map((i) => i.id).join(", ") + ")");
+for (const it of allNull) ok(strongestHuman(it) === "E0" && hasHumanNull(it), it.id + ": an all-null item sits on E0 and wears its null");
+ok(evById.exercise.rows.some((r) => (r.design === "cohort" || r.design === "meta-cohort") && r.outcome === "mortality"),
+  "exercise: the pooled-cohort mortality gradient is on record");
+ok(evById.exercise.rows.some((r) => r.design === "rct" && r.outcome === "null"),
+  "exercise: the Generation 100 randomised null is on the same card");
+ok(hasHumanNull(evById.exercise) && !hasHumanNull(evById.smokingcessation),
+  "hasHumanNull answers per item");
+ok(/not medical advice/.test(EVIDENCE_HEADLINE), "the ledger's headline says it is not medical advice");
+ok(/did nothing/.test(EVIDENCE_HEADLINE) && /harm/.test(EVIDENCE_HEADLINE), "the headline promises the nulls and the harms");
+ok(/people like those in the trial/.test(EVIDENCE_NOTE), "the note frames every result as 'people like those in the trial'");
+
+/* ————— 8. the ledger's copy never advises ————— */
+suite("unit 8 — the ledger reports; it never advises");
+const evSrc = readFileSync(join(HERE, "..", "app", "js", "evidence.js"), "utf8");
+const EV_BANNED = [
+  [/\byou should\b/i, "'you should'"],
+  [/\brecommended\b/i, "'recommended' (doses appear only as what a trial used)"],
+  [/\btake \d+/i, "'take N …' dosing"],
+  [/\bmakes? you live\b/i, "'makes you live'"],
+  [/\bclinically proven\b/i, "'clinically proven'"],
+  [/\bguaranteed\b/i, "'guaranteed'"],
+  [/\bwill extend your life\b/i, "'will extend your life'"],
+  [/\bsafe to take\b/i, "'safe to take'"],
+  [/\b(cures?|reverses?) aging\b/i, "'cures/reverses aging'"],
+  [/\bproven to extend human lifespan\b/i, "'proven to extend human lifespan'"],
+  [/\bdiscovered a drug\b/i, "'discovered a drug'"],
+  [/\bvalidated candidate\b/i, "'validated candidate'"],
+  [/\b(you|people|patients|adults) (must|need to|ought to|have to)\b/i, "a verb of advice"]
+];
+for (const [re, why] of EV_BANNED) ok(!re.test(evSrc), "evidence.js never says " + why + " (" + re + ")");
+ok(/fewer deaths|reduced all-cause mortality/.test(evSrc), "the ledger speaks in the trial's own terms: fewer deaths");
 
 console.log(failed ? "unit: " + failed + " FAILED of " + checks : "unit: " + checks + " checks passed ✓");
 process.exit(failed ? 1 : 0);

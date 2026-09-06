@@ -1,5 +1,6 @@
 import { HEADLINE, DISCLAIMER, COMPOUNDS, ITP_NOTE } from "./data.js";
 import { RUNGS, strongest, hasRigorousNull, rungLabel, ORGANISM_LABEL } from "./grades.js";
+import { EVIDENCE_HEADLINE, EVIDENCE_NOTE, EVIDENCE_RUNGS, HUMAN_EVIDENCE, strongestHuman, hasHumanNull, rungLabelHuman, KIND_LABEL, DESIGN_LABEL, OUTCOME_LABEL } from "./evidence.js";
 import { FEED_URL, parseFeed, feedFreshness } from "./feed.js";
 import { renderLab } from "./lab.js";
 
@@ -18,7 +19,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-const state = { tab: "atlas", filter: "all", query: "", compound: null, feed: null, feedError: false };
+const state = { tab: "atlas", filter: "all", query: "", compound: null, feed: null, feedError: false, evidenceFilter: "all" };
 
 /* ————— atlas ————— */
 
@@ -200,10 +201,103 @@ function renderSources(root) {
   }
 }
 
+/* ————— what has evidence (in people) ————— */
+
+const EV_FILTERS = [["all", "All"], ["rct", "Randomised trials"], ["obs", "Observational"], ["null", "Nulls & harms"]];
+const EV_KINDS = ["behaviour", "medical", "diet", "supplement", "environment", "procedure"];
+const EV_ORDER = EVIDENCE_RUNGS.map((r) => r.key);
+
+function evidenceMatches(item) {
+  const f = state.evidenceFilter;
+  const rung = strongestHuman(item);
+  if (f === "rct") return rung === "E3" || rung === "E2";
+  if (f === "obs") return rung === "E1";
+  if (f === "null") return hasHumanNull(item);
+  if (f.startsWith("kind:")) return item.kind === f.slice(5);
+  return true;
+}
+
+function renderEvidence(root) {
+  const banner = el("div", "banner ev-banner");
+  banner.appendChild(el("p", "banner-headline", EVIDENCE_HEADLINE));
+  root.appendChild(banner);
+  root.appendChild(el("p", "disclaimer ev-disclaimer", DISCLAIMER));
+  root.appendChild(el("p", "prose ev-note", EVIDENCE_NOTE));
+
+  const controls = el("div", "controls ev-controls");
+  const chip = (key, label, extra) => {
+    const b = el("button", "chip" + (extra ? " " + extra : "") + (state.evidenceFilter === key ? " chip-on" : ""), label);
+    b.setAttribute("data-filter", key);
+    b.addEventListener("click", () => { state.evidenceFilter = key; render(); });
+    controls.appendChild(b);
+  };
+  for (const [key, label] of EV_FILTERS) chip(key, label, "");
+  for (const kind of EV_KINDS) chip("kind:" + kind, KIND_LABEL[kind] || kind, "chip-kind");
+  root.appendChild(controls);
+
+  /* E3 first, then E2, E1, E0 — the rung is computed, never typed — then by name */
+  const items = HUMAN_EVIDENCE.filter(evidenceMatches).slice().sort((a, b) => {
+    const d = EV_ORDER.indexOf(strongestHuman(a)) - EV_ORDER.indexOf(strongestHuman(b));
+    return d !== 0 ? d : a.name.localeCompare(b.name);
+  });
+  const list = el("div", "ev-list");
+  for (const item of items) {
+    const rung = strongestHuman(item);
+    const card = el("article", "ev-card");
+    card.setAttribute("data-id", item.id);
+    card.setAttribute("data-rung", rung);
+
+    const top = el("div", "card-top ev-top");
+    top.appendChild(el("h3", "card-name ev-name", item.name));
+    const badge = el("span", "rung ev-rung ev-rung-" + rung, rungLabelHuman(rung));
+    badge.setAttribute("data-rung", rung);
+    top.appendChild(badge);
+    card.appendChild(top);
+
+    const tags = el("div", "card-tags");
+    tags.appendChild(el("span", "tag ev-kind ev-kind-" + item.kind, KIND_LABEL[item.kind] || item.kind));
+    if (hasHumanNull(item)) tags.appendChild(el("span", "tag tag-null", "null or harm on record"));
+    card.appendChild(tags);
+
+    card.appendChild(el("p", "card-what", item.what));
+    const who = el("p", "ev-who");
+    who.appendChild(el("span", "ev-who-label", "Who was studied: "));
+    who.appendChild(el("span", "ev-who-text", item.who));
+    card.appendChild(who);
+
+    const rows = el("div", "evidence ev-rows");
+    for (const r of item.rows) {
+      const isNull = r.outcome === "null" || r.outcome === "harm";
+      const row = el("div", "ev-row" + (isNull ? " ev-null" : ""));
+      const meta = el("div", "ev-meta");
+      meta.appendChild(el("span", "ev-design ev-design-" + r.design, DESIGN_LABEL[r.design] || r.design));
+      meta.appendChild(el("span", "ev-outcome ev-outcome-" + r.outcome, OUTCOME_LABEL[r.outcome] || r.outcome));
+      meta.appendChild(el("span", "ev-year", String(r.year)));
+      if (isNull) meta.appendChild(el("span", "ev-nulltag", "NULL / HARM"));
+      row.appendChild(meta);
+      row.appendChild(el("p", "ev-finding", r.finding));
+      row.appendChild(el("p", "ev-effect", r.effect));
+      const cite = el("a", "ev-cite", r.cite);
+      cite.href = r.url; cite.target = "_blank"; cite.rel = "noopener";
+      row.appendChild(cite);
+      rows.appendChild(row);
+    }
+    card.appendChild(rows);
+    card.appendChild(el("p", "caveat", item.caveat));
+    list.appendChild(card);
+  }
+  if (!items.length) list.appendChild(el("p", "empty", "Nothing matches that filter."));
+  root.appendChild(list);
+
+  root.appendChild(el("p", "ev-footer",
+    "Nothing on this page is advice. Each result belongs to the people the trial enrolled — the trial population " +
+    "defines what a number means — and what it means for anyone else is a question for a physician, with this page in hand."));
+}
+
 /* ————— shell ————— */
 
 const TABS = [
-  ["atlas", "Atlas"], ["lab", "The Lab"], ["ladder", "The Ladder"],
+  ["atlas", "Atlas"], ["evidence", "What has evidence"], ["lab", "The Lab"], ["ladder", "The Ladder"],
   ["feed", "Fresh findings"], ["sources", "Sources"]
 ];
 
@@ -220,6 +314,7 @@ function render() {
   root.textContent = "";
   if (state.tab === "atlas") renderAtlas(root);
   else if (state.tab === "dossier") renderDossier(root);
+  else if (state.tab === "evidence") renderEvidence(root);
   else if (state.tab === "lab") renderLab(root, { apiBase: API_BASE });
   else if (state.tab === "ladder") renderLadder(root);
   else if (state.tab === "feed") renderFeed(root);
@@ -240,4 +335,4 @@ render();
 loadFeed();
 
 /* QA hook — test surface only. */
-window.__los = { state, COMPOUNDS, strongest, hasRigorousNull, parseFeed, render };
+window.__los = { state, COMPOUNDS, strongest, hasRigorousNull, parseFeed, render, HUMAN_EVIDENCE, strongestHuman };

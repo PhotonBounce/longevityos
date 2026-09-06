@@ -15,6 +15,7 @@
  * Verdict discipline: any API-tier mismatch fails; zero VERIFIED overall
  * fails; warnings are printed and counted, never silently passed. */
 import { COMPOUNDS } from "../app/js/data.js";
+import { HUMAN_EVIDENCE } from "../app/js/evidence.js";
 
 const norm = (s) => s.toLowerCase().normalize("NFKD")
   .replace(/[̀-ͯ]/g, "")
@@ -23,6 +24,9 @@ const norm = (s) => s.toLowerCase().normalize("NFKD")
 const UA = { "user-agent": "LongevityOS-source-verifier/1.0 (+https://github.com/PhotonBounce/longevityos)" };
 const rows = [];
 for (const c of COMPOUNDS) for (const ev of c.evidence) rows.push({ id: c.id, ev });
+/* the human-evidence ledger rides the same tiers and the same verdict discipline;
+ * its rows are labelled evidence/<item id> so a mismatch names the card */
+for (const it of HUMAN_EVIDENCE) for (const ev of it.rows) rows.push({ id: "evidence/" + it.id, ev });
 
 let verified = 0, mismatched = 0, unverified = 0;
 const report = (icon, id, status, url) => console.log("  " + icon + " " + id + " · " + status + " · " + url);

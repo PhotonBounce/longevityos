@@ -30,6 +30,7 @@ const ORDER = [
   "js/data.js",
   "js/grades.js",
   "js/feed.js",
+  "js/evidence.js",
   "js/lab.js",
   "js/app.js"
 ];
@@ -118,7 +119,7 @@ html = html.replace("los-1.0.0", "los-2.0.0-dist");
 writeFileSync(join(OUTDIR, "longevityos.html"), html);
 
 /* a build that silently lost a module is worse than a failed build */
-for (const marker of ["const COMPOUNDS", "function screenUnit", "function morganFingerprint", "function renderLab"]) {
+for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab"]) {
   if (!html.includes(marker)) { console.error(`dist: '${marker}' is missing from the bundle — inlining broke`); process.exit(1); }
 }
 if (/^\s*import\s/m.test(html)) { console.error("dist: an ES import survived into the bundle"); process.exit(1); }
