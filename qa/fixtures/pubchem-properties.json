@@ -1,0 +1,31 @@
+{
+  "_comment": "Shape of a real PubChem PUG-REST compound/cid/<list>/property/CanonicalSMILES,MolecularFormula,MolecularWeight/JSON response. Recorded shape, hand-built contents. Every structure here is a well-known molecule written the way PubChem writes it (Kekule, uppercase atoms). The last four rows are deliberately hostile so the offline selftest proves the filters actually bite: an unparseable SMILES, an enormous molecule, a row with no CanonicalSMILES at all, and a distinct CID carrying a structure identical to a reference active. CID 2519 appears twice to prove per-response CID dedupe.",
+  "PropertyTable": {
+    "Properties": [
+      { "CID": 2519, "CanonicalSMILES": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C", "MolecularFormula": "C8H10N4O2", "MolecularWeight": "194.19" },
+      { "CID": 1983, "CanonicalSMILES": "CC(=O)NC1=CC=C(C=C1)O", "MolecularFormula": "C8H9NO2", "MolecularWeight": "151.16" },
+      { "CID": 5793, "CanonicalSMILES": "C(C1C(C(C(C(O1)O)O)O)O)O", "MolecularFormula": "C6H12O6", "MolecularWeight": "180.16" },
+      { "CID": 5281672, "CanonicalSMILES": "C1=C(C=C(C(=C1O)O)O)C2=C(C(=O)C3=C(C=C(C=C3O2)O)O)O", "MolecularFormula": "C15H10O8", "MolecularWeight": "318.23" },
+      { "CID": 5280443, "CanonicalSMILES": "C1=CC(=CC=C1C2=CC(=O)C3=C(C=C(C=C3O2)O)O)O", "MolecularFormula": "C15H10O5", "MolecularWeight": "270.24" },
+      { "CID": 65064, "CanonicalSMILES": "C1C(C(OC2=CC(=CC(=C21)O)O)C3=CC(=C(C(=C3)O)O)O)OC(=O)C4=CC(=C(C(=C4)O)O)O", "MolecularFormula": "C22H18O11", "MolecularWeight": "458.4" },
+      { "CID": 5951, "CanonicalSMILES": "C(C(C(=O)O)N)O", "MolecularFormula": "C3H7NO3", "MolecularWeight": "105.09" },
+      { "CID": 445639, "CanonicalSMILES": "CCCCCCCCC=CCCCCCCCC(=O)O", "MolecularFormula": "C18H34O2", "MolecularWeight": "282.5" },
+      { "CID": 5429, "CanonicalSMILES": "CN1C=NC2=C1C(=O)NC(=O)N2C", "MolecularFormula": "C7H8N4O2", "MolecularWeight": "180.16" },
+      { "CID": 338, "CanonicalSMILES": "C1=CC=C(C(=C1)C(=O)O)O", "MolecularFormula": "C7H6O3", "MolecularWeight": "138.12" },
+      { "CID": 370, "CanonicalSMILES": "C1=C(C=C(C(=C1O)O)O)C(=O)O", "MolecularFormula": "C7H6O5", "MolecularWeight": "170.12" },
+      { "CID": 2519, "CanonicalSMILES": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C", "MolecularFormula": "C8H10N4O2", "MolecularWeight": "194.19" },
+      { "CID": 2244, "CanonicalSMILES": "CC(=O)OC1=CC=CC=C1C(=O)O", "MolecularFormula": "C9H8O4", "MolecularWeight": "180.16" },
+      { "CID": 4091, "CanonicalSMILES": "CN(C)C(=N)NC(=N)N", "MolecularFormula": "C4H11N5", "MolecularWeight": "129.16" },
+      { "CID": 750, "CanonicalSMILES": "C(C(=O)O)N", "MolecularFormula": "C2H5NO2", "MolecularWeight": "75.07" },
+      { "CID": 5280343, "CanonicalSMILES": "C1=CC(=C(C=C1C2=C(C(=O)C3=C(C=C(C=C3O2)O)O)O)O)O", "MolecularFormula": "C15H10O7", "MolecularWeight": "302.23" },
+      { "CID": 1123, "CanonicalSMILES": "C(CS(=O)(=O)O)N", "MolecularFormula": "C2H7NO3S", "MolecularWeight": "125.15" },
+      { "CID": 1176, "CanonicalSMILES": "C(=O)(N)N", "MolecularFormula": "CH4N2O", "MolecularWeight": "60.06" },
+      { "CID": 962, "CanonicalSMILES": "O", "MolecularFormula": "H2O", "MolecularWeight": "18.015" },
+      { "CID": 887, "CanonicalSMILES": "CO", "MolecularFormula": "CH4O", "MolecularWeight": "32.04" },
+      { "CID": 99999901, "CanonicalSMILES": "C1CC(((=", "MolecularFormula": "C?", "MolecularWeight": "144.0" },
+      { "CID": 99999902, "CanonicalSMILES": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "MolecularFormula": "C80H162", "MolecularWeight": "1124.18" },
+      { "CID": 99999903, "MolecularFormula": "C10H16N2", "MolecularWeight": "164.25" },
+      { "CID": 99999904, "CanonicalSMILES": "C1=CC(=CN=C1)C(=O)N", "MolecularFormula": "C6H6N2O", "MolecularWeight": "122.12" }
+    ]
+  }
+}

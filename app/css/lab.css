@@ -1,0 +1,251 @@
+/* lab.css — only the Lab tab's classes, all prefixed .lab-.
+ * Reuses the palette from style.css (--bg/--panel/--panel2/--ink/--dim/--line/
+ * --accent/--accent2/--warn/--null) so the Lab cannot drift from the atlas.
+ * Everything below is laid out to survive a 360px-wide phone: single-column
+ * stacks, wrapping controls, and the one wide thing on the page (the hits
+ * table) scrolls inside its own box rather than pushing the page sideways. */
+
+.lab { display: flex; flex-direction: column; gap: 4px; }
+.lab-section { margin-top: 6px; }
+.lab-intro { margin-bottom: 12px; }
+.lab-lede { color: var(--dim); font-size: 14.5px; margin: 6px 0; }
+
+/* ————— the honesty banner: always visible, never dismissible ————— */
+
+.lab-banner {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--warn);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 4px 0 8px;
+}
+.lab-banner-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+.lab-banner-body { margin: 0; font-size: 14px; color: var(--ink); }
+
+/* ————— live totals ————— */
+
+.lab-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.lab-stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.lab-stat-num {
+  font-size: 24px;
+  font-weight: 650;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.lab-stat-label { color: var(--dim); font-size: 12.5px; margin-top: 2px; }
+
+.lab-note {
+  color: var(--dim);
+  font-size: 12.5px;
+  margin: 8px 0 0;
+}
+.lab-empty { color: var(--dim); font-size: 14px; margin: 6px 0; }
+
+/* ————— the no-server state ————— */
+
+.lab-offline {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--null);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.lab-offline-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--null);
+}
+.lab-offline-body { margin: 0; font-size: 14px; color: var(--ink); }
+
+/* ————— contribute ————— */
+
+.lab-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+.lab-cost {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--dim);
+  font-size: 13.5px;
+}
+.lab-cost li { margin: 4px 0; }
+
+.lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.lab-name {
+  flex: 1 1 180px;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 14px;
+}
+.lab-name:disabled { color: var(--dim); }
+
+.lab-btn {
+  flex: 0 0 auto;
+  background: var(--accent);
+  color: #08110c;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 11px 18px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.lab-btn:hover:enabled { filter: brightness(1.08); }
+.lab-btn:disabled { opacity: 0.5; cursor: default; }
+.lab-btn-stop {
+  background: transparent;
+  color: var(--null);
+  border-color: var(--null);
+  font-weight: 600;
+}
+
+.lab-status { font-size: 13.5px; margin: 10px 0 0; min-height: 1.2em; }
+.lab-status-dim { color: var(--dim); }
+.lab-status-ok { color: var(--accent); }
+.lab-status-warn { color: var(--warn); }
+.lab-status-err { color: var(--null); }
+
+.lab-progress {
+  height: 6px;
+  background: var(--panel2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 0 2px;
+}
+.lab-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent2);
+  transition: width 0.25s linear;
+}
+
+.lab-readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2px 16px;
+  margin-top: 10px;
+}
+.lab-read-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0;
+  font-size: 13.5px;
+}
+.lab-read-k { color: var(--dim); }
+.lab-read-v {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* ————— leaderboard ————— */
+
+.lab-board {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lab-board-row {
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr) 4.5em 5em;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.lab-board-row:first-child { border-top: none; }
+.lab-board-head {
+  color: var(--dim);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--panel2);
+}
+.lab-b-rank { color: var(--dim); font-variant-numeric: tabular-nums; }
+/* A contributor's chosen name: plain text, clipped, never a link. */
+.lab-b-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab-b-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); }
+
+/* ————— top verified hits ————— */
+
+.lab-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.lab-hits {
+  min-width: 560px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lab-hit-row {
+  display: grid;
+  grid-template-columns: 2.2em 8em 4.5em minmax(0, 1fr) minmax(0, 1fr) 6.5em;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.lab-hit-row:first-child { border-top: none; }
+.lab-hit-head {
+  color: var(--dim);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--panel2);
+}
+.lab-h-rank { color: var(--dim); font-variant-numeric: tabular-nums; }
+.lab-h-formula { color: var(--ink); overflow-wrap: anywhere; }
+.lab-h-score { text-align: right; font-variant-numeric: tabular-nums; color: var(--accent); }
+.lab-h-target { color: var(--accent2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab-h-flags { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab-h-flagged { color: var(--warn); }
+/* NOT a clean bill of health: the server never sent this field. Deliberately
+   dimmer and italic so it cannot be read at a glance as "no alerts". */
+.lab-h-unknown { color: var(--dim); font-style: italic; opacity: 0.72; }
+.lab-h-link { color: var(--accent2); text-decoration: none; font-size: 13px; }
+a.lab-h-link:hover { text-decoration: underline; }
+.lab-h-nolink { color: var(--dim); }
+
+@media (max-width: 420px) {
+  .lab-stat-num { font-size: 20px; }
+  .lab-btn { flex: 1 1 100%; }
+  .lab-board-row { grid-template-columns: 1.8em minmax(0, 1fr) 3.6em 4.2em; font-size: 13px; padding: 8px 10px; }
+}

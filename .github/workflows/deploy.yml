@@ -1,0 +1,110 @@
+name: Deploy (LongevityOS SaaS)
+
+# Publishes the platform to photon-bounce.com/longevityos/:
+#   app/      -> /public_html/longevityos/          (the atlas + the Lab)
+#   saas/api/ -> /public_html/longevityos/api/      (the swarm server)
+#   secret    -> /los-private/ingest-key.txt        (BESIDE public_html, never inside it)
+#
+# UPLOAD-ONLY, always. /public_html/longevityos/api/data/ holds the live swarm
+# database — every molecule harvested, every result volunteers computed, every
+# contributor's credit. A `--delete` mirror would erase all of it on the next
+# web deploy, so no lftp line here may ever carry --delete. (This is the
+# hard-won rule from the sibling projects: an eyesaway-style mirror once ate an
+# APK, and a data directory is far less forgiving than a binary.)
+#
+# Requires three repo secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD.
+# Optional: LOS_INGEST_KEY (arms the harvester's ingest door; until it is set
+# the API refuses every ingest, which is the correct fail-closed default).
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "app/**"
+      - "saas/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: los-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Refuse to deploy a broken build
+        run: |
+          set -euo pipefail
+          node qa/unit.mjs
+          node qa/chem.mjs
+          node qa/content.mjs
+          echo "gate passed — safe to publish"
+
+      - name: Check the API's syntax before it reaches the host
+        run: |
+          set -euo pipefail
+          for f in saas/api/*.php; do php -l "$f"; done
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Publish (upload-only, never --delete)
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+          FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+          INGEST_KEY: ${{ secrets.LOS_INGEST_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FTP_SERVER:-}" ]; then
+            echo "::warning::No FTP secrets configured — nothing published. Add FTP_SERVER / FTP_USERNAME / FTP_PASSWORD to this repository's Actions secrets to go live."
+            exit 0
+          fi
+          OPTS="set ftp:ssl-allow true; set ssl:verify-certificate no; set ftp:ssl-protect-data true; set net:timeout 25; set net:max-retries 2; set cmd:fail-exit yes;"
+
+          echo "::group::web app -> /public_html/longevityos/"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_PROTOCOL://$FTP_SERVER" -e "
+            $OPTS
+            mkdir -p -f /public_html/longevityos/;
+            mirror -R --no-perms --no-symlinks --verbose app/ /public_html/longevityos/;
+            bye"
+          echo "::endgroup::"
+
+          echo "::group::swarm API -> /public_html/longevityos/api/ (data/ untouched)"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_PROTOCOL://$FTP_SERVER" -e "
+            $OPTS
+            mkdir -p -f /public_html/longevityos/api/;
+            mirror -R --no-perms --no-symlinks --verbose --exclude-glob data/ saas/api/ /public_html/longevityos/api/;
+            bye"
+          echo "::endgroup::"
+
+          if [ -n "${INGEST_KEY:-}" ]; then
+            echo "::group::ingest key -> /los-private/ (outside the web root)"
+            printf '%s' "$INGEST_KEY" > ingest-key.txt
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_PROTOCOL://$FTP_SERVER" -e "
+              $OPTS
+              mkdir -p -f /los-private/;
+              put -O /los-private/ ingest-key.txt;
+              bye"
+            rm -f ingest-key.txt
+            echo "::endgroup::"
+          else
+            echo "::warning::LOS_INGEST_KEY is not set — the harvester cannot ingest and the API will keep refusing ?a=ingest (fail-closed, as designed)."
+          fi
+
+      - name: Prove the live site answers
+        run: |
+          set -uo pipefail
+          BASE="https://photon-bounce.com/longevityos"
+          echo "index:  $(curl -s -o /dev/null -w '%{http_code}' "$BASE/")"
+          echo "health: $(curl -s "$BASE/api/?a=health" | head -c 300)"

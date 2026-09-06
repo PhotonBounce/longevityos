@@ -1,6 +1,11 @@
 import { HEADLINE, DISCLAIMER, COMPOUNDS, ITP_NOTE } from "./data.js";
 import { RUNGS, strongest, hasRigorousNull, rungLabel, ORGANISM_LABEL } from "./grades.js";
 import { FEED_URL, parseFeed, feedFreshness } from "./feed.js";
+import { renderLab } from "./lab.js";
+
+/* The Lab talks to the swarm server that ships beside the app. A page served
+ * from photon-bounce.com/longevityos/ finds it at ./api/; QA overrides it. */
+const API_BASE = (typeof window !== "undefined" && window.__LOS_API) || "./api/";
 
 /* All dynamic text renders via textContent — nothing from data or the feed is
  * ever parsed as HTML. */
@@ -198,7 +203,8 @@ function renderSources(root) {
 /* ————— shell ————— */
 
 const TABS = [
-  ["atlas", "Atlas"], ["ladder", "The Ladder"], ["feed", "Fresh findings"], ["sources", "Sources"]
+  ["atlas", "Atlas"], ["lab", "The Lab"], ["ladder", "The Ladder"],
+  ["feed", "Fresh findings"], ["sources", "Sources"]
 ];
 
 function render() {
@@ -214,6 +220,7 @@ function render() {
   root.textContent = "";
   if (state.tab === "atlas") renderAtlas(root);
   else if (state.tab === "dossier") renderDossier(root);
+  else if (state.tab === "lab") renderLab(root, { apiBase: API_BASE });
   else if (state.tab === "ladder") renderLadder(root);
   else if (state.tab === "feed") renderFeed(root);
   else if (state.tab === "sources") renderSources(root);

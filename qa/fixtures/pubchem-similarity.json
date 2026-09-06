@@ -1,0 +1,30 @@
+{
+  "_comment": "Shape of a real PubChem PUG-REST fastsimilarity_2d/cid/<CID>/cids/JSON response. Recorded shape, hand-built contents: the CIDs are real PubChem compound identifiers for well-known small molecules, chosen so the offline selftest exercises every filter. Nothing here is fetched at test time; tools/harvest.mjs --selftest runs with fetch disabled.",
+  "IdentifierList": {
+    "CID": [
+      2519,
+      1983,
+      5793,
+      5281672,
+      5280443,
+      65064,
+      5951,
+      445639,
+      5429,
+      338,
+      370,
+      2244,
+      4091,
+      750,
+      5280343,
+      1123,
+      1176,
+      962,
+      887,
+      99999901,
+      99999902,
+      99999903,
+      99999904
+    ]
+  }
+}

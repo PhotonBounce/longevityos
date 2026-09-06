@@ -1,0 +1,64 @@
+# LongevityOS — swarm API (PHP 8 + SQLite).
+#
+# ---------------------------------------------------------------------------
+# data/ IS THE LIVE SWARM DATABASE.
+#
+# data/los.sqlite holds every contributor, every credited work unit and every
+# verified hit the swarm has ever produced. It exists ONLY on the host: it is
+# gitignored, it is never built, and it can never be regenerated from a repo.
+#
+# Therefore NO DEPLOY MAY EVER MIRROR OVER THIS DIRECTORY. Uploads to
+# /public_html/.../api/ must be upload-only: no --delete, no rsync mirror, no
+# "clean the target first" step. A mirror that removes data/ silently deletes
+# the record of everyone's donated CPU, and there is no backup that makes that
+# right.
+# ---------------------------------------------------------------------------
+
+# No directory listings anywhere under the API.
+Options -Indexes
+
+# The API is one front controller.
+DirectoryIndex index.php
+
+# ——— the database is never served, by any route ———
+# 1. the whole data/ directory
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^data(/|$) - [F,L]
+  RewriteRule ^\.  - [F,L]
+</IfModule>
+
+# 2. and every database-shaped file, wherever it ends up
+<FilesMatch "\.(sqlite|sqlite3|db|db-wal|db-shm|journal|bak|log|txt)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# ——— .php must keep executing (never be handed out as source) ———
+# Nothing above touches .php. Under classic mod_php this reaffirms the handler;
+# under LiteSpeed/php-fpm the block is skipped and the server default (lsapi)
+# stays in charge, which is what we want — forcing a handler there breaks PHP.
+<IfModule mod_php.c>
+  php_flag engine on
+  AddType application/x-httpd-php .php
+</IfModule>
+
+# ——— never cache an API response ———
+# This host runs LiteSpeed with aggressive server-side caching; it has cached
+# 404s and day-old files before now. A cached work unit would hand two
+# volunteers the SAME "independent" answer and quietly destroy the redundancy
+# that makes a verified hit mean anything.
+<IfModule LiteSpeed>
+  CacheDisable public /
+</IfModule>
+<IfModule mod_headers.c>
+  Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always unset ETag
+</IfModule>
+FileETag None

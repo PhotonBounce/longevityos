@@ -1,0 +1,66 @@
+name: Molecule harvest (LongevityOS)
+
+# The supply side of the swarm: every day this mines PubChem for molecules
+# structurally near the reference actives in app/js/chem/targets.js, filters
+# them through the app's own parser and drug-likeness rules, and ingests the
+# survivors into the swarm server as candidates for volunteers to screen.
+#
+# It runs here because the authoring sandbox has no route to PubChem. If the
+# server is not configured yet, the harvest is written to an artifact instead
+# of being silently dropped — an undeliverable harvest is reported, never
+# faked.
+
+on:
+  schedule:
+    - cron: "37 4 * * *"
+  workflow_dispatch:
+    inputs:
+      per_active:
+        description: "Max similar molecules to pull per reference active"
+        type: string
+        default: "60"
+      dry_run:
+        description: "Fetch and report, but do not ingest"
+        type: boolean
+        default: false
+  push:
+    branches: [ main ]
+    paths: [ ".github/workflows/harvest.yml", "tools/harvest.mjs" ]
+
+concurrency:
+  group: los-harvest
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Selftest first — the pipeline must work offline before it touches the network
+        run: node tools/harvest.mjs --selftest
+
+      - name: Harvest
+        env:
+          LOS_API: ${{ vars.LOS_API || 'https://photon-bounce.com/longevityos/api/' }}
+          LOS_INGEST_KEY: ${{ secrets.LOS_INGEST_KEY }}
+          LOS_PER_ACTIVE: ${{ inputs.per_active || '60' }}
+        run: |
+          set -uo pipefail
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            node tools/harvest.mjs --dry-run
+          else
+            node tools/harvest.mjs
+          fi
+
+      - name: Keep the harvest even when it could not be delivered
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harvest-${{ github.run_number }}
+          path: data/harvest-latest.json
+          if-no-files-found: ignore

@@ -1,49 +1,92 @@
-# LongevityOS — the immortality-drug evidence atlas
+# LongevityOS — a citizen-science engine for longevity drug candidates
 
-**No drug has ever been shown to extend human lifespan.** This app tracks the
-candidates people call immortality drugs — rapamycin, metformin, senolytics,
-NAD+ boosters, taurine and friends — with the actual published evidence,
-including every rigorous failure. Not medical advice; a map of what is known.
+**No drug has ever been shown to extend human lifespan.** LongevityOS is two
+things pointed at that fact: an evidence atlas of every compound people call an
+immortality drug, and a live screening engine that harvests new molecules and
+puts them in front of a swarm of volunteer computers.
 
-## What makes it honest (structurally, not aspirationally)
+Nothing here is medical advice, and nothing the swarm produces is a discovery.
+The output is a **ranked shortlist of hypotheses** for people who do this for a
+living.
 
-- **Every claim carries its source.** Each evidence row ships a primary-source
-  URL and a `titleCheck`; CI re-fetches every link and verifies the article
-  title against the page (`qa/verify-sources.mjs`). A wrong citation is a red
-  build.
-- **Grades are computed, never typed.** A compound's badge derives from its
-  evidence rows' (organism, outcome) — `app/js/grades.js`. The ladder's top
-  rung ("human RCT, aging outcome met") is empty, and the app says so.
-- **Failures are first-class.** Metformin, fisetin, resveratrol and NR all
-  failed the NIA Interventions Testing Program; ASPREE said no to aspirin in
-  humans; taurine's biomarker premise took two 2025 hits. All of it renders,
-  tagged NULL / CONTRARY, filterable as a group.
-- **The atlas keeps researching.** A daily PubMed E-utilities sweep
-  (`tools/crawl.mjs` via `crawl.yml`) refreshes `data/feed.json`, validated
-  through the app's own parser. No sweep? The app shows its bundled citation
-  library and says exactly that — a bundled library is never dressed up as a
-  live feed, and a stale sweep calls itself stale.
-- **No advice, ever.** `qa/content.mjs` lints every shipped string against
-  imperative dosing, "clinically proven", cure/reversal claims and the rest.
+## How it works
+
+**1. Harvest.** A daily job mines PubChem for molecules structurally near the
+reference actives of eight-plus longevity-relevant targets (mTOR, senolytic
+BCL-2, AMPK/metabolic, NAD+ metabolism, autophagy, mitophagy…), filters them
+through the app's own parser and drug-likeness rules, and files the survivors as
+candidates. `tools/harvest.mjs`, `.github/workflows/harvest.yml`.
+
+**2. Screen — in your browser.** Volunteers open the Lab and press one button.
+The server hands out **work units** (batches of ~40 candidates); a Web Worker
+computes, for each molecule, a Morgan fingerprint, its Tanimoto similarity to
+every reference active, Lipinski/Veber drug-likeness, structural alerts, and a
+composite integer score. This is the SETI@home shape: many small machines, one
+big question.
+
+**3. Verify by agreement.** A result is worthless if one stranger can invent it,
+so **two independent contributors must produce the identical digest** before
+anything is promoted to a verified hit. Disagreement quarantines the unit for a
+tie-break. **Canary units** — whose correct digest the server already knows —
+are mixed into the stream to catch fabricated submissions.
+
+That verification only means something if the computation is reproducible, so
+determinism is enforced as a hard rule: the screening path uses integer and
+bitwise arithmetic only, sorts everything before it reaches a digest, and
+touches no clock, no RNG, no locale, and no transcendental math. `qa/swarm.mjs`
+proves it by computing the same unit in bare Node, in a browser page, and inside
+a real Web Worker, and requiring all three digests to be byte-identical.
+
+## What it is not
+
+It is ligand-based similarity screening: *"this molecule looks like drugs that
+did something in a longevity experiment, and isn't obviously undruggable."* It
+is not docking, not a binding or efficacy prediction, and not evidence that any
+molecule does anything in any living thing. A structural alert is a triage flag,
+not a verdict of toxicity. `qa/content.mjs` fails the build if any shipped
+string drifts past those limits.
 
 ## Layout
 
-- `app/` — the atlas: zero dependencies, offline-first, ES modules.
-- `data/feed.json` — the literature sweep (written by CI, never by hand).
-- `tools/crawl.mjs` — the sweep; `tools/dist.mjs` — builds
-  `dist/longevityos.html`, the whole app in one double-clickable file.
-- `qa/` — the gate: `npm run qa` = unit (data contracts) + content (honesty
-  lint) + crawler selftest + e2e (Playwright); `verify-sources.mjs` (CI);
-  `apk-binary.mjs` drives the signed APK before any publish.
-- `android/` — zero-permission WebView shell (`com.photonbounce.longevityos`);
-  built + signed by `build-apk.yml`, binary lands on the `media-apk-longevityos`
-  branch and as a workflow artifact.
+- `app/` — the web app: Atlas (evidence), **Lab** (the swarm), Ladder, Fresh
+  findings, Sources. Zero dependencies, ES modules.
+  - `app/js/chem/` — the engine: `smiles.js` (parser + ring perception),
+    `fingerprint.js` (Morgan/ECFP4 + Tanimoto), `descriptors.js` (MW, TPSA,
+    cLogP, Lipinski counts), `alerts.js`, `targets.js` (the science inputs),
+    `digest.js` (pure-JS SHA-256), `score.js` (**the screening core**).
+  - `app/js/swarm/` — `client.js` (donation loop, consent-gated) and
+    `worker.js`.
+- `saas/api/` — the swarm server: PHP 8 + SQLite, no framework. Work issue,
+  consensus, canaries, leaderboard, harvester ingest. `data/` is the live
+  database and is never mirrored over by a deploy.
+- `qa/` — the gate. `npm run qa` = `unit` (atlas data) + `chem` (engine pinned
+  to published values) + `content` (honesty + purity + server lint) + `api`
+  (a real `php -S` driven through the whole protocol) + `swarm`
+  (Node↔browser↔worker digest parity) + `e2e`. CI adds `verify-sources.mjs`
+  (every citation checked against PubMed's API) and `verify-molecules.mjs`
+  (every reference SMILES checked against PubChem).
+- `tools/` — `harvest.mjs` (the molecule sweep), `crawl.mjs` (the literature
+  sweep), `dist.mjs` (single-file build).
 
 ## Run it
 
 ```
-cd qa && npm install && npm run qa     # the full gate
-node tools/dist.mjs                    # one-file build → dist/longevityos.html
+cd qa && npm install && npm run qa          # the whole gate
+php -S 127.0.0.1:8080 -t saas/api           # the swarm server
+python3 -m http.server 8081 &               # or any static server for app/
 ```
 
-Open `app/index.html` over any static server (or just double-click the dist).
+## Rules that are not negotiable
+
+1. **Determinism is the trust model.** If two browsers can disagree, "verified"
+   means nothing. No RNG, no clock, no locale, no float accumulation on the
+   screening path.
+2. **Consent.** No CPU is ever used without an explicit press. The client cannot
+   auto-start, and `qa/content.mjs` enforces it.
+3. **Honesty.** Hypotheses, never discoveries. Failures shown beside hopes. No
+   dosing, no advice, no "clinically proven".
+4. **Fail closed.** No ingest key configured means ingest is refused, never
+   opened. A citation or molecule that cannot be verified is reported as
+   unverified — never assumed correct.
+5. **The database is sacred.** `saas/api/data/` holds every contributor's work.
+   No deploy may ever mirror over it.

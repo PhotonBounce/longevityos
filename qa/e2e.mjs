@@ -39,8 +39,10 @@ page.on("pageerror", (e) => pageErrors.push(String(e)));
 page.on("console", (m) => {
   if (m.type() !== "error") return;
   const src = (m.location() && m.location().url) || "";
-  // the missing-feed 404 is the fallback path under test; a favicon 404 is browser noise
-  if (/\/data\/feed\.json$|\/favicon\.ico$/.test(src)) return;
+  // the missing-feed 404 is the fallback path under test, the missing swarm API
+  // is the no-server degradation under test, and a favicon 404 is browser noise
+  if (/\/data\/feed\.json$|\/favicon\.ico$|\/api\//.test(src)) return;
+  if (/Failed to load resource/.test(m.text()) && /\/api\//.test(src)) return;
   pageErrors.push(m.text() + " @ " + src);
 });
 
@@ -88,6 +90,25 @@ await page.waitForSelector(".ladder-row");
 ok(/No compound has ever earned this rung/.test(await page.locator(".ladder-row").first().textContent()),
   "the top rung says it is empty");
 await page.screenshot({ path: join(SHOTS, "03-ladder.png"), fullPage: true });
+
+/* ————— 4b. the Lab renders, and survives having no server ————— */
+suite("e2e 4b — the Lab");
+await page.locator('[data-tab="lab"]').click();
+await page.waitForSelector(".lab-banner, .lab-offline, .lab", { timeout: 15000 });
+const labText = await page.locator("#view").textContent();
+ok(/hypothes/i.test(labText), "the Lab states its output is hypotheses");
+ok(/not (a )?(discover|drug|medical)|shortlist/i.test(labText),
+   "the Lab says plainly what a hit is not");
+ok(/donate|contribute/i.test(labText), "the Lab offers to use the visitor's browser");
+/* this page is served with NO swarm API behind it — the honest outcome is a
+ * panel saying so, never a broken tab */
+await page.waitForTimeout(1500);
+const stillAlive = await page.locator("#nav").isVisible();
+ok(stillAlive, "with no swarm server reachable, the app is still fully usable");
+await page.screenshot({ path: join(SHOTS, "07-lab.png"), fullPage: true });
+await page.locator('[data-tab="atlas"]').click();
+await page.waitForSelector(".card");
+ok((await page.locator(".card").count()) >= 12, "returning to the Atlas still works");
 
 /* ————— 5. the feed is honest with and without a live sweep ————— */
 suite("e2e 5 — fresh findings");
