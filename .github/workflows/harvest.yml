@@ -46,8 +46,14 @@ jobs:
 
       - name: Harvest
         env:
-          LOS_API: ${{ vars.LOS_API || 'https://photon-bounce.com/longevityos/api/' }}
+          # The harvester goes RED when it is half-configured — an endpoint with
+          # no key means a harvest that silently never arrives, and a scheduled
+          # job that stays green while the swarm is never fed is the worst of
+          # both worlds. But "no secrets at all" is the honest not-wired-up-yet
+          # case, so the endpoint is only supplied once a key exists: until
+          # then the run is green and the harvest is kept as an artifact.
           LOS_INGEST_KEY: ${{ secrets.LOS_INGEST_KEY }}
+          LOS_API: ${{ secrets.LOS_INGEST_KEY != '' && (vars.LOS_API || 'https://photon-bounce.com/longevityos/api/') || '' }}
           LOS_PER_ACTIVE: ${{ inputs.per_active || '60' }}
         run: |
           set -uo pipefail
