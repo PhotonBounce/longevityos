@@ -58,16 +58,28 @@ jobs:
 
       - name: Publish (upload-only, never --delete)
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          # This account rotated its FTP secret names: the monorepo's working
+          # deploys read PHOTON__USER / PHOTON_FTP_PASSWORD first and fall back
+          # to the original FTP_* pair. Same order here, so whichever pair is
+          # configured on this repository is the one that gets used — a deploy
+          # that silently skips because it looked for the wrong name is the
+          # failure this ordering exists to prevent.
+          FTP_SERVER: ${{ secrets.PHOTON_FTP_SERVER || secrets.PHOTON_SERVER || secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.PHOTON__USER || secrets.PHOTON_USER || secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.PHOTON_FTP_PASSWORD || secrets.PHOTON_PASSWORD || secrets.FTP_PASSWORD }}
           FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftp' }}
           FTP_PORT: ${{ vars.FTP_PORT || '21' }}
           INGEST_KEY: ${{ secrets.LOS_INGEST_KEY }}
         run: |
           set -euo pipefail
-          if [ -z "${FTP_SERVER:-}" ]; then
-            echo "::warning::No FTP secrets configured — nothing published. Add FTP_SERVER / FTP_USERNAME / FTP_PASSWORD to this repository's Actions secrets to go live."
+          # Report WHICH credentials resolved (presence only, never a value), so
+          # a skipped deploy says why instead of leaving someone guessing which
+          # of two naming conventions the repository actually carries.
+          for v in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
+            if [ -n "${!v:-}" ]; then echo "$v: present"; else echo "$v: MISSING"; fi
+          done
+          if [ -z "${FTP_SERVER:-}" ] || [ -z "${FTP_USERNAME:-}" ] || [ -z "${FTP_PASSWORD:-}" ]; then
+            echo "::warning::FTP credentials incomplete on THIS repository — nothing published. Secrets do not cross repositories: PhotonBounce/longevityos needs its own PHOTON_FTP_SERVER (or FTP_SERVER), PHOTON__USER (or FTP_USERNAME) and PHOTON_FTP_PASSWORD (or FTP_PASSWORD)."
             exit 0
           fi
           OPTS="set ftp:ssl-allow true; set ssl:verify-certificate no; set ftp:ssl-protect-data true; set net:timeout 25; set net:max-retries 2; set cmd:fail-exit yes;"
