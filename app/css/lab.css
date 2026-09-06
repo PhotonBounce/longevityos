@@ -244,8 +244,122 @@
 a.lab-h-link:hover { text-decoration: underline; }
 .lab-h-nolink { color: var(--dim); }
 
+/* ————— 3.0: phone panel, teams, record, public profile ————— */
+
+/* a secondary button: the same shape as .lab-btn, quieter */
+.lab-btn-secondary {
+  background: transparent;
+  color: var(--accent2);
+  border-color: var(--accent2);
+  font-weight: 600;
+}
+.lab-phone-copy { margin: 0 0 10px; }
+
+/* toggles: a big touch target, the label and its live note stacked */
+.lab-toggle, .lab-pace-opt {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 14.5px;
+}
+.lab-toggle input, .lab-pace-opt input {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+.lab-toggle-off { cursor: default; opacity: 0.7; }
+.lab-toggle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lab-toggle-label { color: var(--ink); }
+.lab-toggle-note { color: var(--dim); font-size: 12.5px; overflow-wrap: anywhere; }
+
+.lab-pace { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
+.lab-pace-title, .lab-form-title {
+  color: var(--dim);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+.lab-pace-opts { display: flex; flex-direction: column; }
+.lab-pace-opt { border-top: none; padding: 7px 0; }
+
+.lab-install { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+.lab-install-host { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.lab-install-note { margin: 0; }
+
+/* share link: the URL as text in a field the visitor can select */
+.lab-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  margin: 10px 0 4px;
+}
+.lab-share-label { flex: 1 1 100%; color: var(--dim); font-size: 12.5px; }
+.lab-share-field {
+  flex: 1 1 200px;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--accent2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-variant-ligatures: none;
+}
+.lab-copy { padding: 8px 14px; font-size: 14px; }
+
+/* teams */
+.lab-team-card { margin-bottom: 8px; }
+.lab-team-name { font-size: 18px; font-weight: 650; color: var(--ink); overflow-wrap: anywhere; }
+.lab-team-codeline { margin: 2px 0 6px; font-size: 13.5px; }
+.lab-team-code {
+  color: var(--accent);
+  font-variant-ligatures: none;
+  letter-spacing: 2px;
+  font-weight: 650;
+}
+.lab-team-invite { margin: 0 0 8px; font-size: 14.5px; color: var(--accent); overflow-wrap: anywhere; }
+.lab-team-forms { display: flex; flex-direction: column; gap: 10px; }
+/* a display rule on the class would otherwise beat the UA's [hidden] */
+.lab-team-forms[hidden] { display: none; }
+.lab-form { border-top: 1px solid var(--line); padding-top: 8px; }
+.lab-code { text-transform: uppercase; letter-spacing: 2px; font-variant-ligatures: none; }
+.lab-team-board { margin-top: 10px; }
+.lab-team-top { margin-top: 12px; }
+.lab-team-row { grid-template-columns: 2.2em minmax(0, 1fr) 5.4em 4.5em 5em; }
+.lab-team-row.lab-board-head { letter-spacing: 0.6px; }
+.lab-team-row .lab-b-num { overflow: hidden; }
+
+/* record and badges */
+.lab-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+.lab-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  white-space: nowrap;
+}
+.lab-badge-on { color: #08110c; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.lab-badge-off { opacity: 0.6; }
+
+/* the public record card sits above everything when a ?c= link opened the page */
+.lab-profile { margin-bottom: 8px; }
+.lab-profile-host { border-left: 4px solid var(--accent2); }
+.lab-profile-name { font-size: 20px; font-weight: 650; color: var(--ink); overflow-wrap: anywhere; }
+.lab-profile-missing { color: var(--null); }
+
 @media (max-width: 420px) {
   .lab-stat-num { font-size: 20px; }
   .lab-btn { flex: 1 1 100%; }
+  .lab-copy { flex: 0 0 auto; }
   .lab-board-row { grid-template-columns: 1.8em minmax(0, 1fr) 3.6em 4.2em; font-size: 13px; padding: 8px 10px; }
+  .lab-team-row { grid-template-columns: 1.8em minmax(0, 1fr) 5.2em 3.8em 4.6em; }
 }

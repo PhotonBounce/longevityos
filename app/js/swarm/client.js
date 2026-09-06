@@ -15,6 +15,12 @@
  * to the single Web Worker, submit the digest the worker produced, pause, and
  * go again. Everything a live UI needs is emitted through onEvent.
  *
+ * It also keeps the contributor's record: the token, the chosen name and —
+ * since 3.0 — the team they are in. me()/teamCreate()/teamJoin()/teamLeave()/
+ * leave() are bookkeeping about that token; none of them starts anything.
+ * Events: joined, unit, progress, submitted, confirmed, idle, error, stopped,
+ * plus team (the stored team changed) and left (the record was erased).
+ *
  * WHAT IT REFUSES TO DO. Hammer a server that has no work (30s idle back-off),
  * retry a failure at full speed (exponential 2/4/8…60s), run two workers, keep
  * screening after the tab is hidden unless the visitor asked for that, throw
@@ -33,11 +39,15 @@ import { screenUnit, referenceSet } from "../chem/score.js";
 
 const STORE_KEY = "los.swarm.v1";
 
-/* Pacing. Deliberately unhurried: a volunteer's browser is a guest on their
- * machine, and the swarm's throughput comes from many contributors, not from
- * squeezing one. */
+/* Pacing. A volunteer's browser is a guest on their machine, and the swarm's
+ * throughput comes from many contributors, not from squeezing one. The pace is
+ * the visitor's own dial (Full / Gentle / Trickle in the Lab): the minimum gap
+ * between finishing one unit and asking for the next, 0..PACE_MAX ms. It can
+ * be changed while the loop runs and the sleep it produces is cancellable —
+ * stop() is immediate, never "after the current pause". */
+const PACE_MAX = 10000;
 const DEFAULTS = {
-  paceMs: 1500,        // between finishing one unit and asking for the next
+  paceMs: 0,           // between finishing one unit and asking for the next
   idleMs: 30000,       // the server has nothing to screen — come back later
   backoffMinMs: 2000,  // first retry after a failure
   backoffMaxMs: 60000, // and never slower than this
@@ -63,7 +73,8 @@ function readStore() {
     return {
       token,
       contributor: v.contributor === undefined ? null : v.contributor,
-      name: typeof v.name === "string" ? v.name : ""
+      name: typeof v.name === "string" ? v.name : "",
+      team: cleanTeam(v.team)
     };
   } catch (_) {
     return null;
@@ -76,12 +87,31 @@ function writeStore(identity) {
     localStorage.setItem(STORE_KEY, JSON.stringify({
       token: identity.token,
       contributor: identity.contributor,
-      name: identity.name
+      name: identity.name,
+      team: identity.team || null
     }));
     return true;
   } catch (_) {
     return false;
   }
+}
+
+function clearStore() {
+  try {
+    if (typeof localStorage !== "undefined") localStorage.removeItem(STORE_KEY);
+  } catch (_) { /* storage was refused; the in-memory identity is gone either way */ }
+}
+
+/* A team, as this client is willing to remember it: an 8-character code from
+ * the server's own alphabet (no 0/O/1/I) and a short name. Anything else —
+ * including a stored record a hostile page wrote — becomes "no team". */
+const TEAM_CODE_RE = /^[A-HJ-NP-Z2-9]{8}$/;
+function cleanTeam(t) {
+  if (!t || typeof t !== "object" || Array.isArray(t)) return null;
+  const code = typeof t.code === "string" ? t.code.toUpperCase() : "";
+  if (!TEAM_CODE_RE.test(code)) return null;
+  const name = typeof t.name === "string" ? t.name.slice(0, 24) : "";
+  return { code, name };
 }
 
 /* ————— small helpers ————— */
@@ -100,7 +130,8 @@ export function createSwarmClient(options = {}) {
   const apiBase = typeof opts.apiBase === "string" && opts.apiBase ? opts.apiBase : "./api/";
   const rawEvent = typeof opts.onEvent === "function" ? opts.onEvent : () => {};
   const cfg = {
-    paceMs: numberOr(opts.paceMs, DEFAULTS.paceMs),
+    /* `pace` is the public name; `paceMs` is still honoured for older callers. */
+    paceMs: clampPace(opts.pace !== undefined ? opts.pace : opts.paceMs, DEFAULTS.paceMs),
     idleMs: numberOr(opts.idleMs, DEFAULTS.idleMs),
     backoffMinMs: numberOr(opts.backoffMinMs, DEFAULTS.backoffMinMs),
     backoffMaxMs: numberOr(opts.backoffMaxMs, DEFAULTS.backoffMaxMs),
@@ -112,6 +143,10 @@ export function createSwarmClient(options = {}) {
 
   function numberOr(v, d) {
     return typeof v === "number" && isFinite(v) && v >= 0 ? v : d;
+  }
+  function clampPace(v, d) {
+    const n = typeof v === "number" && isFinite(v) ? v : d;
+    return Math.min(PACE_MAX, Math.max(0, Math.floor(n)));
   }
 
   const state = {
@@ -221,7 +256,7 @@ export function createSwarmClient(options = {}) {
    * failure, offline, CORS, 4xx, 5xx, a timeout, HTML where JSON was promised,
    * a response too large to be one of ours. The loop above never sees an
    * exception and never has to guess. */
-  async function call(action, { params, body } = {}) {
+  async function call(action, { params, body, readError } = {}) {
     if (typeof fetch !== "function") return { ok: false, error: "this browser cannot reach the server" };
     let ctrl = null, timer = null;
     try {
@@ -237,9 +272,22 @@ export function createSwarmClient(options = {}) {
       }
       const res = await fetch(url(action, params), init);
       if (!res.ok) {
-        /* Nothing downstream reads a non-2xx body, so drop it rather than
-         * buffer it — the status is the whole message, and forgetIdentityOn()
-         * upstream needs only that. */
+        /* The loop never reads a non-2xx body — the status is the whole
+         * message there, and forgetIdentityOn() upstream needs only that. The
+         * team and record methods DO want the server's short error code
+         * (bad_code, team_full, unknown_team…), so they ask for it explicitly;
+         * it is read under the same byte cap and only ever used as a code. */
+        if (readError) {
+          try {
+            const read = await readCapped(res, ctrl);
+            if (!read.tooBig) {
+              const parsed = JSON.parse(read.text);
+              if (isPlainObject(parsed) && typeof parsed.error === "string" && /^[a-z_]{1,32}$/.test(parsed.error)) {
+                return { ok: false, error: parsed.error, status: res.status };
+              }
+            }
+          } catch (_) { /* fall through to the status-only message */ }
+        }
         try { if (res.body && typeof res.body.cancel === "function") await res.body.cancel(); } catch (_) {}
         return { ok: false, error: "server said " + res.status, status: res.status };
       }
@@ -425,7 +473,8 @@ export function createSwarmClient(options = {}) {
     state.identity = {
       token,
       contributor: res.data.contributor === undefined ? null : res.data.contributor,
-      name: typeof res.data.name === "string" ? res.data.name : wanted
+      name: typeof res.data.name === "string" ? res.data.name : wanted,
+      team: null   // a fresh token is a fresh contributor, and a contributor starts in no team
     };
     state.stored = writeStore(state.identity);
     emit("joined", {
@@ -434,6 +483,91 @@ export function createSwarmClient(options = {}) {
       stored: state.stored
     });
     return { contributor: state.identity.contributor, name: state.identity.name };
+  }
+
+  /* ————— teams and the personal record ————— */
+
+  /* Every method below returns { ok, data } or { ok, error } and never throws:
+   * these are wired straight to buttons. None of them touches the loop, the
+   * worker or anyone's CPU — they are bookkeeping about a token that already
+   * exists. A method that needs a token and has none says so instead of
+   * minting one: joining the swarm is the Lab's decision, made on a press. */
+  const NO_TOKEN = { ok: false, error: "not_joined" };
+
+  function shapeTeam(t) {
+    return cleanTeam(t);
+  }
+
+  function rememberTeam(team) {
+    if (!state.identity) return;
+    state.identity.team = team;
+    state.stored = writeStore(state.identity);
+  }
+
+  async function me() {
+    if (!state.identity) return NO_TOKEN;
+    const res = await call("me", { params: { token: state.identity.token }, readError: true });
+    if (!res.ok) { forgetIdentityOn(res); return { ok: false, error: res.error, status: res.status }; }
+    const c = isPlainObject(res.data.contributor) ? res.data.contributor : null;
+    if (c) {
+      /* The server's view of this contributor is the truth about them; the
+       * stored record is only a cache of it. */
+      if (typeof c.name === "string") state.identity.name = c.name.slice(0, 40);
+      rememberTeam(shapeTeam(c.team));
+    }
+    return { ok: true, data: res.data };
+  }
+
+  async function teamCreate(name) {
+    if (!state.identity) return NO_TOKEN;
+    const wanted = typeof name === "string" ? name.slice(0, 24) : "";
+    const res = await call("team_create", { body: { token: state.identity.token, name: wanted }, readError: true });
+    if (!res.ok) { forgetIdentityOn(res); return { ok: false, error: res.error, status: res.status }; }
+    const team = shapeTeam(res.data.team);
+    if (!team) return { ok: false, error: "the server did not describe the team" };
+    rememberTeam(team);
+    emit("team", { team });
+    return { ok: true, data: res.data };
+  }
+
+  async function teamJoin(code) {
+    if (!state.identity) return NO_TOKEN;
+    const wanted = typeof code === "string" ? code.trim().toUpperCase() : "";
+    if (!TEAM_CODE_RE.test(wanted)) return { ok: false, error: "bad_code" };
+    const res = await call("team_join", { body: { token: state.identity.token, code: wanted }, readError: true });
+    if (!res.ok) { forgetIdentityOn(res); return { ok: false, error: res.error, status: res.status }; }
+    const team = shapeTeam(res.data.team);
+    if (!team) return { ok: false, error: "the server did not describe the team" };
+    rememberTeam(team);
+    emit("team", { team });
+    return { ok: true, data: res.data };
+  }
+
+  async function teamLeave() {
+    if (!state.identity) return NO_TOKEN;
+    const res = await call("team_leave", { body: { token: state.identity.token }, readError: true });
+    if (!res.ok) { forgetIdentityOn(res); return { ok: false, error: res.error, status: res.status }; }
+    rememberTeam(null);
+    emit("team", { team: null });
+    return { ok: true, data: res.data };
+  }
+
+  /* Leaving the swarm: the server hides this contributor from every board
+   * (their verified work stays counted in the totals — it was real), and this
+   * browser forgets the token. The loop is stopped FIRST, so no unit is ever
+   * screened for a record that is being forgotten. */
+  async function leave() {
+    if (!state.identity) return NO_TOKEN;
+    const res = await call("leave", { body: { token: state.identity.token }, readError: true });
+    if (!res.ok) { forgetIdentityOn(res); return { ok: false, error: res.error, status: res.status }; }
+    if (state.running) halt("left");
+    const was = state.identity;
+    state.identity = null;
+    state.stored = false;
+    state.pendingName = "";
+    clearStore();
+    emit("left", { contributor: was.contributor, name: was.name });
+    return { ok: true, data: res.data };
   }
 
   /* ————— the loop ————— */
@@ -448,9 +582,7 @@ export function createSwarmClient(options = {}) {
     if (!res || res.status !== 401) return false;
     state.identity = null;
     state.stored = false;
-    try {
-      if (typeof localStorage !== "undefined") localStorage.removeItem(STORE_KEY);
-    } catch (_) { /* storage was refused; the in-memory identity is gone either way */ }
+    clearStore();
     return true;
   }
 
@@ -744,10 +876,19 @@ export function createSwarmClient(options = {}) {
 
   return {
     /* Ask the server for a contributor token. Safe to call more than once;
-     * an existing stored token is replaced by the new one. */
+     * an existing stored token is replaced by the new one — which also means
+     * a NEW contributor: the server has no rename, so a UI that only wants to
+     * change the fallback name uses setName() and keeps the record it has. */
     join(name) {
       state.pendingName = typeof name === "string" ? name : "";
       return join(state.pendingName);
+    },
+
+    /* The name to sign up with if the loop ever has to (re-)join on its own —
+     * after a 401, say. Touches nothing on the server and nothing stored. */
+    setName(name) {
+      state.pendingName = typeof name === "string" ? name.slice(0, 40) : "";
+      return state.pendingName;
     },
 
     /* THE ONLY DOOR INTO SOMEONE'S CPU. Called from a click handler, never
@@ -781,7 +922,9 @@ export function createSwarmClient(options = {}) {
         lastStatus: state.lastStatus,
         lastError: state.lastError,
         backoffMs: state.backoffMs,
-        background
+        background,
+        team: state.identity ? (state.identity.team || null) : null,
+        pace: cfg.paceMs
       };
     },
 
@@ -789,9 +932,28 @@ export function createSwarmClient(options = {}) {
 
     contributor() {
       return state.identity
-        ? { contributor: state.identity.contributor, name: state.identity.name, token: !!state.identity.token }
+        ? {
+            id: state.identity.contributor,
+            contributor: state.identity.contributor,   // the older name for `id`, kept
+            name: state.identity.name,
+            team: state.identity.team || null,
+            token: !!state.identity.token
+          }
         : null;
     },
+
+    /* The visitor's own throttle. Takes effect from the next unit; a loop
+     * already sleeping keeps its current pause, and stop() still cuts any
+     * pause short. */
+    setPace(ms) { cfg.paceMs = clampPace(ms, cfg.paceMs); return cfg.paceMs; },
+    pace() { return cfg.paceMs; },
+
+    /* Bookkeeping about an existing token — see the section above. */
+    me,
+    teamCreate,
+    teamJoin,
+    teamLeave,
+    leave,
 
     /* Opting in to background work is a separate, explicit act. */
     setBackground(on) { background = on === true; return background; },

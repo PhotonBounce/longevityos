@@ -233,6 +233,67 @@ ok(wrongEngine.includes("error") || wrongEngine.includes("idle") || !wrongEngine
 ok(pageErrors.filter((e) => !/Failed to load resource/.test(e)).length === 0,
    "no uncaught page errors throughout: " + JSON.stringify(pageErrors.slice(0, 3)));
 
+/* ————— 8. the pace dial, and stop() during the pace sleep ————— */
+suite("swarm 8 — pace: units are spaced, and stop() cuts the pause short");
+/* Every ?a=work request is timestamped on THIS side, so the spacing measured
+ * is what a server would see, not what the client believes it did. */
+const paceHits = [];
+let paceIssued = 0;
+await page.route("**/pace-api/**", async (route) => {
+  const a = new URL(route.request().url()).searchParams.get("a");
+  const json = (body) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  if (a === "join") return json({ token: "d".repeat(32), contributor: 11, name: "qa" });
+  if (a === "work") {
+    paceHits.push(Date.now());
+    paceIssued++;
+    return json({ unit: { unit_id: "pace-" + paceIssued, engine: nodeRefs.engine, targets_digest: nodeRefs.targetsDigest, molecules: UNIT.molecules.slice(0, 2) } });
+  }
+  if (a === "submit") return json({ accepted: true, credited: 1, status: "pending" });
+  return json({ ok: true });
+});
+const paceSetup = await page.evaluate(async ({ base }) => {
+  const { createSwarmClient } = await import(base + "/app/js/swarm/client.js");
+  const events = [];
+  const client = createSwarmClient({ apiBase: "/pace-api/", onEvent: (e) => events.push(e.type) });
+  const out = { defaultPace: client.pace() };
+  out.set = client.setPace(1000);
+  out.clampHi = client.setPace(99999);
+  out.clampLo = client.setPace(-5);
+  out.clampNaN = client.setPace("x");
+  client.setPace(1000);
+  out.readBack = client.pace();
+  window.__paceClient = client;
+  window.__paceEvents = events;
+  await client.join("qa");
+  client.start();
+  await new Promise((r) => setTimeout(r, 3600));
+  return out;
+}, { base: BASE });
+ok(paceSetup.defaultPace === 0, "the default pace is 0 ms (" + paceSetup.defaultPace + ")");
+ok(paceSetup.set === 1000 && paceSetup.readBack === 1000, "setPace(1000) is read back as 1000");
+ok(paceSetup.clampHi === 10000, "setPace clamps to 10000 ms at the top (" + paceSetup.clampHi + ")");
+ok(paceSetup.clampLo === 0, "setPace clamps to 0 ms at the bottom (" + paceSetup.clampLo + ")");
+ok(paceSetup.clampNaN === 0, "a non-number leaves the pace where it was (" + paceSetup.clampNaN + ")");
+
+/* stop() lands while the loop is asleep between units (units of two molecules
+ * screen in milliseconds; the loop spends almost all of its 3.6 s in pauses) */
+const hitsBeforeStop = paceHits.length;
+const stopMoment = Date.now();
+const stopped = await page.evaluate(() => {
+  const c = window.__paceClient;
+  c.stop();
+  return { running: c.isRunning(), stoppedEvent: window.__paceEvents.includes("stopped") };
+});
+await new Promise((r) => setTimeout(r, 2500));
+const lateHits = paceHits.filter((t) => t > stopMoment + 5).length;
+ok(hitsBeforeStop >= 2 && hitsBeforeStop <= 5, `at 1000 ms pace, 3.6 s yields a handful of work requests (${hitsBeforeStop})`);
+let minGap = Infinity;
+for (let i = 1; i < hitsBeforeStop; i++) minGap = Math.min(minGap, paceHits[i] - paceHits[i - 1]);
+ok(hitsBeforeStop < 2 || minGap >= 950, `consecutive work requests are at least ~1000 ms apart (min gap ${minGap} ms)`);
+ok(stopped.running === false && stopped.stoppedEvent, "stop() during the pace sleep is immediate and reports itself");
+ok(lateHits === 0, `no work request is made after stop() — the sleeping loop was woken to exit, not to fetch (${lateHits} late)`);
+ok(paceHits.length === hitsBeforeStop, `the work counter is frozen at stop (${paceHits.length} === ${hitsBeforeStop})`);
+
 await browser.close();
 server.close();
 console.log(failed ? "swarm: " + failed + " FAILED of " + checks : "swarm: " + checks + " checks passed ✓");

@@ -20,6 +20,9 @@ const el = (tag, cls, text) => {
 };
 
 const state = { tab: "atlas", filter: "all", query: "", compound: null, feed: null, feedError: false, evidenceFilter: "all" };
+/* A shared link into the Lab (?team=CODE or ?c=ID) opens on the Lab tab. The
+ * Lab validates the values itself; this only picks the tab. */
+try { if (/[?&](team|c)=/.test(location.search)) state.tab = "lab"; } catch (_) { /* no location, no deep link */ }
 
 /* ————— atlas ————— */
 

@@ -6,14 +6,22 @@
  * for researchers to look at — it is not a discovery, not a drug, not medical
  * advice, and nothing in it has been tested in a living thing.
  *
+ * Since 3.0 it is also the place a phone becomes a contributor (the "On a phone
+ * or tablet" panel: screen wake lock, a charging gate, a pace dial, install),
+ * where teams are made and joined, and where a contributor reads their own
+ * record — plus the public "Contributor record" card a shared ?c=<id> link
+ * opens to.
+ *
  * EVERY STRING ON THIS PAGE THAT CAME FROM THE SERVER IS UNTRUSTED. Leaderboard
- * names are typed by strangers; formulas, targets and flags are assembled by a
- * server this page does not control. So: createElement + textContent only (no
- * markup sink is used anywhere in this file), lengths capped, control
- * characters stripped, and the one external link on the page (PubChem) is
- * built ONLY from a compound id that
- * matched /^[0-9]{1,12}$/. A link built out of unvalidated server text is an
- * open redirect waiting to happen.
+ * names are typed by strangers; team names and codes are typed by strangers;
+ * formulas, targets and flags are assembled by a server this page does not
+ * control. So: createElement + textContent only (no markup sink is used
+ * anywhere in this file), lengths capped, control characters stripped, and the
+ * few links on the page are built ONLY from values that matched a strict
+ * pattern first: a PubChem link from a compound id that matched /^[0-9]{1,12}$/,
+ * a team share link from a code that matched /^[A-HJ-NP-Z2-9]{8}$/, a record
+ * share link from an id that matched /^[1-9][0-9]{0,11}$/. A link built out of
+ * unvalidated server text is an open redirect waiting to happen.
  *
  * NO SERVER IS A SUPPORTED STATE. LongevityOS is an evidence atlas first; the
  * swarm is an extra. Every request here collapses to { ok:false } and the tab
@@ -21,8 +29,13 @@
  * rather than a broken page or a spinner that never stops.
  *
  * CONSENT. Nothing in this file starts using anyone's CPU. The swarm client is
- * not even constructed until the visitor presses Donate, and what donating
- * costs is spelled out before the first press.
+ * constructed lazily (constructing it starts nothing — it is bookkeeping about
+ * a token), and screening begins only when the visitor presses Donate. The
+ * phone panel's preferences are remembered, but remembering "keep the screen
+ * awake" never requests a wake lock on load, and remembering "only while
+ * charging" never starts the loop when a charger appears unless the visitor
+ * had it running when they unplugged. What donating costs is spelled out
+ * before the first press.
  */
 
 import { createSwarmClient } from "./swarm/client.js";
@@ -41,13 +54,45 @@ const REQUEST_MS = 12000;
 const MAX_BODY = 262144;
 const HITS_LIMIT = 20;
 const BOARD_LIMIT = 20;
+const TEAMS_LIMIT = 10;
 const NAME_MAX = 24;         // visible cap on another person's chosen name
+const TEAM_NAME_MAX = 24;    // the server's own cap on a team name
 const FIELD_MAX = 48;        // visible cap on any other server string
 const PUBCHEM = "https://pubchem.ncbi.nlm.nih.gov/compound/";
 const CID_RE = /^[0-9]{1,12}$/;
+/* A team code, exactly as the server mints it: 8 characters from an alphabet
+ * with no 0/O or 1/I, so it can be read off a phone screen or said aloud. */
+const TEAM_CODE_RE = /^[A-HJ-NP-Z2-9]{8}$/;
+/* A contributor id in canonical decimal: no leading zeros, no sign, 1–12
+ * digits. Anything else never reaches a URL. */
+const ID_RE = /^[1-9][0-9]{0,11}$/;
+const PHONE_KEY = "los.phone.v1";
+const LEAVE_CONFIRM_MS = 10000;
 
 const OFFLINE_MSG = "The swarm server is not reachable from here. " +
   "The atlas itself works with no server at all — this panel is the only thing that needs one.";
+
+/* THE BADGE RULE. Badges are thresholds on UNITS — work the contributor's
+ * browser actually screened. There is no badge for a hit, a high score, a
+ * verified molecule or anything else the contributor did not control: a unit
+ * that happens to contain a promising molecule was not screened any harder
+ * than one that did not. Credit is for effort, never for luck, and the same
+ * sentence is printed on the page beside the badges. */
+const BADGES = [
+  [1, "First unit"],
+  [10, "Ten units"],
+  [100, "A hundred"],
+  [1000, "A thousand"],
+  [10000, "Ten thousand"]
+];
+
+/* The pace dial: the minimum pause between finishing one unit and asking for
+ * the next. The Lab's default is Full; the choice is remembered. */
+const PACES = [
+  ["full", 0, "Full", "no pause between units"],
+  ["gentle", 1000, "Gentle", "a one-second breather between units"],
+  ["trickle", 4000, "Trickle", "four seconds between units — the coolest setting, and the slowest"]
+];
 
 /* ————— module state: one client, one poller, however many renders ————— */
 
@@ -75,7 +120,7 @@ const remote = {
 };
 
 const donate = {
-  phase: "idle",      // idle | joining | running | stopped
+  phase: "idle",      // idle | joining | running | paused | stopped
   unitId: "",
   done: 0,
   total: 0,
@@ -85,6 +130,58 @@ const donate = {
   name: "",
   message: "",
   tone: "dim"         // dim | ok | warn | err
+};
+
+/* The phone panel. The three preferences are remembered; everything else is
+ * live state that exists only while the page does. */
+const phone = {
+  wake: false,        // preference: keep the screen awake
+  charging: false,    // preference: only screen while charging
+  pace: 0,            // preference: ms between units
+  sentinel: null,     // the live WakeLockSentinel, if one is held
+  wakeNote: "",       // what the wake lock is doing right now
+  battery: null,      // the BatteryManager, once hooked
+  wantRunning: false, // the charging gate paused a RUNNING loop; resume when power returns
+  chargeNote: ""      // what the charging gate is doing right now
+};
+
+/* Teams. `mine` is the team this contributor is in (or null); `invited` is the
+ * team a ?team= link pointed at, once the server described it. */
+const team = {
+  mine: null,         // { code, name, members, units, credits, since }
+  board: [],          // rows of the team whose board is shown
+  boardCode: "",      // which team the board belongs to
+  boardName: "",
+  top: [],            // top teams from ?a=stats
+  inviteCode: "",     // a validated ?team= code
+  invited: null,      // { code, name } after ?a=team answered
+  inviteError: "",
+  busy: false,
+  message: "",
+  tone: "dim"
+};
+
+/* The contributor's own record, as the server last described it. */
+const record = {
+  known: false,       // ?a=me has answered at least once for this token
+  id: null,
+  name: "",
+  units: null,
+  credits: null,
+  team: null,         // { code, name } | null
+  since: "",
+  error: "",
+  message: "",
+  tone: "dim",
+  confirmArmed: 0     // when the first "Leave the swarm" press happened, or 0
+};
+
+/* The public record a ?c=<id> link opens to. */
+const profile = {
+  id: "",             // validated
+  state: "idle",      // idle | loading | ok | missing | error
+  data: null,
+  error: ""
 };
 
 /* ————— sanitizers: everything below the line is other people's data ————— */
@@ -150,6 +247,35 @@ function groupInt(n) {
 
 function isPlainObject(v) { return !!v && typeof v === "object" && !Array.isArray(v); }
 
+/* A team code as the page is willing to show or link it: uppercase, and
+ * exactly the server's alphabet, or nothing. */
+function safeCode(v) {
+  const s = typeof v === "string" ? v.trim().toUpperCase() : "";
+  return TEAM_CODE_RE.test(s) ? s : null;
+}
+
+/* A contributor id as the page is willing to link it: canonical decimal, or
+ * nothing. Numbers are accepted only if they print canonically. */
+function safeId(v) {
+  const s = typeof v === "number" && isFinite(v) ? String(v) : (typeof v === "string" ? v.trim() : "");
+  return ID_RE.test(s) ? s : null;
+}
+
+/* A unix timestamp (seconds; milliseconds are recognised and folded) rendered
+ * as a plain YYYY-MM-DD, or "" for anything outside 2000..2100. The clock is
+ * fine here — this is the UI, nowhere near a digest. */
+function sinceText(v) {
+  let n = safeInt(v);
+  if (n === null || n <= 0) return "";
+  if (n > 1e12) n = Math.floor(n / 1000);
+  if (n < 946684800 || n > 4102444800) return "";
+  try { return new Date(n * 1000).toISOString().slice(0, 10); } catch (_) { return ""; }
+}
+
+function badgesFor(units) {
+  return BADGES.map(([n, label]) => ({ n, label, earned: units !== null && units >= n }));
+}
+
 /* ————— the network, wrapped so nothing here can ever throw ————— */
 
 function apiUrl(action, params) {
@@ -186,7 +312,7 @@ async function apiGet(action, params) {
     }
     if (!res.ok) {
       try { if (ctrl) ctrl.abort(); } catch (_) {}
-      return { ok: false, error: "the server answered " + res.status };
+      return { ok: false, error: "the server answered " + res.status, status: res.status };
     }
     const body = await res.text();
     if (body.length > MAX_BODY) return { ok: false, error: "the server sent an implausibly large response" };
@@ -203,17 +329,58 @@ async function apiGet(action, params) {
 
 /* ————— shaping server payloads into things safe to render ————— */
 
+function shapeTeamInfo(t) {
+  if (!isPlainObject(t)) return null;
+  return {
+    code: safeCode(t.code),                                   // null ⇒ no link is built, ever
+    name: safeText(t.name, TEAM_NAME_MAX) || "unnamed team",
+    members: safeInt(t.members),
+    units: safeInt(t.units),
+    credits: safeInt(t.credits),
+    since: sinceText(t.created_at)
+  };
+}
+
+/* A team reference as it rides inside a contributor record: code + name. */
+function shapeTeamRef(t) {
+  if (!isPlainObject(t)) return null;
+  return { code: safeCode(t.code), name: safeText(t.name, TEAM_NAME_MAX) || "unnamed team" };
+}
+
+function shapeRows(list, limit) {
+  const rows = [];
+  if (!Array.isArray(list)) return rows;
+  for (const row of list.slice(0, limit)) {
+    if (!isPlainObject(row)) continue;
+    rows.push({
+      name: safeText(row.name, NAME_MAX) || "anonymous",
+      units: safeInt(row.units),
+      credits: safeInt(row.credits)
+    });
+  }
+  return rows;
+}
+
+function shapeContributor(c) {
+  if (!isPlainObject(c)) return null;
+  return {
+    id: safeId(c.id),
+    name: safeText(c.name, NAME_MAX) || "anonymous",
+    units: safeInt(c.units),
+    credits: safeInt(c.credits),
+    rank: safeInt(c.rank),
+    since: sinceText(c.created_at),
+    team: shapeTeamRef(c.team)
+  };
+}
+
 function shapeStats(data) {
   const t = isPlainObject(data.totals) ? data.totals : {};
-  const board = [];
-  if (Array.isArray(data.leaderboard)) {
-    for (const row of data.leaderboard.slice(0, BOARD_LIMIT)) {
-      if (!isPlainObject(row)) continue;
-      board.push({
-        name: safeText(row.name, NAME_MAX) || "anonymous",
-        units: safeInt(row.units),
-        credits: safeInt(row.credits)
-      });
+  const teams = [];
+  if (Array.isArray(data.teams)) {
+    for (const row of data.teams.slice(0, TEAMS_LIMIT)) {
+      const s = shapeTeamInfo(row);
+      if (s) teams.push(s);
     }
   }
   return {
@@ -222,7 +389,8 @@ function shapeStats(data) {
     verified: safeInt(t.verified),
     contributors: safeInt(t.contributors),
     unitsOpen: safeInt(t.units_open),
-    board
+    board: shapeRows(data.leaderboard, BOARD_LIMIT),
+    teams
   };
 }
 
@@ -265,6 +433,57 @@ function shapeHits(data) {
   return out;
 }
 
+/* ————— deep links: ?team=CODE and ?c=ID ————— */
+
+/* Read once per render, validated before anything is built from them. A code
+ * or id that does not match is simply absent — never echoed, never fetched. */
+function deepLinks() {
+  const out = { team: "", c: "" };
+  try {
+    if (typeof location === "undefined") return out;
+    const q = new URLSearchParams(location.search);
+    const t = safeCode(String(q.get("team") || ""));
+    if (t) out.team = t;
+    const c = safeId(String(q.get("c") || ""));
+    if (c) out.c = c;
+  } catch (_) { /* a URL we cannot parse carries no links */ }
+  return out;
+}
+
+function shareUrl(param, value) {
+  try {
+    return location.origin + location.pathname + "?" + param + "=" + encodeURIComponent(value);
+  } catch (_) {
+    return "";
+  }
+}
+
+/* ————— the remembered phone preferences ————— */
+
+/* Read on build, written on every change, and NEVER acted on at load time:
+ * a remembered wake-lock preference waits for the next press, and a
+ * remembered charging gate never starts anything by itself. */
+function readPhonePrefs() {
+  try {
+    if (typeof localStorage === "undefined") return;
+    const raw = localStorage.getItem(PHONE_KEY);
+    if (!raw) return;
+    const v = JSON.parse(raw);
+    if (!isPlainObject(v)) return;
+    phone.wake = v.wake === true;
+    phone.charging = v.charging === true;
+    const p = safeInt(v.pace);
+    phone.pace = PACES.some((x) => x[1] === p) ? p : 0;
+  } catch (_) { /* storage refused: the defaults stand */ }
+}
+
+function writePhonePrefs() {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(PHONE_KEY, JSON.stringify({ wake: phone.wake, charging: phone.charging, pace: phone.pace }));
+  } catch (_) { /* storage refused: the preference lives for this page only */ }
+}
+
 /* ————— polling ————— */
 
 function stopPolling() {
@@ -278,6 +497,10 @@ function tabIsVisible() {
 
 function attached() {
   return !!(ui && ui.root && ui.root.isConnected);
+}
+
+function clientRunning() {
+  try { return !!(client && client.isRunning && client.isRunning()); } catch (_) { return false; }
 }
 
 function startPolling() {
@@ -301,6 +524,14 @@ function hookVisibility() {
     document.addEventListener("visibilitychange", () => {
       try {
         if (tabIsVisible() && attached()) refresh();
+        /* The wake lock is re-acquired when the page comes back — but only if
+         * the visitor asked for it AND the swarm is actually running. The
+         * client's own visibility handler resumes the loop in the same tick,
+         * and it may be registered after this one, so the check is deferred a
+         * beat rather than racing it. */
+        if (tabIsVisible()) {
+          setTimeout(() => { try { if (phone.wake && clientRunning()) acquireWakeLock(); } catch (_) {} }, 50);
+        }
       } catch (_) { /* a visibility handler may never take the page down */ }
     });
   } catch (_) {}
@@ -317,11 +548,20 @@ async function refresh() {
   refreshing = true;
   refreshedOnce = true;
   try {
-    const [s, h] = await Promise.all([apiGet("stats"), apiGet("hits", { limit: HITS_LIMIT })]);
+    /* The record is asked for only when a token exists — a visitor who has
+     * never pressed Donate has no record and is never signed up to get one. */
+    const c = ensureClient();
+    const wantMe = !!(c && c.status().joined);
+    const [s, h, m] = await Promise.all([
+      apiGet("stats"),
+      apiGet("hits", { limit: HITS_LIMIT }),
+      wantMe ? c.me() : Promise.resolve(null)
+    ]);
     if (s.ok) {
       remote.stats = shapeStats(s.data);
       remote.reachable = true;
       remote.statsError = "";
+      team.top = remote.stats.teams;
     } else {
       remote.reachable = false;
       remote.statsError = s.error || "could not reach the server";
@@ -336,6 +576,8 @@ async function refresh() {
       remote.hitsReachable = false;
       remote.hitsError = h.error || "could not reach the server";
     }
+    if (m) applyMe(m);
+    await refreshTeam();
   } finally {
     refreshing = false;
   }
@@ -343,6 +585,70 @@ async function refresh() {
   paintStats();
   paintBoard();
   paintHits();
+  paintTeams();
+  paintRecord();
+}
+
+function applyMe(m) {
+  if (!m) return;
+  if (!m.ok) {
+    /* A token the server no longer knows (401) has already been forgotten by
+     * the client; anything else is a passing failure and the last record
+     * stands. */
+    record.error = safeText(m.error, 60);
+    if (m.status === 401) resetRecord();
+    return;
+  }
+  const c = shapeContributor(m.data.contributor);
+  if (!c) { record.error = "the server did not describe this contributor"; return; }
+  record.known = true;
+  record.error = "";
+  record.id = c.id;
+  record.name = c.name;
+  record.units = c.units;
+  record.credits = c.credits;
+  record.since = c.since;
+  record.team = c.team;
+  if (c.team && c.team.code) {
+    if (!team.mine || team.mine.code !== c.team.code) {
+      team.mine = { code: c.team.code, name: c.team.name, members: null, units: null, credits: null, since: "" };
+    }
+  } else {
+    team.mine = null;
+  }
+}
+
+function resetRecord() {
+  record.known = false;
+  record.id = null;
+  record.name = "";
+  record.units = null;
+  record.credits = null;
+  record.since = "";
+  record.team = null;
+  record.confirmArmed = 0;
+  team.mine = null;
+  team.board = [];
+  team.boardCode = "";
+  team.boardName = "";
+}
+
+/* The board shown is the visitor's own team's, or — before they join — the
+ * team the invitation pointed at. */
+async function refreshTeam() {
+  const code = (team.mine && team.mine.code) || team.inviteCode;
+  if (!code) { team.board = []; team.boardCode = ""; team.boardName = ""; return; }
+  const res = await apiGet("team", { code });
+  if (!res.ok) {
+    if (team.inviteCode && !team.mine) team.inviteError = res.status === 404 ? "no team has that code" : safeText(res.error, 60);
+    return;
+  }
+  const info = shapeTeamInfo(res.data.team);
+  team.board = shapeRows(res.data.board, BOARD_LIMIT);
+  team.boardCode = code;
+  team.boardName = info ? info.name : "";
+  if (team.mine && team.mine.code === code && info) team.mine = info;
+  if (team.inviteCode === code) { team.invited = { code, name: info ? info.name : "" }; team.inviteError = ""; }
 }
 
 /* ————— section 1+2: explainer and the honesty banner ————— */
@@ -445,6 +751,7 @@ const COSTS = [
 
 function buildContribute(root) {
   const sec = labEl("section", "lab-section");
+  sec.setAttribute("data-lab", "contribute");
   sec.appendChild(labEl("h3", "sect", "Donate this browser"));
 
   const panel = labEl("div", "lab-panel");
@@ -498,10 +805,14 @@ function buildContribute(root) {
   paintDonate();
 }
 
+/* Constructing the client starts nothing: it reads the stored token, registers
+ * a visibility listener and waits. It is built lazily so the record and team
+ * panels can ask the server about an existing token without a press — and so
+ * a visitor who has never joined costs the server nothing at all. */
 function ensureClient() {
   if (client) return client;
   try {
-    client = createSwarmClient({ apiBase, onEvent: onSwarmEvent });
+    client = createSwarmClient({ apiBase, onEvent: onSwarmEvent, pace: phone.pace });
   } catch (_) {
     client = null;
     donate.phase = "stopped";
@@ -514,6 +825,10 @@ function ensureClient() {
 async function startDonating() {
   const c = ensureClient();
   if (!c) { paintDonate(); return; }
+  /* THIS IS A GESTURE. The wake lock, if the visitor asked for one, is
+   * requested here — inside the press — never from a timer or a load event. */
+  if (phone.wake) acquireWakeLock();
+  if (phone.charging) hookBattery();
   donate.phase = "joining";
   donate.message = "Signing up as a contributor…";
   donate.tone = "dim";
@@ -526,8 +841,11 @@ async function startDonating() {
       const who = await c.join(donate.name);
       joined = !!who;
     } else if (donate.name) {
-      /* keep the loop's fallback name in step with what is typed */
-      c.join(donate.name);
+      /* keep the loop's fallback name in step with what is typed — WITHOUT
+       * joining again: ?a=join mints a fresh contributor every time, and a
+       * second press must not throw away the record, team and badges the
+       * first one earned */
+      c.setName(donate.name);
     }
   } catch (_) { /* join never throws, but never trust that from here */ }
 
@@ -540,6 +858,20 @@ async function startDonating() {
    * screener now would take a stranger's CPU after they refused it. */
   if (donate.phase !== "joining") { paintDonate(); return; }
 
+  /* The charging gate, checked at the door: a visitor who asked for
+   * charging-only and is unplugged right now gets a waiting state, not a
+   * running one. The press is remembered, so power returning resumes it. */
+  if (phone.charging && phone.battery && !isCharging()) {
+    phone.wantRunning = true;
+    donate.phase = "paused";
+    donate.message = "Waiting for a charger — “only while charging” is on. Screening starts when one is connected.";
+    donate.tone = "dim";
+    paintDonate();
+    paintPhone();
+    scheduleRefresh();
+    return;
+  }
+
   try { c.start(); } catch (_) {}
   donate.phase = "running";
   donate.message = joined
@@ -547,9 +879,12 @@ async function startDonating() {
     : "Screening. (Still trying to sign in with the server; it will retry by itself.)";
   donate.tone = joined ? "ok" : "warn";
   paintDonate();
+  paintPhone();
+  scheduleRefresh();
 }
 
 function stopDonating() {
+  phone.wantRunning = false;
   if (client) { try { client.stop(); } catch (_) {} }
   donate.phase = "stopped";
   donate.unitId = "";
@@ -557,7 +892,9 @@ function stopDonating() {
   donate.total = 0;
   donate.message = "Stopped. Nothing is using your CPU.";
   donate.tone = "dim";
+  releaseWakeLock();
   paintDonate();
+  paintPhone();
 }
 
 /* Every event the swarm client emits, turned into one line a person can read.
@@ -610,6 +947,24 @@ function onSwarmEvent(ev) {
       donate.done = 0;
       donate.total = 0;
       if (donate.tone !== "warn") { donate.message = "Stopped. Nothing is using your CPU."; donate.tone = "dim"; }
+      /* The screen may sleep again whatever stopped the loop. */
+      releaseWakeLock();
+    } else if (ev.type === "team") {
+      /* the stored team changed — the panels catch up on the next refresh */
+      scheduleRefresh();
+    } else if (ev.type === "left") {
+      resetRecord();
+      donate.phase = "stopped";
+      donate.unitId = "";
+      donate.done = 0;
+      donate.total = 0;
+      donate.units = 0;
+      donate.confirmed = 0;
+      donate.credits = 0;
+      donate.message = "You have left the swarm. Nothing is using your CPU.";
+      donate.tone = "dim";
+      paintTeams();
+      paintRecord();
     }
     paintDonate();
   } catch (_) { /* the UI's problem, never the swarm's */ }
@@ -631,7 +986,7 @@ function scheduleRefresh() {
 
 function paintDonate() {
   if (!ui || !ui.status) return;
-  const running = !!(client && client.isRunning && client.isRunning()) || donate.phase === "joining";
+  const running = clientRunning() || donate.phase === "joining";
   ui.goBtn.disabled = running;
   ui.goBtn.textContent = donate.phase === "joining" ? "Starting…" : "Donate this browser";
   ui.stopBtn.disabled = !running;
@@ -663,6 +1018,853 @@ function paintDonate() {
   }
 }
 
+/* ————— section 4b: on a phone or tablet ————— */
+
+/* The screen wake lock. Requested ONLY from inside a press (the toggle, or
+ * the Donate button) or when the page comes back into view while the swarm is
+ * running; released whenever screening stops or the toggle goes off. A
+ * browser without the API says so and the toggle is disabled — nothing is
+ * faked. */
+function wakeLockApi() {
+  try {
+    return typeof navigator !== "undefined" && navigator.wakeLock && typeof navigator.wakeLock.request === "function"
+      ? navigator.wakeLock : null;
+  } catch (_) { return null; }
+}
+
+async function acquireWakeLock() {
+  const api = wakeLockApi();
+  if (!api || !phone.wake) return;
+  if (phone.sentinel && phone.sentinel.released !== true) return;
+  try {
+    const s = await api.request("screen");
+    phone.sentinel = s;
+    phone.wakeNote = "the screen stays on while this page is in front";
+    try {
+      s.addEventListener("release", () => {
+        if (phone.sentinel === s) { phone.sentinel = null; phone.wakeNote = "released — the screen may sleep"; }
+        paintPhone();
+      });
+    } catch (_) {}
+  } catch (_) {
+    phone.sentinel = null;
+    phone.wakeNote = "the browser refused to keep the screen awake just now";
+  }
+  paintPhone();
+}
+
+async function releaseWakeLock() {
+  const s = phone.sentinel;
+  phone.sentinel = null;
+  if (s) {
+    try { await s.release(); } catch (_) {}
+    phone.wakeNote = "released — the screen may sleep";
+  }
+  paintPhone();
+}
+
+/* The charging gate. When the visitor asks for it, an unplugged device pauses
+ * the loop and a charger resumes it — but ONLY if the loop was running when
+ * power went away. A stopped swarm never starts because a cable was plugged
+ * in; consent is a press, not a plug. */
+function batteryApi() {
+  try { return typeof navigator !== "undefined" && typeof navigator.getBattery === "function"; }
+  catch (_) { return false; }
+}
+
+async function hookBattery() {
+  if (phone.battery) return phone.battery;
+  if (!batteryApi()) return null;
+  try {
+    const b = await navigator.getBattery();
+    if (!b) return null;
+    phone.battery = b;
+    try { b.addEventListener("chargingchange", onChargingChange); } catch (_) {}
+    onChargingChange();
+    return b;
+  } catch (_) {
+    phone.battery = null;
+    phone.chargeNote = "the browser would not report the battery";
+    paintPhone();
+    return null;
+  }
+}
+
+/* Unknown never pauses anyone: only a battery that says "not charging" does. */
+function isCharging() {
+  const b = phone.battery;
+  return !b || b.charging !== false;
+}
+
+function onChargingChange() {
+  try {
+    if (!phone.charging) { paintPhone(); return; }
+    if (!isCharging()) {
+      if (clientRunning()) { phone.wantRunning = true; pauseForPower(); }
+      phone.chargeNote = phone.wantRunning
+        ? "unplugged — paused until a charger is connected"
+        : "unplugged — screening stays off until you plug in and press Donate";
+    } else if (phone.wantRunning) {
+      phone.wantRunning = false;
+      resumeFromPower();
+      phone.chargeNote = "charging — screening again";
+    } else {
+      phone.chargeNote = "charging";
+    }
+    paintPhone();
+  } catch (_) { /* a battery event may never take the page down */ }
+}
+
+function pauseForPower() {
+  if (client) { try { client.stop(); } catch (_) {} }
+  donate.phase = "paused";
+  donate.unitId = "";
+  donate.done = 0;
+  donate.total = 0;
+  donate.message = "Paused — unplugged. Screening resumes when a charger is connected.";
+  donate.tone = "dim";
+  paintDonate();
+}
+
+function resumeFromPower() {
+  const c = ensureClient();
+  if (!c) return;
+  try { c.start(); } catch (_) {}
+  donate.phase = "running";
+  donate.message = "Charger connected — screening again.";
+  donate.tone = "ok";
+  paintDonate();
+  if (phone.wake) acquireWakeLock();
+}
+
+/* The install prompt. Chromium fires beforeinstallprompt early — often before
+ * the Lab exists — so it is captured at module scope and shown when the panel
+ * is built. Capturing an event is not a request for anything. */
+let deferredInstall = null;
+function installed() {
+  try {
+    if (typeof navigator !== "undefined" && navigator.standalone === true) return true;
+    return typeof matchMedia === "function" && matchMedia("(display-mode: standalone)").matches;
+  } catch (_) { return false; }
+}
+try {
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("beforeinstallprompt", (ev) => {
+      try { ev.preventDefault(); } catch (_) {}
+      deferredInstall = ev;
+      paintInstall();
+    });
+    window.addEventListener("appinstalled", () => { deferredInstall = null; paintInstall(); });
+  }
+} catch (_) {}
+
+const PHONE_COPY = [
+  "A phone or tablet can screen molecules too. It only works while this page is open: plug it in, " +
+  "tap Donate this browser, and leave it on the nightstand.",
+  "It stops the moment you close the page, and it never starts on its own. The settings below are " +
+  "remembered on this device; none of them starts anything."
+];
+
+function toggleRow(label, checked, onChange) {
+  const row = labEl("label", "lab-toggle");
+  const box = labEl("input");
+  box.type = "checkbox";
+  box.checked = checked;
+  box.addEventListener("change", () => { onChange(box.checked); });
+  row.appendChild(box);
+  const text = labEl("span", "lab-toggle-text");
+  text.appendChild(labEl("span", "lab-toggle-label", label));
+  const note = labEl("span", "lab-toggle-note");
+  text.appendChild(note);
+  row.appendChild(text);
+  return { row, box, note };
+}
+
+function buildPhone(root) {
+  const sec = labEl("section", "lab-section");
+  sec.setAttribute("data-lab", "phone");
+  sec.appendChild(labEl("h3", "sect", "On a phone or tablet"));
+  const panel = labEl("div", "lab-panel");
+  for (const line of PHONE_COPY) panel.appendChild(labEl("p", "lab-lede lab-phone-copy", line));
+
+  /* keep the screen awake */
+  const wake = toggleRow("Keep the screen awake", phone.wake, (on) => {
+    /* the change event of a checkbox is a user gesture: this is the one place
+     * a wake lock is first requested */
+    phone.wake = on;
+    writePhonePrefs();
+    if (on) acquireWakeLock();
+    else releaseWakeLock();
+    paintPhone();
+  });
+  wake.box.setAttribute("data-pref", "wake");
+  if (!wakeLockApi()) {
+    wake.box.disabled = true;
+    wake.box.checked = false;
+    wake.row.classList.add("lab-toggle-off");
+  }
+  panel.appendChild(wake.row);
+
+  /* only while charging */
+  const charge = toggleRow("Only while charging", phone.charging, (on) => {
+    phone.charging = on;
+    writePhonePrefs();
+    if (on) {
+      hookBattery();
+    } else {
+      /* lifting the gate while it holds a paused loop hands the loop back */
+      if (phone.wantRunning) { phone.wantRunning = false; resumeFromPower(); }
+      phone.chargeNote = "";
+    }
+    paintPhone();
+  });
+  charge.box.setAttribute("data-pref", "charging");
+  if (!batteryApi()) {
+    charge.box.disabled = true;
+    charge.box.checked = false;
+    charge.row.classList.add("lab-toggle-off");
+  }
+  panel.appendChild(charge.row);
+
+  /* pace */
+  const paceWrap = labEl("div", "lab-pace");
+  paceWrap.appendChild(labEl("div", "lab-pace-title", "Pace"));
+  const paceOpts = labEl("div", "lab-pace-opts");
+  const radios = [];
+  for (const [key, ms, label, note] of PACES) {
+    const opt = labEl("label", "lab-pace-opt");
+    const r = labEl("input");
+    r.type = "radio";
+    r.name = "lab-pace";
+    r.value = String(ms);
+    r.setAttribute("data-pace", key);
+    r.checked = phone.pace === ms;
+    r.addEventListener("change", () => {
+      if (!r.checked) return;
+      phone.pace = ms;
+      writePhonePrefs();
+      if (client) { try { client.setPace(ms); } catch (_) {} }
+      paintPhone();
+    });
+    opt.appendChild(r);
+    const t = labEl("span", "lab-toggle-text");
+    t.appendChild(labEl("span", "lab-toggle-label", label));
+    t.appendChild(labEl("span", "lab-toggle-note", note));
+    opt.appendChild(t);
+    paceOpts.appendChild(opt);
+    radios.push(r);
+  }
+  paceWrap.appendChild(paceOpts);
+  panel.appendChild(paceWrap);
+
+  /* install */
+  const install = labEl("div", "lab-install");
+  install.appendChild(labEl("div", "lab-pace-title", "Install"));
+  const installHost = labEl("div", "lab-install-host");
+  install.appendChild(installHost);
+  panel.appendChild(install);
+
+  sec.appendChild(panel);
+  root.appendChild(sec);
+
+  ui.wakeBox = wake.box;
+  ui.wakeNote = wake.note;
+  ui.chargeBox = charge.box;
+  ui.chargeNote = charge.note;
+  ui.paceRadios = radios;
+  ui.installHost = installHost;
+  paintPhone();
+  paintInstall();
+}
+
+function paintPhone() {
+  if (!ui || !ui.wakeBox) return;
+  if (!wakeLockApi()) {
+    ui.wakeNote.textContent = "this browser cannot keep the screen awake";
+  } else if (!phone.wake) {
+    ui.wakeNote.textContent = "off — the screen sleeps as usual";
+  } else if (phone.sentinel && phone.sentinel.released !== true) {
+    ui.wakeNote.textContent = phone.wakeNote || "the screen stays on while this page is in front";
+  } else {
+    ui.wakeNote.textContent = phone.wakeNote || "on — requested when you tap Donate this browser";
+  }
+  ui.wakeBox.checked = !!wakeLockApi() && phone.wake;
+
+  if (!batteryApi()) {
+    ui.chargeNote.textContent = "not available on this browser — unplugging will not pause it";
+  } else if (!phone.charging) {
+    ui.chargeNote.textContent = "off — screening continues on battery";
+  } else {
+    ui.chargeNote.textContent = phone.chargeNote || "on — unplug and screening pauses; plug in and it resumes only if it was running";
+  }
+  ui.chargeBox.checked = batteryApi() && phone.charging;
+
+  for (const r of ui.paceRadios) r.checked = Number(r.value) === phone.pace;
+}
+
+function paintInstall() {
+  const host = ui && ui.installHost;
+  if (!host) return;
+  host.textContent = "";
+  if (installed()) {
+    host.appendChild(labEl("p", "lab-note lab-install-note", "Installed — this page is running as an app on this device."));
+    return;
+  }
+  if (deferredInstall) {
+    const b = labEl("button", "lab-btn lab-btn-secondary", "Add to home screen");
+    b.addEventListener("click", async () => {
+      const ev = deferredInstall;
+      if (!ev) return;
+      try { await ev.prompt(); } catch (_) {}
+      deferredInstall = null;
+      paintInstall();
+    });
+    host.appendChild(b);
+    host.appendChild(labEl("p", "lab-note lab-install-note", "Puts an icon on the home screen; the page still needs to be open to screen."));
+    return;
+  }
+  host.appendChild(labEl("p", "lab-note lab-install-note",
+    "On iPhone: Share → Add to Home Screen. On Android: browser menu → Install app."));
+}
+
+/* ————— section 4c: teams ————— */
+
+function setTeamMsg(text, tone) {
+  team.message = text;
+  team.tone = tone || "dim";
+  paintTeams();
+}
+
+function teamError(code) {
+  if (code === "bad_name") return "That team name is not allowed — up to 24 plain characters.";
+  if (code === "already_in_team") return "You are already in a team. Leave it first to join another.";
+  if (code === "bad_code") return "A team code is 8 letters and digits, with no 0, O, 1 or I.";
+  if (code === "unknown_team") return "No team has that code.";
+  if (code === "team_full") return "That team is full.";
+  if (code === "not_in_team") return "You are not in a team.";
+  if (code === "rate_limited") return "The server asked us to slow down — try again in a minute.";
+  if (code === "not_joined") return "Sign in first — tap Donate this browser once.";
+  return "The server answered: " + (safeText(code, 60) || "unknown error") + ".";
+}
+
+/* A team action needs a token. A visitor who has never pressed Donate is
+ * signed up first (with whatever name they typed) — that costs no CPU. */
+async function ensureJoined() {
+  const c = ensureClient();
+  if (!c) return null;
+  if (c.status().joined) return c;
+  const who = await c.join(donate.name);
+  return who ? c : null;
+}
+
+async function createTeam() {
+  if (team.busy) return;
+  const name = (ui.teamNameInput.value || "").trim().slice(0, TEAM_NAME_MAX);
+  if (!name) { setTeamMsg("Give the team a name — up to 24 characters.", "warn"); return; }
+  team.busy = true;
+  setTeamMsg("Creating the team…", "dim");
+  try {
+    const c = await ensureJoined();
+    if (!c) { setTeamMsg("Could not sign in with the server, so no team was created.", "warn"); return; }
+    const res = await c.teamCreate(name);
+    if (!res.ok) { setTeamMsg(teamError(res.error), "warn"); return; }
+    applyTeamPayload(res.data);
+    ui.teamNameInput.value = "";
+    await refreshTeam();
+    setTeamMsg("Team created. Share the link — anyone who joins with it counts toward the team.", "ok");
+    scheduleRefresh();
+  } finally {
+    team.busy = false;
+    paintTeams();
+    paintRecord();
+  }
+}
+
+async function joinTeam() {
+  if (team.busy) return;
+  const code = safeCode(ui.teamCodeInput.value || "");
+  if (!code) { setTeamMsg(teamError("bad_code"), "warn"); return; }
+  team.busy = true;
+  setTeamMsg("Joining…", "dim");
+  try {
+    const c = await ensureJoined();
+    if (!c) { setTeamMsg("Could not sign in with the server, so nothing was joined.", "warn"); return; }
+    const res = await c.teamJoin(code);
+    if (!res.ok) { setTeamMsg(teamError(res.error), "warn"); return; }
+    applyTeamPayload(res.data);
+    await refreshTeam();
+    setTeamMsg("Joined. Your units now count toward the team as well as your own record.", "ok");
+    scheduleRefresh();
+  } finally {
+    team.busy = false;
+    paintTeams();
+    paintRecord();
+  }
+}
+
+async function leaveTeam() {
+  if (team.busy) return;
+  const c = ensureClient();
+  if (!c || !c.status().joined) { setTeamMsg(teamError("not_joined"), "warn"); return; }
+  team.busy = true;
+  setTeamMsg("Leaving the team…", "dim");
+  try {
+    const res = await c.teamLeave();
+    if (!res.ok) { setTeamMsg(teamError(res.error), "warn"); return; }
+    team.mine = null;
+    record.team = null;
+    team.board = [];
+    team.boardCode = "";
+    team.boardName = "";
+    await refreshTeam();
+    setTeamMsg("You have left the team. Your own record is unchanged.", "ok");
+    scheduleRefresh();
+  } finally {
+    team.busy = false;
+    paintTeams();
+    paintRecord();
+  }
+}
+
+function applyTeamPayload(data) {
+  const info = shapeTeamInfo(isPlainObject(data) ? data.team : null);
+  team.mine = info && info.code ? info : null;
+  record.team = team.mine ? { code: team.mine.code, name: team.mine.name } : null;
+  team.board = [];
+  team.boardCode = "";
+  team.boardName = "";
+}
+
+/* A share link: the URL as plain text in a read-only field plus a Copy
+ * button. Copy uses the clipboard when the browser allows it and otherwise
+ * selects the text so the visitor can copy it themselves — nothing is faked. */
+function shareRow(label, url) {
+  const wrap = labEl("div", "lab-share");
+  wrap.appendChild(labEl("span", "lab-share-label", label));
+  const field = labEl("input", "lab-share-field");
+  field.type = "text";
+  field.readOnly = true;
+  field.value = url;
+  field.setAttribute("aria-label", label);
+  field.addEventListener("focus", () => { try { field.select(); } catch (_) {} });
+  wrap.appendChild(field);
+  const btn = labEl("button", "lab-btn lab-btn-secondary lab-copy", "Copy");
+  btn.addEventListener("click", async () => {
+    let done = false;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(url);
+        done = true;
+      }
+    } catch (_) { done = false; }
+    if (!done) {
+      try { field.focus(); field.select(); field.setSelectionRange(0, url.length); } catch (_) {}
+    }
+    btn.textContent = done ? "Copied" : "Selected — copy it";
+    setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+  });
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+function rowsTable(rows, nameHeader) {
+  const table = labEl("div", "lab-board");
+  const head = labEl("div", "lab-board-row lab-board-head");
+  head.appendChild(labEl("span", "lab-b-rank", "#"));
+  head.appendChild(labEl("span", "lab-b-name", nameHeader));
+  head.appendChild(labEl("span", "lab-b-num", "units"));
+  head.appendChild(labEl("span", "lab-b-num", "credits"));
+  table.appendChild(head);
+  let rank = 0;
+  for (const row of rows) {
+    rank++;
+    const r = labEl("div", "lab-board-row");
+    r.appendChild(labEl("span", "lab-b-rank", String(rank)));
+    /* A span, never an anchor: these names are typed by strangers. */
+    r.appendChild(labEl("span", "lab-b-name", row.name));
+    r.appendChild(labEl("span", "lab-b-num", groupInt(row.units)));
+    r.appendChild(labEl("span", "lab-b-num", groupInt(row.credits)));
+    table.appendChild(r);
+  }
+  return table;
+}
+
+function buildTeams(root) {
+  const sec = labEl("section", "lab-section");
+  sec.setAttribute("data-lab", "teams");
+  sec.appendChild(labEl("h3", "sect", "Teams"));
+  sec.appendChild(labEl("p", "lab-lede",
+    "A team is a shared tally: a household, a lab group, a classroom. Units and credits are still yours — " +
+    "the team simply adds them up. Teams count work, never luck, exactly as contributors do."));
+
+  const panel = labEl("div", "lab-panel");
+
+  const card = labEl("div", "lab-team-card");
+  panel.appendChild(card);
+
+  /* the forms are built once and shown or hidden, so typed text survives a
+   * repaint */
+  const forms = labEl("div", "lab-team-forms");
+
+  const createForm = labEl("div", "lab-form");
+  createForm.appendChild(labEl("div", "lab-form-title", "Start a team"));
+  const createRow = labEl("div", "lab-actions");
+  const nameInput = labEl("input", "lab-name");
+  nameInput.type = "text";
+  nameInput.maxLength = TEAM_NAME_MAX;
+  nameInput.placeholder = "Team name (up to 24 characters)";
+  nameInput.setAttribute("aria-label", "Team name");
+  nameInput.setAttribute("data-team", "name");
+  createRow.appendChild(nameInput);
+  const createBtn = labEl("button", "lab-btn lab-btn-secondary", "Create team");
+  createBtn.setAttribute("data-team", "create");
+  createBtn.addEventListener("click", () => { createTeam(); });
+  createRow.appendChild(createBtn);
+  createForm.appendChild(createRow);
+  forms.appendChild(createForm);
+
+  const joinForm = labEl("div", "lab-form");
+  joinForm.appendChild(labEl("div", "lab-form-title", "Join a team"));
+  const joinRow = labEl("div", "lab-actions");
+  const codeInput = labEl("input", "lab-name lab-code");
+  codeInput.type = "text";
+  codeInput.maxLength = 8;
+  codeInput.placeholder = "8-character team code";
+  codeInput.autocapitalize = "characters";
+  codeInput.spellcheck = false;
+  codeInput.setAttribute("aria-label", "Team code");
+  codeInput.setAttribute("data-team", "code");
+  codeInput.value = team.inviteCode;
+  codeInput.addEventListener("input", () => {
+    const v = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+    if (v !== codeInput.value) codeInput.value = v;
+  });
+  joinRow.appendChild(codeInput);
+  const joinBtn = labEl("button", "lab-btn lab-btn-secondary", "Join team");
+  joinBtn.setAttribute("data-team", "join");
+  joinBtn.addEventListener("click", () => { joinTeam(); });
+  joinRow.appendChild(joinBtn);
+  joinForm.appendChild(joinRow);
+  forms.appendChild(joinForm);
+
+  panel.appendChild(forms);
+
+  const msg = labEl("p", "lab-status");
+  panel.appendChild(msg);
+
+  const boardHost = labEl("div", "lab-team-board");
+  panel.appendChild(boardHost);
+
+  sec.appendChild(panel);
+
+  const topHost = labEl("div", "lab-team-top");
+  sec.appendChild(topHost);
+
+  root.appendChild(sec);
+
+  ui.teamCard = card;
+  ui.teamForms = forms;
+  ui.teamNameInput = nameInput;
+  ui.teamCodeInput = codeInput;
+  ui.teamCreateBtn = createBtn;
+  ui.teamJoinBtn = joinBtn;
+  ui.teamMsg = msg;
+  ui.teamBoardHost = boardHost;
+  ui.teamTopHost = topHost;
+  paintTeams();
+}
+
+function paintTeams() {
+  if (!ui || !ui.teamCard) return;
+  const card = ui.teamCard;
+  card.textContent = "";
+  const mine = team.mine;
+
+  if (mine) {
+    card.appendChild(labEl("div", "lab-team-name", mine.name));
+    const codeLine = labEl("div", "lab-team-codeline");
+    codeLine.appendChild(labEl("span", "lab-read-k", "code "));
+    codeLine.appendChild(labEl("span", "lab-team-code", mine.code || "—"));
+    card.appendChild(codeLine);
+    const rows = [
+      ["members", groupInt(mine.members)],
+      ["units", groupInt(mine.units)],
+      ["credits", groupInt(mine.credits)]
+    ];
+    if (mine.since) rows.push(["since", mine.since]);
+    const readout = labEl("div", "lab-readout");
+    for (const [k, v] of rows) {
+      const row = labEl("div", "lab-read-row");
+      row.appendChild(labEl("span", "lab-read-k", k));
+      row.appendChild(labEl("span", "lab-read-v", v));
+      readout.appendChild(row);
+    }
+    card.appendChild(readout);
+    /* THE LINK RULE: a share link is built only from a code that matched the
+     * server's own alphabet; a team whose code did not gets no link. */
+    if (mine.code) card.appendChild(shareRow("Invite link", shareUrl("team", mine.code)));
+    const leave = labEl("button", "lab-btn lab-btn-stop", "Leave team");
+    leave.setAttribute("data-team", "leave");
+    leave.disabled = team.busy;
+    leave.addEventListener("click", () => { leaveTeam(); });
+    card.appendChild(leave);
+    ui.teamForms.hidden = true;
+  } else {
+    if (team.invited) {
+      card.appendChild(labEl("p", "lab-team-invite",
+        "Invited to team " + (team.invited.name || "(unnamed)") + " — code " + team.invited.code + ". Joining still takes the button below."));
+    } else if (team.inviteCode && team.inviteError) {
+      card.appendChild(labEl("p", "lab-team-invite lab-status-warn", "This invitation could not be checked: " + team.inviteError + "."));
+    } else if (team.inviteCode) {
+      card.appendChild(labEl("p", "lab-team-invite", "Checking the invitation…"));
+    } else {
+      card.appendChild(labEl("p", "lab-empty", "You are not in a team."));
+    }
+    ui.teamForms.hidden = false;
+    ui.teamCreateBtn.disabled = team.busy;
+    ui.teamJoinBtn.disabled = team.busy;
+  }
+
+  ui.teamMsg.className = "lab-status lab-status-" + team.tone;
+  ui.teamMsg.textContent = team.message;
+
+  const bh = ui.teamBoardHost;
+  bh.textContent = "";
+  if (team.boardCode) {
+    bh.appendChild(labEl("div", "lab-form-title", "Team board — " + (team.boardName || team.boardCode)));
+    if (team.board.length) bh.appendChild(rowsTable(team.board, "member"));
+    else bh.appendChild(labEl("p", "lab-empty", "Nobody on this team has finished a unit yet."));
+  }
+
+  const th = ui.teamTopHost;
+  th.textContent = "";
+  if (team.top.length) {
+    th.appendChild(labEl("div", "lab-form-title", "Top teams"));
+    const table = labEl("div", "lab-board");
+    const head = labEl("div", "lab-board-row lab-board-head lab-team-row");
+    head.appendChild(labEl("span", "lab-b-rank", "#"));
+    head.appendChild(labEl("span", "lab-b-name", "team"));
+    head.appendChild(labEl("span", "lab-b-num", "members"));
+    head.appendChild(labEl("span", "lab-b-num", "units"));
+    head.appendChild(labEl("span", "lab-b-num", "credits"));
+    table.appendChild(head);
+    let rank = 0;
+    for (const t of team.top) {
+      rank++;
+      const r = labEl("div", "lab-board-row lab-team-row");
+      r.appendChild(labEl("span", "lab-b-rank", String(rank)));
+      r.appendChild(labEl("span", "lab-b-name", t.name));
+      r.appendChild(labEl("span", "lab-b-num", groupInt(t.members)));
+      r.appendChild(labEl("span", "lab-b-num", groupInt(t.units)));
+      r.appendChild(labEl("span", "lab-b-num", groupInt(t.credits)));
+      table.appendChild(r);
+    }
+    th.appendChild(table);
+    th.appendChild(labEl("p", "lab-note", "Team names are chosen by their members and shown as plain text."));
+  }
+}
+
+/* ————— section 4d: your record ————— */
+
+function badgeStrip(units) {
+  const strip = labEl("div", "lab-badges");
+  for (const b of badgesFor(units)) {
+    const chip = labEl("span", "lab-badge" + (b.earned ? " lab-badge-on" : " lab-badge-off"), b.label);
+    chip.setAttribute("data-badge", String(b.n));
+    chip.setAttribute("data-earned", b.earned ? "1" : "0");
+    chip.title = (b.earned ? "earned — " : "not yet — ") + groupInt(b.n) + (b.n === 1 ? " unit" : " units");
+    strip.appendChild(chip);
+  }
+  return strip;
+}
+
+function buildRecord(root) {
+  const sec = labEl("section", "lab-section");
+  sec.setAttribute("data-lab", "record");
+  sec.appendChild(labEl("h3", "sect", "Your record"));
+  sec.appendChild(labEl("p", "lab-lede",
+    "What this browser has done for the swarm, as the server counts it. " +
+    "Badges count work, never luck: they mark units screened, and there is no badge for a hit, " +
+    "because a unit with a promising molecule in it was not screened any harder than one without."));
+  const panel = labEl("div", "lab-panel");
+  const host = labEl("div", "lab-record-host");
+  panel.appendChild(host);
+  const msg = labEl("p", "lab-status");
+  panel.appendChild(msg);
+  const leaveBtn = labEl("button", "lab-btn lab-btn-stop", "Leave the swarm");
+  leaveBtn.setAttribute("data-record", "leave");
+  leaveBtn.addEventListener("click", () => { onLeaveClick(); });
+  panel.appendChild(leaveBtn);
+  panel.appendChild(labEl("p", "lab-note",
+    "Leaving hides your name from every board and makes this browser forget its token. " +
+    "Work that two volunteers already verified stays counted in the totals — it was real, and it stays real."));
+  sec.appendChild(panel);
+  root.appendChild(sec);
+  ui.recordHost = host;
+  ui.recordMsg = msg;
+  ui.leaveBtn = leaveBtn;
+  paintRecord();
+}
+
+function paintRecord() {
+  const host = ui && ui.recordHost;
+  if (!host) return;
+  host.textContent = "";
+  const joined = !!(client && client.status().joined);
+  if (record.known) {
+    const rows = [
+      ["id", record.id || "—"],
+      ["name", record.name || "anonymous"],
+      ["units", groupInt(record.units)],
+      ["credits", groupInt(record.credits)],
+      ["team", record.team ? record.team.name + (record.team.code ? " (" + record.team.code + ")" : "") : "none"],
+      ["since", record.since || "—"]
+    ];
+    const readout = labEl("div", "lab-readout");
+    for (const [k, v] of rows) {
+      const row = labEl("div", "lab-read-row");
+      row.appendChild(labEl("span", "lab-read-k", k));
+      row.appendChild(labEl("span", "lab-read-v", v));
+      readout.appendChild(row);
+    }
+    host.appendChild(readout);
+    host.appendChild(badgeStrip(record.units));
+    /* THE LINK RULE: a record link is built only from an id that is canonical
+     * decimal. */
+    if (record.id) host.appendChild(shareRow("Your public record", shareUrl("c", record.id)));
+    if (record.error) host.appendChild(labEl("p", "lab-note", "The last refresh did not succeed (" + record.error + ") — showing the last record we fetched."));
+    ui.leaveBtn.hidden = false;
+  } else if (joined) {
+    host.appendChild(labEl("p", "lab-empty", record.error
+      ? "Your record could not be fetched (" + record.error + "). This panel retries by itself."
+      : "Fetching your record…"));
+    ui.leaveBtn.hidden = false;
+  } else {
+    host.appendChild(labEl("p", "lab-empty",
+      "No record yet. One is created the moment you tap Donate this browser and sign in — " +
+      "no account, no email, just a token this browser keeps."));
+    ui.leaveBtn.hidden = true;
+  }
+  ui.leaveBtn.textContent = record.confirmArmed ? "Tap again to leave" : "Leave the swarm";
+  ui.recordMsg.className = "lab-status lab-status-" + record.tone;
+  ui.recordMsg.textContent = record.message;
+}
+
+/* Leaving takes two presses within ten seconds. One press explains; the
+ * second one acts. A timer lets a single press lapse back to nothing. */
+function onLeaveClick() {
+  const now = Date.now();
+  if (!record.confirmArmed || now - record.confirmArmed > LEAVE_CONFIRM_MS) {
+    record.confirmArmed = now;
+    record.message = "Tap again within 10 seconds to leave the swarm. Your verified work stays counted; " +
+      "your name comes off every board and this browser forgets your token.";
+    record.tone = "warn";
+    paintRecord();
+    setTimeout(() => {
+      if (record.confirmArmed && Date.now() - record.confirmArmed >= LEAVE_CONFIRM_MS) {
+        record.confirmArmed = 0;
+        record.message = "";
+        record.tone = "dim";
+        paintRecord();
+      }
+    }, LEAVE_CONFIRM_MS + 250);
+    return;
+  }
+  record.confirmArmed = 0;
+  leaveSwarm();
+}
+
+async function leaveSwarm() {
+  const c = ensureClient();
+  if (!c) return;
+  record.message = "Leaving…";
+  record.tone = "dim";
+  paintRecord();
+  const res = await c.leave();
+  if (!res.ok) {
+    record.message = "Could not leave: " + teamError(res.error);
+    record.tone = "warn";
+    paintRecord();
+    return;
+  }
+  /* the client's `left` event has already reset the record and the team */
+  record.message = "You have left the swarm. Verified work stays counted; your name is off the boards, " +
+    "and this browser has forgotten your token.";
+  record.tone = "ok";
+  paintRecord();
+  paintTeams();
+  paintDonate();
+  scheduleRefresh();
+}
+
+/* ————— section 0: a public contributor record (?c=<id>) ————— */
+
+async function loadProfile() {
+  if (!profile.id) return;
+  profile.state = "loading";
+  paintProfile();
+  const res = await apiGet("contributor", { id: profile.id });
+  if (!res.ok) {
+    profile.state = res.status === 404 ? "missing" : "error";
+    profile.error = safeText(res.error, 80);
+  } else {
+    const c = shapeContributor(res.data.contributor);
+    if (c) { profile.state = "ok"; profile.data = c; }
+    else { profile.state = "error"; profile.error = "the server did not describe this contributor"; }
+  }
+  paintProfile();
+}
+
+function buildProfile(root) {
+  const sec = labEl("section", "lab-section lab-profile");
+  sec.setAttribute("data-lab", "profile");
+  sec.appendChild(labEl("h3", "sect", "Contributor record"));
+  const host = labEl("div", "lab-panel lab-profile-host");
+  sec.appendChild(host);
+  root.appendChild(sec);
+  ui.profileHost = host;
+  paintProfile();
+}
+
+function paintProfile() {
+  const host = ui && ui.profileHost;
+  if (!host) return;
+  host.textContent = "";
+  if (profile.state === "loading" || profile.state === "idle") {
+    host.appendChild(labEl("p", "lab-empty", "Looking up contributor " + profile.id + "…"));
+    return;
+  }
+  if (profile.state === "missing") {
+    host.appendChild(labEl("p", "lab-empty lab-profile-missing", "No such contributor."));
+    host.appendChild(labEl("p", "lab-note", "The record may have been removed by its owner, or the link may be wrong."));
+    return;
+  }
+  if (profile.state !== "ok" || !profile.data) {
+    host.appendChild(labEl("p", "lab-empty", "This record could not be fetched" + (profile.error ? " (" + profile.error + ")" : "") + "."));
+    return;
+  }
+  const d = profile.data;
+  host.appendChild(labEl("div", "lab-profile-name", d.name));
+  const rows = [
+    ["rank", d.rank === null ? "—" : "#" + groupInt(d.rank)],
+    ["units", groupInt(d.units)],
+    ["credits", groupInt(d.credits)],
+    ["team", d.team ? d.team.name + (d.team.code ? " (" + d.team.code + ")" : "") : "none"],
+    ["since", d.since || "—"]
+  ];
+  const readout = labEl("div", "lab-readout");
+  for (const [k, v] of rows) {
+    const row = labEl("div", "lab-read-row");
+    row.appendChild(labEl("span", "lab-read-k", k));
+    row.appendChild(labEl("span", "lab-read-v", v));
+    readout.appendChild(row);
+  }
+  host.appendChild(readout);
+  host.appendChild(badgeStrip(d.units));
+  host.appendChild(labEl("p", "lab-note",
+    "Rank and badges count verified units — work, never luck. Names are chosen by contributors and shown as plain text."));
+}
+
 /* ————— section 5: the leaderboard ————— */
 
 function buildBoard(root) {
@@ -685,25 +1887,7 @@ function paintBoard() {
   }
   const board = remote.stats.board;
   if (!board.length) { host.appendChild(labEl("p", "lab-empty", "Nobody has finished a unit yet. You could be first.")); return; }
-  const table = labEl("div", "lab-board");
-  const head = labEl("div", "lab-board-row lab-board-head");
-  head.appendChild(labEl("span", "lab-b-rank", "#"));
-  head.appendChild(labEl("span", "lab-b-name", "contributor"));
-  head.appendChild(labEl("span", "lab-b-num", "units"));
-  head.appendChild(labEl("span", "lab-b-num", "credits"));
-  table.appendChild(head);
-  let rank = 0;
-  for (const row of board) {
-    rank++;
-    const r = labEl("div", "lab-board-row");
-    r.appendChild(labEl("span", "lab-b-rank", String(rank)));
-    /* A span, never an anchor: these names are typed by strangers. */
-    r.appendChild(labEl("span", "lab-b-name", row.name));
-    r.appendChild(labEl("span", "lab-b-num", groupInt(row.units)));
-    r.appendChild(labEl("span", "lab-b-num", groupInt(row.credits)));
-    table.appendChild(r);
-  }
-  host.appendChild(table);
+  host.appendChild(rowsTable(board, "contributor"));
   host.appendChild(labEl("p", "lab-note", "Names are chosen by contributors and shown as plain text."));
   if (remote.reachable === false) {
     host.appendChild(labEl("p", "lab-note", "This is the last board we managed to fetch — " + OFFLINE_MSG));
@@ -801,6 +1985,8 @@ function staleHitsNote() {
 
 /* ————— the export ————— */
 
+let prefsRead = false;
+
 export function renderLab(root, options) {
   /* Nothing in this module may take the page down, and that includes a caller
    * handing it something that is not an element. Refuse, do not throw, and do
@@ -810,12 +1996,24 @@ export function renderLab(root, options) {
   const opts = isPlainObject(options) ? options : {};
   if (typeof opts.apiBase === "string" && opts.apiBase) apiBase = opts.apiBase;
 
+  /* Remembered preferences are read once. Reading them starts nothing. */
+  if (!prefsRead) { prefsRead = true; readPhonePrefs(); }
+
+  /* Deep links are validated before anything is built from them. */
+  const links = deepLinks();
+  if (links.team && !team.inviteCode) team.inviteCode = links.team;
+  if (links.c && profile.id !== links.c) { profile.id = links.c; profile.state = "idle"; profile.data = null; }
+
   const wrap = labEl("div", "lab");
   ui = { root: wrap };
 
+  if (profile.id) buildProfile(wrap);
   buildIntro(wrap);
   buildStats(wrap);
   buildContribute(wrap);
+  buildPhone(wrap);
+  buildTeams(wrap);
+  buildRecord(wrap);
   buildBoard(wrap);
   buildHits(wrap);
 
@@ -828,6 +2026,8 @@ export function renderLab(root, options) {
 
   hookVisibility();
   paintDonate();
+  paintPhone();
+  if (profile.id && (profile.state === "idle" || profile.state === "error")) loadProfile();
   /* app.js rebuilds this whole view on every tab click, so an unconditional
    * refresh here turns idle tab-toggling into two API requests per click. The
    * first open must fetch; after that the panels are already painted from the
@@ -845,9 +2045,26 @@ try {
   if (typeof window !== "undefined") {
     window.__losLab = {
       refresh,
-      snapshot: () => ({ donate: Object.assign({}, donate), reachable: remote.reachable }),
+      snapshot: () => ({
+        donate: Object.assign({}, donate),
+        reachable: remote.reachable,
+        phone: {
+          wake: phone.wake, charging: phone.charging, pace: phone.pace, wantRunning: phone.wantRunning,
+          held: !!(phone.sentinel && phone.sentinel.released !== true)
+        },
+        team: {
+          mine: team.mine ? Object.assign({}, team.mine) : null, boardCode: team.boardCode, boardRows: team.board.length,
+          invited: team.invited, inviteCode: team.inviteCode, top: team.top.length
+        },
+        record: Object.assign({}, record),
+        profile: { id: profile.id, state: profile.state },
+        running: clientRunning(),
+        pace: client ? client.pace() : null
+      }),
       safeText,
-      CID_RE
+      CID_RE,
+      TEAM_CODE_RE,
+      ID_RE
     };
   }
 } catch (_) {}
