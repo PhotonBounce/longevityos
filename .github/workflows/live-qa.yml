@@ -18,9 +18,6 @@ on:
         default: "https://photon-bounce.com/longevityos/"
   schedule:
     - cron: "17 6 * * *"
-  push:
-    branches: [ main ]
-    paths: [ ".github/workflows/live-qa.yml", "qa/live.mjs" ]
 
 concurrency:
   group: los-live

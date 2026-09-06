@@ -114,7 +114,7 @@ html = html.replace(/<link rel="stylesheet"[^>]*>\s*/g, "");
 html = html.replace("</head>", "<style>\n" + css + "\n</style>\n</head>");
 html = html.replace(/<script type="module"[^>]*><\/script>/,
   '<script>\n"use strict";\n/* single-file build: no module workers, no server — the client\n   screens on the main thread if it is ever pointed at a live swarm. */\nwindow.__LOS_SINGLE_FILE = true;\n(() => {\n' + js + "\n})();\n</script>");
-html = html.replace("los-1.0.0", "los-2.0.0-dist");
+html = html.replace("los-3.0.0", "los-3.0.0-dist");
 
 writeFileSync(join(OUTDIR, "longevityos.html"), html);
 

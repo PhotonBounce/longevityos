@@ -442,10 +442,13 @@ function deepLinks() {
   try {
     if (typeof location === "undefined") return out;
     const q = new URLSearchParams(location.search);
-    const t = safeCode(String(q.get("team") || ""));
-    if (t) out.team = t;
-    const c = safeId(String(q.get("c") || ""));
-    if (c) out.c = c;
+    // A link somebody else wrote is matched RAW — no trimming, no repair. A
+    // code or id that is not exactly the server's shape is not a link at all,
+    // so it never becomes a request (probe-deeplink.mjs holds this line).
+    const rawTeam = String(q.get("team") || "").toUpperCase();
+    if (TEAM_CODE_RE.test(rawTeam)) out.team = rawTeam;
+    const rawId = String(q.get("c") || "");
+    if (ID_RE.test(rawId)) out.c = rawId;
   } catch (_) { /* a URL we cannot parse carries no links */ }
   return out;
 }

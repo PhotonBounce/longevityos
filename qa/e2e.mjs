@@ -137,6 +137,19 @@ ok(srcCount >= 25, "every citation is listed (" + srcCount + ")");
 await page.screenshot({ path: join(SHOTS, "05-sources.png"), fullPage: true });
 
 /* ————— 7. zero errors ————— */
+/* ————— 6b. the 3.0 surface is wired: the ledger tab and the Lab's new sections ————— */
+suite("e2e 6b — the 3.0 surface");
+const tabLabels = await page.locator("#nav .tab").allTextContents();
+ok(tabLabels.length === 6 && tabLabels[1] === "What has evidence", "six tabs, the ledger second (" + tabLabels.join(" | ") + ")");
+await page.locator("#nav .tab", { hasText: "The Lab" }).click();
+await page.waitForTimeout(600);
+const labText30 = await page.locator("#view").textContent();
+for (const sect of ["On a phone or tablet", "Teams", "Your record"]) ok(labText30.includes(sect), "the Lab has its '" + sect + "' section");
+ok(/only works while this page is open/i.test(labText30), "the phone copy says a phone works only while the page is open");
+ok(/never starts on its own/i.test(labText30), "…and that nothing starts on its own");
+const manifestRes = await page.request.get(BASE + "/app/manifest.webmanifest");
+ok(manifestRes.status() === 200 && /"display"\s*:\s*"standalone"/.test(await manifestRes.text()), "the web manifest is served and standalone");
+
 suite("e2e 7 — zero page errors");
 ok(pageErrors.length === 0, "no console/page errors: " + JSON.stringify(pageErrors.slice(0, 3)));
 

@@ -1,0 +1,26 @@
+# LongevityOS — served fresh, never page-cached at the server.
+Options -Indexes
+
+# Correct MIME type for the web app manifest (older Apache configs miss it).
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# LiteSpeed: never page-cache this app. Fresh HTML + a day-old app.js is a
+# page with dead buttons; the sibling projects learned this the hard way.
+<IfModule LiteSpeed>
+  CacheDisable public /
+  CacheDisable private /
+</IfModule>
+
+# Browser caching: HTML, the manifest and JSON always revalidate; JS/CSS/
+# images may be reused for an hour but only by the end user (private — no
+# shared caches) and must revalidate after that. There is no service worker.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|svg|png)$">
+    Header set Cache-Control "private, max-age=3600, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(html|webmanifest|json)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
