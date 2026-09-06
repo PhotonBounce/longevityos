@@ -176,5 +176,26 @@ if (existsSync(join(apiDir, "index.php"))) {
   ok(false, "saas/api/index.php is missing — the swarm has no server");
 }
 
+/* ————— 11. the human-evidence ledger (3.0) ————— */
+suite("content 11 — the ledger of what has evidence in people");
+const evidencePath = join(APP, "js", "evidence.js");
+if (existsSync(evidencePath)) {
+  const ev = text[evidencePath];
+  ok(/not medical advice/i.test(ev), "the ledger says, in its own headline, that it is not medical advice");
+  ok(/people like those in the trial/.test(ev), "the ledger frames every result as 'in people like those in the trial'");
+  ok((ev.match(/url: "https:\/\//g) || []).length === (ev.match(/finding:/g) || []).length, "every evidence row has exactly one https source");
+  ok((ev.match(/titleCheck:/g) || []).length === (ev.match(/finding:/g) || []).length, "every evidence row has a titleCheck for CI to verify");
+  ok(!/url: "http:\/\//.test(ev), "no plaintext-http citation in the ledger");
+  ok(!/\brung\s*:|\bgrade\s*:/.test(ev), "rungs are computed, never typed into the ledger");
+  ok(/NULL \/ HARM/.test(text[join(APP, "js", "app.js")] || ""), "nulls and harms wear a badge that says so");
+  ok((ev.match(/outcome: "(null|harm)"/g) || []).length >= 7, "the ledger carries at least seven rigorous nulls or harms");
+} else {
+  ok(false, "app/js/evidence.js is missing — the app claims to show what has evidence in people");
+}
+/* advice verbs are banned app-wide, not only in the ledger */
+ok(!/\byou should\b/i.test(all), "the app never tells anyone what they should do");
+ok(!/\bwe recommend\b/i.test(all), "the app never recommends anything");
+ok(!/serviceWorker\.register/.test(all), "no service worker — the app is served fresh and the deploy is upload-only");
+
 console.log(failed ? "content: " + failed + " FAILED of " + checks : "content: " + checks + " checks passed ✓");
 process.exit(failed ? 1 : 0);
