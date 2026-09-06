@@ -170,7 +170,7 @@ async function drive(label, contextOpts) {
   await page.screenshot({ path: join(SHOTS, label + "-01-atlas.png"), fullPage: true });
   await page.getByRole("button", { name: "What has evidence" }).click();
   await page.waitForTimeout(400);
-  const evCards = await page.locator("#view .card").count();
+  const evCards = await page.locator("#view .ev-card").count();
   ok(evCards >= 18, label + ": the evidence ledger renders (" + evCards + " items)");
   ok(/NULL \/ HARM/.test(await page.locator("#view").textContent()), label + ": the ledger shows its nulls and harms");
   await page.screenshot({ path: join(SHOTS, label + "-02-evidence.png"), fullPage: true });
@@ -179,7 +179,7 @@ async function drive(label, contextOpts) {
   const lab = await page.locator("#view").textContent();
   ok(/On a phone or tablet/.test(lab), label + ": the phone section is there");
   ok(/Teams/.test(lab), label + ": the teams section is there");
-  ok(!/NO SWARM SERVER HERE/.test(lab), label + ": the Lab reached the live swarm server");
+  ok(!/No swarm server here|not reachable from here/i.test(lab), label + ": the Lab reached the live swarm server");
   await page.screenshot({ path: join(SHOTS, label + "-03-lab.png"), fullPage: true });
   ok(errors.length === 0, label + ": zero page errors" + (errors.length ? " — " + errors.slice(0, 3).join(" | ") : ""));
   await ctx.close();
