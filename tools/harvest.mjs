@@ -850,7 +850,7 @@ export function selftest() {
 
     // 10. Engine identity travels with the molecules.
     check(/^[0-9a-f]{64}$/.test(targetsDigest()), "targetsDigest must be 64 hex chars");
-    check(ENGINE_VERSION === "los-chem-1", "unexpected engine version " + ENGINE_VERSION);
+    check(ENGINE_VERSION === "los-chem-2", "unexpected engine version " + ENGINE_VERSION);
 
     // 11. EVERY reason in REJECTIONS must have bitten somewhere above. Written
     //     as a loop, not as a hand-written list, so the next reason anybody adds

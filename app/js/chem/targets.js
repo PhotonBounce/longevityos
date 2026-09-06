@@ -53,7 +53,11 @@ import { sha256Hex } from "./digest.js";
  * different builds must never be able to "confirm" each other's work, so this
  * string changes whenever the screening semantics change — including when a
  * reference molecule is added, removed or corrected. */
-export const ENGINE_VERSION = "los-chem-1";
+export const ENGINE_VERSION = "los-chem-2";
+/* los-chem-2 (2026-09-06): metformin corrected to PubChem's tautomer spelling
+ * (CN(C)C(=N)N=C(N)N, CID 4091). The old spelling shared its formula but
+ * scored 322/1000 against the record — verify-molecules.mjs caught it the
+ * first time it ran in CI. Nothing else in the reference set changed. */
 
 /* ————————————————————————————————————————————————————————————————
  * THE TARGETS
@@ -151,7 +155,7 @@ export const TARGETS = [
       {
         name: "Metformin",
         cid: 4091,
-        smiles: "CN(C)C(=N)NC(=N)N",
+        smiles: "CN(C)C(=N)N=C(N)N",
         note: "Biguanide; indirect AMPK activation and mild mitochondrial complex I inhibition."
       },
       {

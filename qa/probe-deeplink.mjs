@@ -28,7 +28,7 @@ const server = createServer((req, res) => {
     const a = u.searchParams.get("a");
     requests.push({ a, id: u.searchParams.get("id"), code: u.searchParams.get("code") });
     const json = (status, body) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
-    if (a === "health") return json(200, { ok: true, engine: "los-chem-1", targets_digest: "", molecules: 0, screened: 0, verified: 0, contributors: 1, ingest_armed: false });
+    if (a === "health") return json(200, { ok: true, engine: "los-chem-2", targets_digest: "", molecules: 0, screened: 0, verified: 0, contributors: 1, ingest_armed: false });
     if (a === "stats") return json(200, { totals: { harvested: 1, screened: 1, verified: 1, contributors: 1, units_open: 0 }, leaderboard: [{ name: HOSTILE_NAME, units: 1, credits: 10 }], teams: [{ code: "ABCDEFGH", name: HOSTILE_NAME, members: 1, units: 1, credits: 10 }] });
     if (a === "hits") return json(200, { hits: [] });
     if (a === "contributor") {

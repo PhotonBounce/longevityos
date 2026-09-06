@@ -46,7 +46,7 @@ require_once __DIR__ . '/db.php';
 
 /* ————————————————————————— configuration ————————————————————————— */
 
-define('LOS_ENGINE_FALLBACK', 'los-chem-1'); // app/js/chem/targets.js ENGINE_VERSION
+define('LOS_ENGINE_FALLBACK', 'los-chem-2'); // app/js/chem/targets.js ENGINE_VERSION
 define('LOS_BATCH', 40);          // molecules per work unit
 define('LOS_MAX_ISSUES', 4);      // a unit is never handed out more than this
 define('LOS_LEASE', 1800);        // seconds a holder has to answer before a unit is abandoned
@@ -447,8 +447,50 @@ function los_pin_engine(PDO $db)
     }
     $td = los_param('targets_digest', null);
     if (is_string($td) && preg_match('/^[0-9a-f]{64}$/', $td) === 1) {
+        $was = los_meta_get($db, 'targets_digest', '');
         los_meta_set($db, 'targets_digest', $td);
+        if ($was !== '' && $was !== $td) {
+            los_retire_old_units($db, $td);
+        }
     }
+}
+
+/**
+ * The reference set changed (a corrected molecule, a new engine). Every unit
+ * still carrying the old digest is unanswerable now: a current client refuses
+ * it, and the old clients that could answer it must not be able to "confirm"
+ * each other's work under a set nobody screens against any more. So open and
+ * conflicted units are retired and their molecules go back to the pool, and
+ * old canaries — whose known answer was computed under the old set — are
+ * removed. Confirmed units and verified hits are history and stay exactly as
+ * they are. Called inside the ingest/canary transactions' caller, so it takes
+ * its own transaction here.
+ */
+function los_retire_old_units(PDO $db, $current)
+{
+    los_tx($db, function () use ($db, $current) {
+        $st = $db->prepare("SELECT id, mol_ids FROM units
+                             WHERE canary_digest IS NULL
+                               AND status IN ('open','conflict')
+                               AND targets_digest <> ?");
+        $st->execute(array($current));
+        $rows = $st->fetchAll();
+        $st->closeCursor();
+        $upd = $db->prepare("UPDATE units SET status = 'stale' WHERE id = ?");
+        foreach ($rows as $u) {
+            $upd->execute(array($u['id']));
+            $ids = los_unit_mols($u['mol_ids']);
+            if (!$ids) {
+                continue;
+            }
+            $ph  = implode(',', array_fill(0, count($ids), '?'));
+            $rst = $db->prepare("UPDATE molecules SET state = 'pending'
+                                  WHERE id IN ($ph) AND state <> 'verified'");
+            $rst->execute($ids);
+        }
+        $db->prepare("DELETE FROM units WHERE canary_digest IS NOT NULL AND targets_digest <> ?")
+           ->execute(array($current));
+    });
 }
 
 /* ————————————————————————— shared queries ————————————————————————— */
@@ -662,17 +704,19 @@ function action_work(PDO $db)
         ));
     }
 
-    $unit = los_tx($db, function () use ($db, $cid) {
+    $pin  = los_targets_digest($db);
+    $unit = los_tx($db, function () use ($db, $cid, $pin) {
         los_reap_stale($db);
 
         /* — roughly 1 issue in 20 is a canary the server can already grade — */
         if (random_int(1, LOS_CANARY_ONE_IN) === 1) {
             $st = $db->prepare('SELECT id, engine, targets_digest, mol_ids FROM units
                                  WHERE canary_digest IS NOT NULL
+                                   AND targets_digest = ?
                                    AND id NOT IN (SELECT unit_id FROM issued  WHERE contributor = ?)
                                    AND id NOT IN (SELECT unit_id FROM results WHERE contributor = ?)
                                  ORDER BY created_at ASC LIMIT 1');
-            $st->execute(array($cid, $cid));
+            $st->execute(array($pin, $cid, $cid));
             $c = $st->fetch();
             if ($c !== false) {
                 return los_issue($db, $c, $cid, true);
@@ -684,11 +728,12 @@ function action_work(PDO $db)
         $st = $db->prepare("SELECT id, engine, targets_digest, mol_ids FROM units
                              WHERE canary_digest IS NULL
                                AND status IN ('open','conflict')
+                               AND targets_digest = ?
                                AND issues < ?
                                AND id NOT IN (SELECT unit_id FROM issued  WHERE contributor = ?)
                                AND id NOT IN (SELECT unit_id FROM results WHERE contributor = ?)
                              ORDER BY created_at ASC LIMIT 1");
-        $st->execute(array(LOS_MAX_ISSUES, $cid, $cid));
+        $st->execute(array($pin, LOS_MAX_ISSUES, $cid, $cid));
         $u = $st->fetch();
         if ($u !== false) {
             return los_issue($db, $u, $cid, false);

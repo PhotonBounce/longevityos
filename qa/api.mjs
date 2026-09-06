@@ -11,7 +11,8 @@
 import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { targetsDigest } from "../app/js/chem/targets.js";
+import { targetsDigest, ENGINE_VERSION } from "../app/js/chem/targets.js";
+import { screenUnit, referenceSet } from "../app/js/chem/score.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -543,6 +544,44 @@ ok((await call("a=health")).json.ok === true, "the server is healthy after the w
 /* the server lint in content.mjs section 10 still holds for the grown server */
 const lint = spawnSync(process.execPath, [join(HERE, "content.mjs")], { encoding: "utf8" });
 ok(lint.status === 0 && /content 10/.test(lint.stdout), `node content.mjs is still green (exit ${lint.status})`);
+
+/* ————— 13. the reference set changes under a live swarm ————— */
+suite("api 13 — a re-pinned reference set retires the old units");
+{
+  const fresh = [
+    { cid: "9000001", smiles: "CCCCCCO", formula: "C6H14O", source: "qa" },
+    { cid: "9000002", smiles: "CCCCCCCO", formula: "C7H16O", source: "qa" },
+    { cid: "9000003", smiles: "CCCCCCCCO", formula: "C8H18O", source: "qa" }
+  ];
+  const before = (await call("a=health")).json;
+  const r1 = await call("a=ingest", { key: KEY, engine: ENGINE_VERSION, targets_digest: targetsDigest(), molecules: fresh });
+  ok(r1.json && r1.json.added === 3, "three fresh molecules ingested under the current reference set");
+  const x = (await call("a=join", { name: "repin-x" })).json;
+  const w1 = await call("a=work&token=" + x.token);
+  ok(w1.json && w1.json.unit && w1.json.unit.targets_digest === targetsDigest(), "a volunteer is issued a unit under the current digest");
+  const NEW_DIGEST = "0".repeat(63) + "1";
+  const r2 = await call("a=ingest", { key: KEY, engine: ENGINE_VERSION, targets_digest: NEW_DIGEST,
+                                      molecules: [{ cid: "9000004", smiles: "CCCCCCCCCO", formula: "C9H20O", source: "qa" }] });
+  ok(r2.json && r2.json.added === 1, "the harvester re-pins the server with a corrected reference set");
+  const h2 = (await call("a=health")).json;
+  ok(h2.targets_digest === NEW_DIGEST, "health now reports the new digest");
+  if (w1.json && w1.json.unit) {
+    const u = w1.json.unit;
+    const res = screenUnit(u, referenceSet());
+    const sub = await call("a=submit", { token: x.token, unit_id: u.unit_id, digest: res.digest, results: res.results });
+    ok(sub.status === 409 && sub.json && sub.json.error === "unit_stale", "the unit issued under the old digest is refused as stale (" + sub.status + " " + (sub.json && sub.json.error) + ")");
+  }
+  const w2 = await call("a=work&token=" + x.token);
+  ok(w2.json && w2.json.unit && w2.json.unit.targets_digest === NEW_DIGEST, "the next unit carries the new digest");
+  ok(h2.molecules === before.molecules + 4, "no molecule was lost in the change (" + before.molecules + " → " + h2.molecules + ")");
+  /* an old-digest unit can never be issued again, however many volunteers ask */
+  const y = (await call("a=join", { name: "repin-y" })).json;
+  const w3 = await call("a=work&token=" + y.token);
+  ok(!w3.json || !w3.json.unit || w3.json.unit.targets_digest === NEW_DIGEST, "a second volunteer only ever sees current-digest units");
+  /* restore the real pin so the server state stays honest for anything after */
+  await call("a=ingest", { key: KEY, engine: ENGINE_VERSION, targets_digest: targetsDigest(), molecules: [] });
+  ok((await call("a=health")).json.targets_digest === targetsDigest(), "pin restored");
+}
 
 cleanup();
 console.log(failed ? "api: " + failed + " FAILED of " + checks : "api: " + checks + " checks passed ✓");

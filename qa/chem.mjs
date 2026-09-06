@@ -326,7 +326,7 @@ ok(JSON.stringify(alertsAsp) === JSON.stringify([...alertsAsp].sort()), "alert i
 
 /* ————— 6. the targets: the scientific inputs ————— */
 suite("chem 6 — longevity targets and reference actives");
-ok(ENGINE_VERSION === "los-chem-1", "engine version is pinned");
+ok(ENGINE_VERSION === "los-chem-2", "engine version is pinned");
 ok(Array.isArray(TARGETS) && TARGETS.length >= 8, `at least 8 targets (${TARGETS.length})`);
 const seenIds = new Set();
 let totalActives = 0;
