@@ -1,0 +1,51 @@
+name: Literature sweep (LongevityOS)
+
+# The part of the atlas that keeps researching: a daily PubMed E-utilities
+# sweep across the atlas's topics, validated through the app's OWN feed
+# parser, committed to data/feed.json. On any failure the old feed stays —
+# stale beats fabricated, and the app labels staleness honestly.
+
+on:
+  schedule:
+    - cron: "23 11 * * *"
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ ".github/workflows/crawl.yml", "tools/crawl.mjs" ]
+
+concurrency:
+  group: los-crawl
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Selftest first (the crawler must round-trip the app's parser)
+        run: node tools/crawl.mjs --selftest
+      - name: Sweep PubMed
+        run: node tools/crawl.mjs
+      - name: Commit the feed if it changed
+        run: |
+          set -e
+          git config user.name "literature-sweep"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/feed.json
+          if git diff --cached --quiet; then
+            echo "feed unchanged"
+          else
+            git commit -m "literature sweep: $(date -u +%F)"
+            for a in 1 2 3; do
+              git push origin HEAD:main && break
+              [ "$a" = 3 ] && exit 1
+              sleep $((a * 5)); git pull --rebase origin main
+            done
+          fi

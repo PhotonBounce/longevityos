@@ -1,0 +1,20 @@
+{
+  "header": { "type": "esummary", "version": "0.3" },
+  "result": {
+    "uids": ["38041783", "32990681"],
+    "38041783": {
+      "uid": "38041783",
+      "pubdate": "2024 Feb",
+      "sortpubdate": "2024/02/01 00:00",
+      "title": "Astaxanthin and meclizine extend lifespan in UM-HET3 male mice; fisetin, SG1002 (hydrogen sulfide donor), dimethyl fumarate, mycophenolic acid, and 4-phenylbutyrate do not significantly affect lifespan in either sex at the doses and schedules used.",
+      "fulljournalname": "GeroScience"
+    },
+    "32990681": {
+      "uid": "32990681",
+      "pubdate": "2020 Nov 2",
+      "sortpubdate": "2020/11/02 00:00",
+      "title": "Canagliflozin extends life span in genetically heterogeneous male but not female mice.",
+      "fulljournalname": "JCI insight"
+    }
+  }
+}

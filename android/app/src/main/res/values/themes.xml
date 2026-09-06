@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.LongevityOS" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/los_bg</item>
+        <item name="android:statusBarColor">@color/los_bg</item>
+        <item name="android:navigationBarColor">@color/los_bg</item>
+    </style>
+</resources>

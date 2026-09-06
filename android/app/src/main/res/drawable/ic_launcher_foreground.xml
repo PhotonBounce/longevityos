@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- an infinity loop broken open on the right: the honest infinity -->
+    <path android:strokeColor="#59D4A5" android:strokeWidth="6" android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M38,54 C38,45 30,40 24,45 C18,50 18,58 24,63 C30,68 38,63 44,57 L52,49 C58,43 66,38 72,43"/>
+    <path android:strokeColor="#7AB8FF" android:strokeWidth="6" android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M70,65 C64,70 56,65 50,59"/>
+    <path android:fillColor="#59D4A5" android:pathData="M78,47 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"/>
+</vector>

@@ -1,0 +1,26 @@
+{
+  "fetched_at": "2026-09-05T11:23:00Z",
+  "entries": [
+    {
+      "pmid": "38041783",
+      "title": "Astaxanthin and meclizine extend lifespan in UM-HET3 male mice; fisetin, SG1002, dimethyl fumarate, mycophenolic acid, and 4-phenylbutyrate do not significantly affect lifespan in either sex",
+      "journal": "GeroScience",
+      "date": "2023-12-01",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "32990681",
+      "title": "Canagliflozin extends life span in genetically heterogeneous male but not female mice",
+      "journal": "JCI Insight",
+      "date": "2020-11-02",
+      "topic": "canagliflozin"
+    },
+    {
+      "pmid": "30916479",
+      "title": "Glycine supplementation extends lifespan of male and female mice",
+      "journal": "Aging Cell",
+      "date": "2019-03-27",
+      "topic": "glycine"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+// Top-level build file for the TapeHorn Android WebView wrapper.
+// AGP 8.9.1 is the floor for compileSdk 36 (Android 16); needs Gradle 8.11.1+.
+plugins {
+    id 'com.android.application' version '8.9.1' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.24' apply false
+}

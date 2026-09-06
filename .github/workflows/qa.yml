@@ -1,0 +1,52 @@
+name: QA (LongevityOS)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: los-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        working-directory: qa
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run the gate (unit + content honesty lint + crawler selftest + e2e)
+        working-directory: qa
+        run: npm run qa
+      - name: Build + boot the single-file dist
+        run: |
+          node tools/dist.mjs
+          test -s dist/longevityos.html
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-shots
+          path: qa/shots/
+          if-no-files-found: ignore
+
+  verify-sources:
+    # Every citation URL is fetched and its article title checked against the
+    # page. The authoring sandbox cannot reach journals; this runner can.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node qa/verify-sources.mjs
