@@ -378,10 +378,10 @@ function pushLine(tag, text, holdMs) {
 function trimQueue(tag) {
   const max = tag === "CONF" ? QUEUE_CONF_MAX : QUEUE_PER_TAG;
   for (;;) {
-    const mine = [];
-    for (let i = 0; i < queue.length; i++) if (queue[i].tag === tag) mine.push(i);
-    if (mine.length <= max) return;
-    queue.splice(tag === "CONF" ? mine[mine.length - 1] : mine[0], 1);
+    const own = [];
+    for (let i = 0; i < queue.length; i++) if (queue[i].tag === tag) own.push(i);
+    if (own.length <= max) return;
+    queue.splice(tag === "CONF" ? own[own.length - 1] : own[0], 1);
   }
 }
 /* Drop every waiting frame of a tag — the Lab's stop: the run they describe

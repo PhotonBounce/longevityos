@@ -23,6 +23,11 @@
  *   in :  { type: 'screen', unit }            unit = { unit_id, molecules:[{id,smiles}] }
  *   out:  { type: 'ready' }                   once, when the reference set is built
  *         { type: 'progress', done, total, unitId }
+ *         { type: 'spotlight', unitId, index, cid, smiles, result }
+ *                                             one molecule every fortieth CHUNK, chosen BY
+ *                                             POSITION (THE SPOTLIGHT, below), posted from
+ *                                             inside the chunk loop; result ===
+ *                                             screenMolecule(smiles, refs)
  *         { type: 'done', result }            result === screenUnit(unit, refs), verbatim
  *         { type: 'error', message, unitId }  and the worker STAYS ALIVE for the next unit
  *
@@ -31,7 +36,7 @@
  * a result or as an error message, never as a dead worker.
  */
 
-import { screenUnit, referenceSet } from "../chem/score.js";
+import { screenUnit, screenMolecule, referenceSet } from "../chem/score.js";
 
 /* Molecules screened between yields. Small enough that the worker stays
  * answerable on a slow phone, large enough that the yields do not dominate. */
@@ -103,6 +108,33 @@ function unitIdOf(unit) {
  * any stack. */
 let current = "";
 
+/* ————— THE SPOTLIGHT ————— */
+
+/* The lens on the page shows one real molecule as it is scored. Which one is
+ * decided BY POSITION AND NOTHING ELSE: a counter of chunks this worker has
+ * screened, and on every fortieth chunk the FIRST molecule of that chunk. It
+ * is not the best-scoring molecule, not the worst, not a "hit" — no score is
+ * ever read, compared or sorted here, so the specimen on the lens is a fair
+ * sample of the stream and the page cannot be accused of showing only its
+ * prettiest work. The counter is not a clock either: the determinism
+ * paragraph above stays true, and the extra screenMolecule() call feeds the
+ * display only — the unit's digest is produced by the single screenUnit()
+ * call and never touches this. Cost: one molecule per forty chunks of five,
+ * about 0.5% — the lens can show at most one specimen per 2.2 s anyway, so
+ * anything more frequent would be screened twice and never drawn. */
+const SPOTLIGHT_EVERY = 40;
+let chunkCounter = 0;
+
+function spotlight(unitId, index, m, r) {
+  try {
+    let smiles = null, cid = "";
+    try { smiles = m && m.smiles; } catch (_) { smiles = null; }
+    try { cid = m && m.id !== undefined ? String(m.id) : ""; } catch (_) { cid = ""; }
+    const result = screenMolecule(smiles, r);
+    post({ type: "spotlight", unitId, index, cid, smiles: typeof smiles === "string" ? smiles : "", result });
+  } catch (_) { /* a display extra must never cost the unit */ }
+}
+
 async function screen(unit) {
   const id = unitIdOf(unit);
   current = id;
@@ -123,6 +155,8 @@ async function screen(unit) {
          * to report honest progress, never to produce a digest. */
         screenUnit({ unit_id: id, molecules: slice }, r);
         post({ type: "progress", unitId: id, done: Math.min(i + CHUNK, total), total });
+        if (chunkCounter % SPOTLIGHT_EVERY === 0) spotlight(id, i, slice[0], r);   // position, never a score
+        chunkCounter++;
         await yieldToLoop();
       }
     }

@@ -18,8 +18,12 @@
  * It also keeps the contributor's record: the token, the chosen name and —
  * since 3.0 — the team they are in. me()/teamCreate()/teamJoin()/teamLeave()/
  * leave() are bookkeeping about that token; none of them starts anything.
- * Events: joined, unit, progress, submitted, confirmed, idle, error, stopped,
- * plus team (the stored team changed) and left (the record was erased).
+ * Events: joined, unit, progress, spotlight, submitted, confirmed, idle, error,
+ * stopped, plus team (the stored team changed) and left (the record was
+ * erased). `spotlight` carries one molecule every fortieth chunk of screening,
+ * chosen by its POSITION (a chunk counter, never a score — the first molecule
+ * of that chunk), with its own screenMolecule() result — the lens on the page
+ * draws it. It is display only and is never part of what is submitted.
  *
  * WHAT IT REFUSES TO DO. Hammer a server that has no work (30s idle back-off),
  * retry a failure at full speed (exponential 2/4/8…60s), run two workers, keep
@@ -35,7 +39,7 @@
 /* The engine is imported here ONLY for the no-worker fallback below (the
  * single-file build, and any browser without module workers). The normal path
  * never calls it on this thread. */
-import { screenUnit, referenceSet } from "../chem/score.js";
+import { screenUnit, screenMolecule, referenceSet } from "../chem/score.js";
 
 const STORE_KEY = "los.swarm.v1";
 
@@ -342,6 +346,10 @@ export function createSwarmClient(options = {}) {
   }
 
   let localRefs = null;
+  /* the same spotlight rule the worker follows: every fortieth chunk, the
+   * first molecule of that chunk — a counter, never a score */
+  const SPOTLIGHT_EVERY = 40;
+  let localChunkCounter = 0;
   async function screenOnThisThread(unit, unitId) {
     try {
       if (!localRefs) localRefs = referenceSet();
@@ -357,6 +365,12 @@ export function createSwarmClient(options = {}) {
           state.done = Math.min(i + CHUNK, total);
           state.total = total;
           emit("progress", { unitId, done: state.done, total });
+          if (localChunkCounter % SPOTLIGHT_EVERY === 0) {
+            let m = null, smi = null, cid = "";
+            try { m = mols[i]; smi = m && m.smiles; cid = m && m.id !== undefined ? String(m.id) : ""; } catch (_) { smi = null; }
+            emit("spotlight", { unitId, index: i, cid, smiles: typeof smi === "string" ? smi : "", result: screenMolecule(smi, localRefs) });
+          }
+          localChunkCounter++;
           await new Promise((r) => setTimeout(r, 0));
         }
       }
@@ -394,6 +408,18 @@ export function createSwarmClient(options = {}) {
         state.done = typeof d.done === "number" ? d.done : state.done;
         state.total = typeof d.total === "number" ? d.total : state.total;
         emit("progress", { unitId: pending ? pending.unitId : state.lastUnitId, done: state.done, total: state.total });
+        return;
+      }
+      if (d.type === "spotlight") {
+        /* display only: forwarded as it came, tagged with the unit in flight.
+         * A stopped loop forwards nothing — the worker may still be finishing
+         * the unit that was in flight when Stop was pressed, and its specimen
+         * must not light a stage the visitor just switched off. */
+        if (!state.running) return;
+        emit("spotlight", {
+          unitId: pending ? pending.unitId : (typeof d.unitId === "string" ? d.unitId : state.lastUnitId),
+          index: d.index, cid: d.cid, smiles: d.smiles, result: d.result
+        });
         return;
       }
       if (d.type === "done") {

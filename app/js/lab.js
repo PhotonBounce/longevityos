@@ -49,6 +49,7 @@
 import { createSwarmClient } from "./swarm/client.js";
 import { viewLed, viewLedBar, viewPark } from "./view/led.js";
 import { viewTelemetry } from "./view/telemetry.js";
+import { viewLens } from "./view/lens.js";
 
 /* ————— style conventions, borrowed from app.js verbatim ————— */
 
@@ -111,6 +112,10 @@ const PACES = [
  * switches, while `ui` is re-pointed at whatever DOM is currently on screen. */
 let client = null;
 let ui = null;
+/* UNDER THE LENS: the view instance of the current render, and the session
+ * counters it prints (kept here so a tab click does not reset "this session") */
+let lens = null;
+const lensSession = { shown: 0, base: 0, cur: 0, dropped: 0, offered: 0 };
 let apiBase = "./api/";
 let visibilityHooked = false;
 let subscribed = false;
@@ -433,6 +438,9 @@ function shapeHits(data) {
     out.push({
       cid: CID_RE.test(rawCid) ? rawCid : null,      // null ⇒ no link is built, ever
       cidText: safeText(rawCid, 16),
+      /* the lens draws the shortlist specimen from this; it goes through the
+       * engine's own parser and nowhere else, so it is capped, not sanitized */
+      smiles: typeof h.smiles === "string" ? h.smiles.slice(0, 4000) : "",
       formula: safeText(h.formula, FIELD_MAX),
       score: safeInt(h.score),
       target: safeText(h.best_target, FIELD_MAX),
@@ -711,6 +719,27 @@ function buildIntro(root) {
     "Nothing on this page has been tested in a living thing, and no result here says anything about " +
     "whether a substance is effective or safe."));
   root.appendChild(banner);
+}
+
+/* ————— section 2: UNDER THE LENS ————— */
+
+/* One real molecule at a time, drawn as this browser scores it, with the
+ * engine's own readouts. The module is app/js/view/lens.js; this only mounts
+ * it, feeds it the client's events, and hands it the already-fetched hits for
+ * the pre-run specimen. It starts nothing. */
+function buildLens(root) {
+  const sec = labEl("section", "lab-section lab-lens");
+  sec.setAttribute("data-lab", "lens");
+  sec.appendChild(labEl("h3", "sect", "Under the lens"));
+  const host = labEl("div", "lab-lens-host");
+  sec.appendChild(host);
+  root.appendChild(sec);
+  if (lens) { try { lens.destroy(); } catch (_) {} }
+  lens = viewLens(host, { session: lensSession });
+  if (lens) {
+    lens.setRunning(clientRunning());
+    if (remote.hits) lens.setHits(remote.hits);
+  }
 }
 
 /* ————— section 3: live totals ————— */
@@ -1008,6 +1037,8 @@ function stopDonating() {
 function onSwarmEvent(ev) {
   try {
     if (!ev || typeof ev.type !== "string") return;
+    if (lens) lens.onEvent(ev);
+    if (ev.type === "spotlight") return;   // display only — the lens has it; nothing else changes
     if (ev.type === "joined") {
       /* A join can land AFTER the visitor pressed Stop — the request was
        * already in flight. Signing in costs them nothing, but the status line
@@ -1117,6 +1148,7 @@ function scheduleRefresh() {
 function paintDonate() {
   if (!ui || !ui.status) return;
   const running = clientRunning() || donate.phase === "joining";
+  if (lens) lens.setRunning(clientRunning());
   ui.goBtn.disabled = running;
   ui.goBtn.textContent = donate.phase === "joining" ? "Starting…" : "Donate this browser";
   ui.stopBtn.disabled = !running;
@@ -2030,6 +2062,7 @@ function buildHits(root) {
 }
 
 function paintHits() {
+  if (lens && remote.hits) lens.setHits(remote.hits);
   const host = ui && ui.hitsHost;
   if (!host) return;
   host.textContent = "";
@@ -2130,6 +2163,7 @@ export function renderLab(root, options) {
   if (profile.id) buildProfile(wrap);
   buildIntro(wrap);
   buildConsole(wrap);
+  buildLens(wrap);
   buildStats(wrap);
   buildContribute(wrap);
   buildPhone(wrap);

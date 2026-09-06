@@ -98,7 +98,7 @@ for (const [re, why] of SCREEN_BANNED) {
  * data.js does, for metformin and dasatinib). So this scans the engine, the
  * Lab and the client — never the corpus. */
 const SCREEN_SURFACE = files
-  .filter((p) => p.includes("/chem/") || p.includes("/swarm/") || p.endsWith("lab.js"))
+  .filter((p) => p.includes("/chem/") || p.includes("/swarm/") || p.includes("/view/") || p.endsWith("lab.js"))
   .map((p) => text[p]).join("\n");
 ok(!/\btoxic(ity)?\b(?!.*(alert|flag|triage|not a verdict|never|not measured))/i.test(SCREEN_SURFACE),
    "the screening surface never calls a molecule toxic — an alert is a triage flag, and the swarm measures no toxicity at all");
@@ -197,6 +197,7 @@ ok(!/\byou should\b/i.test(all), "the app never tells anyone what they should do
 ok(!/\bwe recommend\b/i.test(all), "the app never recommends anything");
 ok(!/serviceWorker\.register/.test(all), "no service worker — the app is served fresh and the deploy is upload-only");
 
+{ /* section 12 scope */
 /* ————— 12. the Observatory (4.0): the console's rules ————— */
 suite("content 12 — the console: motion, markup, copy");
 const obsPath = join(APP, "css", "observatory.css");
@@ -294,6 +295,83 @@ for (const [re, why] of [
 ]) {
   ok(!re.test(files.map((p) => copyOf(p, text[p])).join("\n")), "no shipped copy uses " + why);
 }
+}
+{ /* section 13 scope */
+/* ————— 13. the Observatory (4.0): the lens, the spotlight, the view modules ————— */
+suite("content 13 — the lens draws what was scored, chosen by position, and moves only as allowed");
+const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const viewFiles = files.filter((p) => p.includes("/js/view/") && p.endsWith(".js"));
+ok(viewFiles.length >= 2, "js/view/ ships (" + viewFiles.length + " modules)");
+for (const p of viewFiles) {
+  const name = p.split("/").pop();
+  const src = text[p];
+  const code = strip(src);
+  ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(code), `${name}: no HTML sinks — server text renders as text`);
+  ok(!/parseSmiles\s*\(/.test(code), `${name}: never calls parseSmiles( — the only door is molFromSmiles, the engine's own`);
+  /* the two sanctioned exceptions: telemetry.js IS the app's only poller (section 12
+   * proves lab.js delegates to it), and sound.js fetches the audio manifest only
+   * after an arming gesture (section 14 proves the gesture) */
+  if (!/telemetry\.js$|sound\.js$/.test(name)) ok(!/\bfetch\s*\(|XMLHttpRequest/.test(code), `${name}: no network — a view draws, it never polls`);
+  ok(!/\.start\s*\(/.test(code), `${name}: no .start( — a view can never donate CPU`);
+  ok(!/new\s+(Audio|AudioContext|webkitAudioContext)\b/.test(code), `${name}: constructs no audio`);
+  ok(!/requestAnimationFrame/.test(code), `${name}: no rAF loop — every phase is a timer`);
+  ok(!/\beval\s*\(|new Function/.test(code), `${name}: no eval`);
+  for (const m of src.matchAll(/^\s*export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+    ok(/^view[A-Z]/.test(m[1]) || /^[A-Z][A-Z0-9_]*$/.test(m[1]), `${name}: export '${m[1]}' is prefixed view* or is UPPER_CASE data`);
+  }
+  ok(!/\b(mining|miner|mine)\b/i.test(src), `${name}: never calls the activity mining`);
+  ok(!/\b(streak|combo|jackpot|level up|loot|rare find)\b/i.test(src), `${name}: no game-economy words`);
+  ok(!/\b(discover(y|ed|s)?|breakthrough)\b/i.test(src), `${name}: no discovery language`);
+  ok(!/one in (\d|five|ten|twenty|forty|a hundred)/i.test(src), `${name}: no fixed sampling ratio — the caption computes it`);
+  ok(!/✓|\bclean\b/.test(src), `${name}: zero flags is never a tick or 'clean'`);
+}
+/* string literals are wrapped across lines with " + "; join them before matching sentences */
+const lensSrc = (text[join(APP, "js", "view", "lens.js")] || "").replace(/"\s*\+\s*\n\s*"/g, "");
+const layoutSrc = text[join(APP, "js", "view", "layout.js")] || "";
+ok(/Triage flags\. They mark a molecule for a person to look at; the screen has measured nothing about what any of them mean in a living thing\./.test(lensSrc),
+   "the lens carries the triage sentence verbatim");
+ok(/no drug-likeness flags raised/.test(lensSrc), "zero flags prints 'no drug-likeness flags raised'");
+ok(/chosen by its position in the work unit and never by its score/.test(lensSrc), "the sampling caption states the selection rule");
+ok(/DID NOT PARSE — scored as unparseable, score 0\./.test(lensSrc), "the unparseable card is verbatim");
+ok(/the drawing was refused — it is larger than the lens draws, or its coordinates did not resolve\. The score beside it is the real one\./.test(lensSrc),
+   "the refused card is verbatim");
+ok(/worth a look/.test(lensSrc) && />= WORTH_A_LOOK|>= 700/.test(lensSrc), "700 and above says 'worth a look' — words, no sound, no bloom");
+ok(/import \{ molFromSmiles \} from "\.\.\/chem\/aromatic\.js"/.test(layoutSrc) && /import \{ perceivedRings \} from "\.\.\/chem\/descriptors\.js"/.test(layoutSrc),
+   "layout.js imports only the engine's own front door and ring perception");
+ok((layoutSrc.match(/^import /gm) || []).length === 2, "layout.js has exactly those two imports");
+ok(/createElementNS/.test(lensSrc) && /textContent/.test(lensSrc), "the lens builds SVG with createElementNS and writes text with textContent");
 
+/* the spotlight: position, never a score; a counter, never a clock */
+const workerSrc = text[join(APP, "js", "swarm", "worker.js")] || "";
+const workerCode = strip(workerSrc);
+ok(!/Date\.now|new Date\(|Math\.random/.test(workerCode), "worker.js still touches no clock and no randomness");
+ok(/const SPOTLIGHT_EVERY = 40;/.test(workerCode) && /chunkCounter\s*%\s*SPOTLIGHT_EVERY === 0/.test(workerCode), "the spotlight fires on every fortieth chunk — a chunk counter, never a clock (grep-able)");
+ok(/spotlight\(id, i, slice\[0\], r\)/.test(workerCode), "…and it is the first molecule of that chunk: position, never a score");
+ok(!/unitCounter/.test(workerCode), "no per-unit spotlight remains (the lens shows one per 2.2 s at most; screening more would be waste)");
+ok(!/score\s*[<>=!]|[<>=!]=?\s*[\w.]*\bscore\b/.test(workerCode), "worker.js never compares anything against a score");
+ok(!/\.sort\s*\(/.test(workerCode), "worker.js never sorts — nothing is ranked on the way to the lens");
+ok(/type: "spotlight"/.test(workerCode), "the worker posts the spotlight message");
+const clientCode = strip(text[join(APP, "js", "swarm", "client.js")] || "");
+ok(/localChunkCounter\s*%\s*SPOTLIGHT_EVERY === 0/.test(clientCode) && /const SPOTLIGHT_EVERY = 40;/.test(clientCode), "the main-thread fallback picks its spotlight by the same chunk-counter rule");
+ok(!/\.score\b/.test(clientCode), "client.js never reads a score");
+ok(/spotlight/.test(text[join(APP, "js", "swarm", "client.js")].split("export function")[0]), "the client documents the spotlight event");
+
+/* the lens stylesheet: only transform/opacity/dashoffset move; reduced motion is honoured by redefinition */
+const lensCss = (text[join(APP, "css", "lens.css")] || "").replace(/\/\*[\s\S]*?\*\//g, "");
+ok(lensCss.length > 0, "lens.css ships");
+ok(!/(^|[^-])filter\s*:|backdrop-filter|mix-blend-mode|text-shadow/.test(lensCss), "lens.css uses no filter, backdrop-filter, mix-blend-mode or text-shadow");
+for (const m of lensCss.matchAll(/transition\s*:\s*([^;]+);/g)) {
+  ok(!/\b(width|height|top|left|right|bottom|margin|padding)\b/.test(m[1]), "no transition animates layout: " + m[1].trim());
+}
+for (const m of lensCss.matchAll(/@keyframes[^{]*\{([\s\S]*?)\}\s*\}/g)) {
+  ok(!/\b(width|height|top|left|right|bottom|margin|padding)\s*:/.test(m[1]), "no keyframe animates layout");
+}
+ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*@keyframes obs-grow[\s\S]*opacity/.test(lensCss), "prefers-reduced-motion REDEFINES the wave keyframe as an opacity fade");
+ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.lens-bar-track i \{ transition: none; \}/.test(lensCss), "…and the bars set transition: none");
+ok(/html\[data-still\]/.test(lensCss), "the in-page 'hold the instruments still' switch is honoured by the same rules");
+ok(!/animation[^;]*(score|amber)/.test(lensCss), "no animation is keyed to a score");
+ok(!/serviceWorker/.test(all) && fetches === 1, "app.js still fetches exactly one thing");
+
+}
 console.log(failed ? "content: " + failed + " FAILED of " + checks : "content: " + checks + " checks passed ✓");
 process.exit(failed ? 1 : 0);

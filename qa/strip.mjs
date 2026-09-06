@@ -653,12 +653,15 @@ suite("strip 11b — a panel scrolled out of view is parked; scrolled back, it w
 {
   await P.locator('[data-tab="lab"]').click();
   await P.waitForSelector('[data-lab="stats-grid"]', { timeout: 10000 });
+  /* 4.0 puts the lens above the grid, so "in view" is a scroll, not a given */
+  await P.evaluate(() => document.querySelector('[data-lab="stats-grid"]').scrollIntoView({ block: "center" }));
   ok(!!(await until(async () => (await P.evaluate(() => !document.querySelector('[data-lab="stats-grid"]').classList.contains("is-parked"))) ? true : null, 2000)), "the readout grid in view is not parked");
   await P.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   ok(!!(await until(async () => (await P.evaluate(() => document.querySelector('[data-lab="stats-grid"]').classList.contains("is-parked"))) ? true : null, 3000)), "scrolled far below it, the grid is .is-parked");
   ok(await P.evaluate(() => getComputedStyle(document.querySelector('[data-lab="stats-grid"] svg')).animationPlayState === "paused"), "…and its animations are paused");
-  await P.evaluate(() => window.scrollTo(0, 0));
+  await P.evaluate(() => document.querySelector('[data-lab="stats-grid"]').scrollIntoView({ block: "center" }));
   ok(!!(await until(async () => (await P.evaluate(() => !document.querySelector('[data-lab="stats-grid"]').classList.contains("is-parked"))) ? true : null, 3000)), "scrolled back, it wakes");
+  await P.evaluate(() => window.scrollTo(0, 0));
 }
 
 /* ————— 12. reduced motion: the same nodes, fades ————— */

@@ -1,0 +1,354 @@
+/* lens.css — UNDER THE LENS (LongevityOS 4.0 §4), all classes prefixed
+ * .lens- / .mol- / .led. Instrument tokens are read with fallbacks so this
+ * sheet renders identically whether or not observatory.css is loaded first;
+ * a value it defines there wins.
+ *
+ * MOTION RULES. Only transform, opacity and stroke-dashoffset ever animate;
+ * the build is eight composited wave groups (obs-grow), at most six
+ * ring-closure strokes staggered so no more than two run at once, one settle
+ * scale on the whole drawing, one flip on the score LED, and ten bar
+ * transitions. No filter, no backdrop-filter, no mix-blend-mode, no
+ * text-shadow, nothing animates width/height/top/left. Under
+ * prefers-reduced-motion (and html[data-still]) every keyframe is REDEFINED
+ * as a 120ms opacity fade — the same DOM, the same timeline, nothing frozen
+ * mid-transform — and the bars set transition: none. */
+
+.lens {
+  --lens-well: var(--instr-well, #070c11);
+  --lens-face: var(--instr-face, #0f1720);
+  --lens-bezel: var(--bezel, #1c2836);
+  --lens-phosphor: var(--phosphor, #6ff0c0);
+  --lens-phosphor-dim: var(--phosphor-dim, rgba(111, 240, 192, 0.11));
+  --lens-trace: var(--trace, #7ab8ff);
+  --lens-grid: var(--grid, rgba(122, 184, 255, 0.06));
+  --lens-amber: var(--amber, #ffb454);
+  --lens-rose: var(--rose, #ff7a90);
+  --lens-atom-c: var(--atom-c, #e8eef4);
+  --lens-atom-n: var(--atom-n, #7ab8ff);
+  --lens-atom-o: var(--atom-o, #ff9a86);
+  --lens-atom-s: var(--atom-s, #ffcf6b);
+  --lens-atom-p: var(--atom-p, #c39bff);
+  --lens-atom-hal: var(--atom-hal, #6ff0c0);
+  --lens-mono: var(--mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 14px;
+  background: linear-gradient(180deg, var(--lens-face), #0c141c);
+  border: 1px solid var(--lens-bezel);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+@media (max-width: 759px) {
+  .lens { grid-template-columns: minmax(0, 1fr); }
+}
+
+.lens-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  margin: 0;
+}
+.lens-value {
+  font-family: var(--lens-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ————— the stage ————— */
+
+.lens-stage {
+  position: relative;
+  align-self: start;
+  min-width: 0;
+  background:
+    repeating-linear-gradient(0deg, var(--lens-grid) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(90deg, var(--lens-grid) 0 1px, transparent 1px 16px),
+    var(--lens-well);
+  border: 1px solid var(--lens-bezel);
+  border-radius: 3px;
+  padding: 8px 10px 10px;
+}
+/* the dim to HOLD fades; coming back on is instant, so the fade never
+ * overlaps a build's first instant (the budget counts every scheduled animation) */
+.lens-stage.is-hold { opacity: 0.55; transition: opacity 260ms; }
+.lens-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  font-family: var(--lens-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-height: 1.4em;
+}
+.lens-tag { color: var(--lens-phosphor); }
+.lens-unit { color: var(--dim); }
+.lens-mode {
+  margin-left: auto;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+}
+.lens-mode.is-live { color: var(--lens-phosphor); }
+.lens-mode.is-hold { color: var(--lens-amber); }
+
+.lens-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  max-height: 300px;
+  margin: 4px auto 0;
+  overflow: visible;
+}
+.lens-svg [hidden] { display: none; }
+.lens-svg.is-blank { opacity: 0.25; }
+
+.mol-bond {
+  fill: none;
+  stroke: var(--lens-atom-c);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.mol-offset {
+  stroke: var(--lens-atom-c);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.mol-arom {
+  fill: none;
+  stroke: var(--lens-phosphor);
+  stroke-width: 1;
+  opacity: 0.8;
+}
+.mol-label {
+  font-family: var(--lens-mono);
+  font-size: 11.5px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: var(--lens-well);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  fill: var(--lens-atom-c);
+}
+.mol-n { fill: var(--lens-atom-n); }
+.mol-o { fill: var(--lens-atom-o); }
+.mol-s { fill: var(--lens-atom-s); }
+.mol-p { fill: var(--lens-atom-p); }
+.mol-hal { fill: var(--lens-atom-hal); }
+.mol-x { fill: var(--lens-amber); }
+
+.mol-wave { transform-box: fill-box; transform-origin: center; }
+.lens-mol { transform-box: fill-box; transform-origin: center; }
+
+/* the build: eight composited groups, delayed by their wave index.
+ * Every animation here fills BACKWARDS, never forwards: the natural state is
+ * the final state (a wave at scale 1, a closure fully drawn), so a finished
+ * animation is simply dropped — it leaves document.getAnimations() the moment
+ * it ends, and what the budget measures is what is actually moving (≤ 3
+ * waves, ≤ 2 closures), not every group that has already landed. */
+.is-building .mol-wave {
+  animation: obs-grow 220ms calc(var(--d, 0) * 90ms) backwards;
+}
+/* ring closures draw as a stroke; --cd is assigned in JS so that no two
+ * overlap by more than one (each is spaced at least 90ms from the last).
+ * The natural dashoffset is 0 (drawn); the keyframe starts from 1 and the
+ * backwards fill holds it undrawn through its delay. */
+.is-building .mol-close {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: obs-close 180ms calc(var(--cd, 0) * 1ms) backwards;
+}
+.is-settle { animation: obs-settle 180ms backwards; }
+
+@keyframes obs-grow {
+  from { opacity: 0; transform: scale(0.72); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes obs-close {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes obs-settle {
+  from { transform: scale(1.03); }
+  to { transform: scale(1); }
+}
+@keyframes obs-flip {
+  from { opacity: 0.35; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes obs-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ————— the failure card ————— */
+
+.lens-fail {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 40%;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--lens-face);
+  border: 1px solid var(--lens-amber);
+  border-radius: 3px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.lens-fail[hidden] { display: none; }
+.lens-fail-unparsed { border-color: var(--lens-rose); font-family: var(--lens-mono); }
+
+.lens-stamp {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 3px 8px;
+  border: 1px solid var(--lens-phosphor);
+  border-radius: 2px;
+  color: var(--lens-phosphor);
+  font-family: var(--lens-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+}
+.lens-stamp[hidden] { display: none; }
+
+/* ————— the readout column ————— */
+
+.lens-readout { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.lens-score-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.lens-score-row .lens-label { flex: 1 1 100%; }
+.led { display: block; height: 44px; width: auto; }
+.led .sa, .led .sb, .led .sc, .led .sd, .led .se, .led .sf, .led .sg {
+  fill: var(--lens-phosphor);
+}
+.led .sa { fill-opacity: calc(0.11 + 0.89 * var(--a, 0)); }
+.led .sb { fill-opacity: calc(0.11 + 0.89 * var(--b, 0)); }
+.led .sc { fill-opacity: calc(0.11 + 0.89 * var(--c, 0)); }
+.led .sd { fill-opacity: calc(0.11 + 0.89 * var(--d, 0)); }
+.led .se { fill-opacity: calc(0.11 + 0.89 * var(--e, 0)); }
+.led .sf { fill-opacity: calc(0.11 + 0.89 * var(--f, 0)); }
+.led .sg { fill-opacity: calc(0.11 + 0.89 * var(--g, 0)); }
+.led.flip { animation: obs-flip 180ms backwards; }
+.led-text {
+  font-family: var(--lens-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--lens-phosphor);
+}
+.lens-score-row.is-amber .led .sa, .lens-score-row.is-amber .led .sb, .lens-score-row.is-amber .led .sc,
+.lens-score-row.is-amber .led .sd, .lens-score-row.is-amber .led .se, .lens-score-row.is-amber .led .sf,
+.lens-score-row.is-amber .led .sg { fill: var(--lens-amber); }
+.lens-score-row.is-amber .led-text { color: var(--lens-amber); }
+.lens-worth {
+  font-family: var(--lens-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--lens-amber);
+}
+.lens-worth[hidden] { display: none; }
+.lens-of { color: var(--dim); font-family: var(--lens-mono); font-size: 12px; }
+
+/* LED bars */
+.lens-bars { display: flex; flex-direction: column; gap: 4px; }
+.lens-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5em;
+  gap: 2px 8px;
+  align-items: center;
+  font-family: var(--lens-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.lens-bar[hidden] { display: none; }
+.lens-bar-label { grid-column: 1 / -1; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lens-bar-track {
+  position: relative;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, var(--lens-phosphor-dim) 0 6px, transparent 6px 9px);
+  overflow: hidden;
+}
+.lens-bar-track i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: repeating-linear-gradient(90deg, var(--lens-phosphor) 0 6px, transparent 6px 9px);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 400ms;
+}
+.lens-bar-val { color: var(--ink); text-align: right; }
+.lens-bars-note { margin: 0; font-size: 12px; color: var(--dim); }
+.lens-bars-note[hidden] { display: none; }
+
+/* descriptors */
+.lens-desc { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.lens-desc td { padding: 3px 0; border-bottom: 1px solid var(--lens-bezel); }
+.lens-desc td:first-child { color: var(--dim); }
+.lens-desc td:last-child { text-align: right; font-family: var(--lens-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+
+/* flags */
+.lens-flags-title { margin: 0; font-size: 12.5px; color: var(--ink); }
+.lens-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 1.6em; }
+.lens-chip {
+  font-family: var(--lens-mono);
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border: 1px solid var(--lens-amber);
+  border-radius: 2px;
+  color: var(--lens-amber);
+}
+.lens-chip[hidden] { display: none; }
+.lens-noflags { margin: 0; font-family: var(--lens-mono); font-size: 12px; color: var(--dim); }
+.lens-noflags[hidden] { display: none; }
+
+/* captions and the idle control */
+.lens-foot { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.lens-state { margin: 0; font-size: 13px; color: var(--ink); }
+.lens-caption { margin: 0; font-size: 12.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.lens-next {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 8px 18px;
+  background: transparent;
+  color: var(--lens-trace);
+  border: 1px solid var(--lens-trace);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.lens-next:focus-visible { outline: 2px solid var(--lens-trace); outline-offset: 2px; }
+.lens-next[hidden] { display: none; }
+
+/* ————— reduced motion: same DOM, fades only ————— */
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes obs-grow { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes obs-close { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes obs-settle { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes obs-flip { from { opacity: 0.35; } to { opacity: 1; } }
+  .is-building .mol-wave { animation-duration: 120ms; }
+  .is-building .mol-close { stroke-dasharray: none; stroke-dashoffset: 0; animation-duration: 120ms; }
+  .is-settle { animation-duration: 120ms; }
+  .led.flip { animation-duration: 120ms; }
+  .lens-bar-track i { transition: none; }
+  .lens-stage { transition: none; }
+}
+/* an instant paint (Stop mid-build, a re-mount): nothing plays */
+.lens.is-instant .lens-bar-track i { transition: none; }
+.lens.is-instant .led.flip { animation: none; }
+.lens.is-instant .is-settle { animation: none; }
+
+html[data-still] .is-building .mol-wave { animation: obs-fade 120ms calc(var(--d, 0) * 90ms) backwards; }
+html[data-still] .is-building .mol-close { stroke-dasharray: none; stroke-dashoffset: 0; animation: obs-fade 120ms calc(var(--cd, 0) * 1ms) backwards; }
+html[data-still] .is-settle { animation: none; }
+html[data-still] .led.flip { animation: obs-fade 120ms backwards; }
+html[data-still] .lens-bar-track i { transition: none; }
+html[data-still] .lens-stage { transition: none; }

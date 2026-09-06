@@ -61,7 +61,20 @@ const PROBE = `
     const tick = (t) => { window.__perf.frames.push(t - last); last = t; if (window.__perf.on) requestAnimationFrame(tick); };
     window.__perf.on = true; requestAnimationFrame(tick);
     try { new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__perf.long.push(e.duration); }).observe({ entryTypes: ["longtask"] }); } catch (_) {}
-    window.__perf.sampler = setInterval(() => { try { window.__perf.anim.push(document.getAnimations().length); } catch (_) {} }, 500);
+    /* each sample: how many animations, whether the lens says its own
+     * timeline is still moving (build → settle → readout bars; it reports
+     * quiet after that, even while the next specimen is already pending),
+     * and whether any running animation carries a transform or a dash (under
+     * reduced motion every keyframe is redefined as an opacity fade — spec §2
+     * — so that must read 0). The assertions stay measured: the lens only says
+     * WHEN it believes nothing moves; getAnimations() says whether it is right. */
+    window.__perf.sampler = setInterval(() => { try {
+      const list = document.getAnimations();
+      let nonFade = 0;
+      for (const a of list) { try { if (a.effect.getKeyframes().some((k) => "transform" in k || "strokeDashoffset" in k)) nonFade++; } catch (_) {} }
+      const lens = window.__losLens && window.__losLens.api ? window.__losLens.api.state() : null;
+      window.__perf.anim.push({ n: list.length, building: !!(lens && !lens.quiet), nonFade });
+    } catch (_) {} }, 250);
   }, stop() { window.__perf.on = false; clearInterval(window.__perf.sampler); } };
 `;
 const stats = (arr) => { const s = [...arr].sort((a, b) => a - b); const q = (p) => s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0; return { n: s.length, median: q(0.5), p95: q(0.95), max: s[s.length - 1] || 0 }; };
@@ -92,7 +105,13 @@ async function run(label, extra) {
   await page.screenshot({ path: join(SHOTS, "perf-" + label + ".png") });
   await browser.close();
   const fl = stats(lab.frames), fo = stats(obs.frames);
-  const r = { label, throttle: THROTTLE, unitsSubmitted: submitted, lab: { nodes: lab.nodes, lensNodes: lab.lens, animMax: Math.max(0, ...lab.anim), frames: fl, longest: Math.max(0, ...lab.long) }, observatory: { nodes: obs.nodes, animMax: Math.max(0, ...obs.anim), frames: fo, longest: Math.max(0, ...obs.long) }, errors };
+  const animOf = (samples) => ({
+    animMax: Math.max(0, ...samples.map((x) => x.n)),
+    animMaxSettled: Math.max(0, ...samples.filter((x) => !x.building).map((x) => x.n)),
+    settledSamples: samples.filter((x) => !x.building).length,
+    nonFadeMax: Math.max(0, ...samples.map((x) => x.nonFade))
+  });
+  const r = { label, throttle: THROTTLE, unitsSubmitted: submitted, lab: Object.assign({ nodes: lab.nodes, lensNodes: lab.lens, frames: fl, longest: Math.max(0, ...lab.long) }, animOf(lab.anim)), observatory: Object.assign({ nodes: obs.nodes, frames: fo, longest: Math.max(0, ...obs.long) }, animOf(obs.anim)), errors };
   console.log("  · " + JSON.stringify(r));
   return r;
 }
@@ -110,11 +129,20 @@ ok(full.lab.animMax <= BUDGET.animating, "≤ " + BUDGET.animating + " animation
 ok(full.observatory.frames.median <= BUDGET.medianMs, "Observatory median frame ≤ " + BUDGET.medianMs + " ms (" + full.observatory.frames.median.toFixed(1) + ")");
 ok(full.observatory.nodes <= BUDGET.obsNodes, "Observatory DOM within budget (" + full.observatory.nodes + " ≤ " + BUDGET.obsNodes + ")");
 
-suite("perf 2 — prefers-reduced-motion: same DOM, nothing animating");
+suite("perf 2 — prefers-reduced-motion: same DOM, fades only while a specimen builds, nothing between builds");
+/* Spec §2: reduced motion REDEFINES every keyframe as a 120 ms opacity fade
+ * (nothing freezes mid-transform), so a build still registers animations —
+ * §11 sets the reduced-motion budget at 0 BETWEEN builds. Both halves are
+ * asserted: samples taken while the lens holds a specimen may show fades
+ * (never a transform or a dash), samples between builds must show none. */
 const still = await run("still", { reducedMotion: "reduce" });
 ok(still.errors.length === 0, "zero page errors under reduced motion");
 ok(Math.abs(still.lab.nodes - full.lab.nodes) <= 40, "reduced motion keeps the same Lab DOM (" + still.lab.nodes + " vs " + full.lab.nodes + ")");
-ok(still.lab.animMax === 0 || still.lab.animMax <= 1, "reduced motion runs (almost) no animations (" + still.lab.animMax + ")");
+ok(still.lab.settledSamples >= 5, "the sampler caught the lens between builds (" + still.lab.settledSamples + " settled samples)");
+ok(still.lab.animMaxSettled === 0 || still.lab.animMaxSettled <= 1, "reduced motion runs (almost) no animations between builds (" + still.lab.animMaxSettled + ")");
+ok(still.lab.animMax <= BUDGET.animating, "a reduced-motion build stays within the ≤ " + BUDGET.animating + " budget (" + still.lab.animMax + ")");
+ok(still.lab.nonFadeMax === 0, "under reduced motion no running animation carries a transform or a dash — fades only (" + still.lab.nonFadeMax + ")");
+ok(still.observatory.animMaxSettled <= 1, "the Observatory under reduced motion animates nothing between builds (" + still.observatory.animMaxSettled + ")");
 
 writeFileSync(join(SHOTS, "perf.json"), JSON.stringify({ budget: BUDGET, motion: full, still }, null, 2));
 mock.close();

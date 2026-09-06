@@ -26,6 +26,8 @@ const ORDER = [
   "js/chem/alerts.js",
   "js/chem/targets.js",
   "js/chem/score.js",
+  "js/view/layout.js",
+  "js/view/lens.js",
   "js/swarm/client.js",
   "js/data.js",
   "js/grades.js",
@@ -94,20 +96,25 @@ for (const rel of ORDER) {
   const src = readFileSync(p, "utf8");
   const imports = parseImports(src);
   const exports = parseExports(src);
-  /* Two modules exporting the same name would silently overwrite each other
-   * in the shared registry — the second one wins and the first one's callers
-   * get the wrong function. That is a hard failure, not a warning. */
+  /* Every module publishes into ONE shared registry, so two modules exporting
+   * the same name would silently overwrite each other in the bundle while
+   * working perfectly as separate ES modules. That is a hard failure, not a
+   * warning — and it is why every js/view/ export is prefixed view* (or is
+   * UPPER_CASE data). */
+  const reExported = new Set(imports.map((i) => i.local));
   for (const n of exports) {
-    /* a pass-through (`import { X } …; export { X };`) re-publishes the same
-     * binding and is fine; a second DEFINITION of the name is the failure */
-    const passThrough = imports.some((i) => i.local === n);
-    if (exportOwner.has(n) && !passThrough) { console.error(`dist: duplicate export '${n}' in ${rel} (already exported by ${exportOwner.get(n)})`); process.exit(1); }
-    if (!passThrough) exportOwner.set(n, rel);
-  }
-  /* 4.0: every export under js/view/ is prefixed view* or is UPPER_CASE data */
-  if (rel.startsWith("js/view/")) {
-    for (const n of exports) {
-      if (!/^view[A-Z]/.test(n) && !/^[A-Z][A-Z0-9_]*$/.test(n)) { console.error(`dist: ${rel} exports '${n}' — view modules export view* or UPPER_CASE only`); process.exit(1); }
+    /* a name the module imported and passes straight through (score.js
+     * re-exports targets.js's ENGINE_VERSION) is the same binding, not a
+     * second definition */
+    if (exportOwner.has(n) && reExported.has(n)) continue;
+    if (exportOwner.has(n)) {
+      console.error(`dist: duplicate export '${n}' in ${rel} (already exported by ${exportOwner.get(n)}) — the single-file registry cannot hold both`);
+      process.exit(1);
+    }
+    exportOwner.set(n, rel);
+    if (rel.startsWith("js/view/") && !/^view[A-Z]/.test(n) && !/^[A-Z][A-Z0-9_]*$/.test(n)) {
+      console.error(`dist: ${rel} exports '${n}' — js/view/ exports must be prefixed view* or be UPPER_CASE data`);
+      process.exit(1);
     }
   }
   exports.forEach((n) => allExports.add(n));
@@ -126,7 +133,7 @@ if (missing.length) {
  * anything running afterwards (the app's own entry code) sees a normal scope */
 const js = "const __M = {};\n" + parts.join("\n") +
   `\nconst { ${[...allExports].join(", ")} } = __M;\n`;
-const cssFiles = ["css/style.css", "css/lab.css", "css/observatory.css"].filter((f) => existsSync(join(APP, f)));
+const cssFiles = ["css/style.css", "css/lab.css", "css/observatory.css", "css/lens.css"].filter((f) => existsSync(join(APP, f)));
 const css = cssFiles.map((f) => readFileSync(join(APP, f), "utf8")).join("\n");
 
 let html = readFileSync(join(APP, "index.html"), "utf8");
@@ -139,7 +146,7 @@ html = html.replace("los-3.0.0", "los-3.0.0-dist");
 writeFileSync(join(OUTDIR, "longevityos.html"), html);
 
 /* a build that silently lost a module is worse than a failed build */
-for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab", "function viewTelemetry", "function viewLed"]) {
+for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab", "function viewTelemetry", "function viewLed", "function viewLayoutMolecule", "function viewLens"]) {
   if (!html.includes(marker)) { console.error(`dist: '${marker}' is missing from the bundle — inlining broke`); process.exit(1); }
 }
 if (/^\s*import\s/m.test(html)) { console.error("dist: an ES import survived into the bundle"); process.exit(1); }

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "qa": "node unit.mjs && node chem.mjs && node content.mjs && node ../tools/crawl.mjs --selftest && node ../tools/harvest.mjs --selftest && node api.mjs && node swarm.mjs && node phone.mjs && node strip.mjs && node e2e.mjs && node evidence.mjs",
+    "qa": "node unit.mjs && node chem.mjs && node content.mjs && node ../tools/crawl.mjs --selftest && node ../tools/harvest.mjs --selftest && node api.mjs && node swarm.mjs && node phone.mjs && node strip.mjs && node layout.mjs && node lens.mjs && node e2e.mjs && node evidence.mjs",
     "test:unit": "node unit.mjs",
     "test:chem": "node chem.mjs",
     "test:content": "node content.mjs",
@@ -11,6 +11,8 @@
     "test:swarm": "node swarm.mjs",
     "test:phone": "node phone.mjs",
     "test:strip": "node strip.mjs",
+    "test:layout": "node layout.mjs",
+    "test:lens": "node lens.mjs",
     "test:e2e": "node e2e.mjs",
     "test:evidence": "node evidence.mjs",
     "icons": "node gen-icons.mjs",
