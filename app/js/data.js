@@ -100,7 +100,7 @@ export const COMPOUNDS = [
         finding: "Started late in life (16 months), it still extended lifespan in male mice; the effect remains male-only.",
         organism: "mouse", outcome: "lifespan", year: 2021,
         cite: "Harrison DE et al., Aging Cell 20:e13328 (ITP)",
-        url: "https://onlinelibrary.wiley.com/doi/full/10.1111/acel.13328",
+        url: "https://pubmed.ncbi.nlm.nih.gov/33788371/",
         titleCheck: "17-a-estradiol late in life extends lifespan in aging UM-HET3 male mice"
       }
     ],
@@ -257,7 +257,7 @@ export const COMPOUNDS = [
         finding: "In the rigorous multi-site ITP, metformin ALONE did not significantly extend mouse lifespan (the rapamycin+metformin combination did).",
         organism: "mouse", outcome: "null", year: 2016,
         cite: "Strong R et al., Aging Cell 15:872-884 (ITP)",
-        url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5013015/",
+        url: "https://pubmed.ncbi.nlm.nih.gov/27312235/",
         titleCheck: "Longer lifespan in male mice treated with a weakly estrogenic agonist"
       }
     ],
@@ -278,7 +278,7 @@ export const COMPOUNDS = [
         finding: "First human chronic-dosing RCT of NR: well tolerated over 6 weeks and effectively raised blood NAD+ in healthy middle-aged and older adults.",
         organism: "human-rct", outcome: "biomarker", year: 2018,
         cite: "Martens CR et al., Nature Communications 9:1286",
-        url: "https://www.nature.com/articles/s41467-018-03421-7",
+        url: "https://pubmed.ncbi.nlm.nih.gov/29599478/",
         titleCheck: "Chronic nicotinamide riboside supplementation is well-tolerated and elevates NAD"
       },
       {
@@ -292,7 +292,7 @@ export const COMPOUNDS = [
         finding: "In the multi-site ITP, nicotinamide riboside did not affect mouse lifespan in either sex at the dose tested.",
         organism: "mouse", outcome: "null", year: 2021,
         cite: "Harrison DE et al., Aging Cell 20:e13328 (ITP)",
-        url: "https://onlinelibrary.wiley.com/doi/full/10.1111/acel.13328",
+        url: "https://pubmed.ncbi.nlm.nih.gov/33788371/",
         titleCheck: "nicotinamide riboside and three other drugs do not affect lifespan in either sex"
       }
     ],
