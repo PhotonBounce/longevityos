@@ -174,6 +174,7 @@ async function drive(label, contextOpts) {
   ok(evCards >= 18, label + ": the evidence ledger renders (" + evCards + " items)");
   ok(/NULL \/ HARM/.test(await page.locator("#view").textContent()), label + ": the ledger shows its nulls and harms");
   await page.screenshot({ path: join(SHOTS, label + "-02-evidence.png"), fullPage: true });
+  await page.screenshot({ path: join(SHOTS, label + "-02-evidence-viewport.png") });
   await page.getByRole("button", { name: "The Lab" }).click();
   await page.waitForTimeout(2500);
   const lab = await page.locator("#view").textContent();
@@ -181,6 +182,7 @@ async function drive(label, contextOpts) {
   ok(/Teams/.test(lab), label + ": the teams section is there");
   ok(!/No swarm server here|not reachable from here/i.test(lab), label + ": the Lab reached the live swarm server");
   await page.screenshot({ path: join(SHOTS, label + "-03-lab.png"), fullPage: true });
+  await page.screenshot({ path: join(SHOTS, label + "-03-lab-viewport.png") });   // what a visitor actually sees first
   ok(errors.length === 0, label + ": zero page errors" + (errors.length ? " — " + errors.slice(0, 3).join(" | ") : ""));
   await ctx.close();
 }
