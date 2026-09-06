@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-09-06T03:25:53.396Z",
+  "fetched_at": "2026-09-06T11:26:00.080Z",
   "entries": [
+    {
+      "pmid": "42700866",
+      "title": "Mitochondria-Endoplasmic Reticulum Contact Sites (MERCS/MAM): Multi-Layered Upstream Regulators of Microglial Senescence in Alzheimer's Disease.",
+      "journal": "Ageing research reviews",
+      "date": "2026-09-05",
+      "topic": "senolytics"
+    },
     {
       "pmid": "42686641",
       "title": "Mitochondrial Microautophagy: An Emerging Pathway in Maintaining Mitochondrial Homeostasis.",
@@ -14,6 +21,13 @@
       "journal": "Aging cell",
       "date": "2026-09-01",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42689913",
+      "title": "Insights Into the Interplay Between the Senescent Cells and Immune Cells.",
+      "journal": "Aging cell",
+      "date": "2026-09-01",
+      "topic": "senolytics"
     },
     {
       "pmid": "42677553",
@@ -42,6 +56,34 @@
       "journal": "Tissue barriers",
       "date": "2026-08-25",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42691218",
+      "title": "Senolytic Treatment Triggered by Carotid Occlusion Confers Protection Against Later Acute Ischemic Stroke in Aged Rats.",
+      "journal": "Aging and disease",
+      "date": "2026-08-11",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42694901",
+      "title": "Vascular Smooth Muscle Cell Plasticity in Atherosclerosis: Mechanisms, Recent Advances, and Therapeutic Implications.",
+      "journal": "Reviews in cardiovascular medicine",
+      "date": "2026-08-05",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42688549",
+      "title": "[Oral Aging: Age-Related Changes and Their Association With Systemic Aging].",
+      "journal": "Sichuan da xue xue bao. Yi xue ban = Journal of Sichuan University. Medical science edition",
+      "date": "2026-07-20",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42692552",
+      "title": "Flow cytometry analysis of mitochondrial apoptotic priming with BH3 profiling on senescent cells.",
+      "journal": "Methods in cell biology",
+      "date": "2026-01-01",
+      "topic": "senolytics"
     }
   ]
 }
