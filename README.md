@@ -59,6 +59,43 @@ a real Web Worker, and requiring all three digests to be byte-identical.
   every board while your verified work stays counted; emptied teams are swept.
 - Rewards are points, teams, badges and named credit — never cash or a token.
 
+## 4.0 — "The Observatory"
+
+The app became an instrument room. Everything that moves on screen is a real
+event: a real molecule drawn from the same parsed graph the engine just
+scored, seven-segment readouts of real counts, a telemetry strip narrating
+what the swarm did, and one loud moment when a stranger's browser produces the
+identical fingerprint.
+
+- **Under the lens** (`app/js/view/layout.js`, `lens.js`): the molecule being
+  screened is laid out in 2D and built atom-group by atom-group (2.2 s), with
+  per-target similarity bars, descriptors, triage flags and the score on an
+  LED. The specimen is chosen by its position in the work unit — never by its
+  score — and the caption prints the sampling ratio live ("shown 148 ·
+  screened 61,912 — one in 418"). A pool of ≤ 220 SVG nodes; no
+  requestAnimationFrame loop; reduced motion turns every build into a fade.
+- **The telemetry strip** (`view/telemetry.js`): the only poller in the app
+  (stats 15 s, hits 45 s, history 5 min, ETag/304, suspended while hidden,
+  quiet mode when the host asks), a two-row flip display with LIVE / QUIET /
+  NO LINK, and an always-open 20-line log as its accessible twin.
+- **The Observatory tab** (`view/observatory.js`, `charts.js`): fifteen
+  figures — sweep, confirmed per day, the pool, score spectrum, target board,
+  consensus meter, witnesses, integrity (canaries), people, freshness clocks,
+  flag ledger, team and contributor boards, your scope, session ledger, and
+  the host's bandwidth against its daily budget — every one with an open
+  "Read the numbers" table under it.
+- **The wizard** (`view/wizard.js`): eight steps from "what this console does"
+  to "consent, and start"; nothing runs before the last button; "Measure this
+  device" screens 200 real molecules on press and prints the rate.
+- **Sound and voice** (`view/sound.js`, `guide.js`; rendered on a runner by
+  the monorepo's `gen-audio-longevityos.yml`, never committed): eleven
+  instrument sounds keyed to events, never to scores; a calm narrator for the
+  intro and one line per page, press-to-play, transcript always on the page.
+  Silent until a tap; a remembered preference is armed and spent on the next
+  touch.
+- **The host meters itself**: bytes served per day and per action, a daily
+  budget, and a quiet flag every client honours.
+
 ## What it is not
 
 It is ligand-based similarity screening: *"this molecule looks like drugs that
@@ -126,6 +163,12 @@ python3 -m http.server 8081 &               # or any static server for app/
    "we recommend" fail the build anywhere in the app.
 7. **Credit is for effort.** Badges and points count verified units, never
    whether a unit held a hit; rewards are never money.
+8. **Excitement comes from real events only.** No sound, glow or animation is
+   keyed to a score; no count-up; no streaks, combos or invented scale; the
+   specimen under the lens is chosen by position, never by score, and the
+   sampling ratio is computed, never typed.
+9. **Nothing moves or sounds before a tap**, and reduced motion is honoured
+   by redefining every keyframe as a fade — never by freezing mid-transform.
 
 Licences: code MIT (`LICENSE`), data CC BY 4.0 (`LICENSE-DATA`); cite via
 `CITATION.cff`. The roadmap is `ROADMAP.md`.

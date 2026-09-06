@@ -106,6 +106,50 @@ ok(stats.json && Array.isArray(stats.json.teams), "stats carries the 3.0 teams b
 const hits = await api("hits", { limit: "5" });
 ok(hits.status === 200 && hits.json && Array.isArray(hits.json.hits), "hits answers (" + (hits.json && hits.json.hits && hits.json.hits.length) + " rows)");
 
+/* ————— 2b. the 4.0 API surface: history, integer stats fields, ETag/304, the bandwidth meter ————— */
+suite("live 2b — the Observatory's data");
+const sj = stats.json || {};
+ok(typeof sj.quiet === "boolean", "stats carries the quiet flag (" + sj.quiet + ")");
+ok(Array.isArray(sj.spectrum) && sj.spectrum.length === 10, "stats carries the 10-bucket score spectrum");
+ok(Array.isArray(sj.witnesses) && sj.witnesses.length === 3, "stats carries the witnesses histogram");
+ok(sj.clocks && typeof sj.clocks.harvest === "number", "stats carries the freshness clocks");
+ok(sj.units && typeof sj.units.open === "number", "stats carries the unit status counts");
+const hist = await api("history", { hours: "24" });
+ok(hist.status === 200 && hist.json && Array.isArray(hist.json.hour), "history answers (" + (hist.json && hist.json.hour && hist.json.hour.length) + " hours)");
+ok(hist.buf.length < 9000, "history stays under 9 KB (" + hist.buf.length + " B)");
+const etagRes = await fetch(API + "?a=stats", { headers: { "user-agent": UA } });
+const etag = etagRes.headers.get("etag");
+ok(!!etag, "stats sends an ETag (" + etag + ")");
+ok(/no-cache/.test(etagRes.headers.get("cache-control") || ""), "stats is no-cache (revalidate, never served stale by the host)");
+if (etag) {
+  const again = await fetch(API + "?a=stats", { headers: { "user-agent": UA, "if-none-match": etag } });
+  ok(again.status === 304, "a matching If-None-Match gets 304 (" + again.status + ")");
+}
+const workHdr = await fetch(API + "?a=work&token=none", { headers: { "user-agent": UA } });
+ok(/no-store/.test(workHdr.headers.get("cache-control") || ""), "work is no-store (a cached unit would hand two volunteers the same answer)");
+const bw = health.json && health.json.bandwidth;
+ok(bw && typeof bw.today_bytes === "number" && typeof bw.budget_bytes === "number", "health reports the host's bandwidth meter");
+if (bw) {
+  const pct = bw.budget_bytes ? Math.round(100 * bw.today_bytes / bw.budget_bytes) : 0;
+  (pct >= 80 ? warn : (m) => console.log("  · " + m))("bandwidth today: " + bw.today_bytes + " B of " + bw.budget_bytes + " (" + pct + "%)" + (bw.quiet ? " — QUIET MODE" : ""));
+}
+const audioMan = await get(BASE + "audio/manifest.json");
+if (audioMan.status === 200) {
+  let man = null; try { man = JSON.parse(audioMan.text); } catch (_) {}
+  ok(man && man.sfx && man.voice, "the audio manifest parses (sfx + voice)");
+  const entries = man ? [...Object.values(man.sfx || {}), ...Object.values(man.voice || {})] : [];
+  let present = 0;
+  for (const e of entries) {
+    const r = await fetch(BASE + "audio/" + String(e.file).replace(/^\/+/, ""), { method: "HEAD", headers: { "user-agent": UA } });
+    if (r.status === 200) present++;
+  }
+  ok(entries.length > 0 && present === entries.length, "every file the manifest lists is served (" + present + "/" + entries.length + ")");
+} else if (process.env.LOS_REQUIRE_AUDIO === "1") {
+  ok(false, "audio manifest missing (" + audioMan.status + ") and LOS_REQUIRE_AUDIO=1");
+} else {
+  warn("audio not generated yet (manifest " + audioMan.status + ") — captions carry the guide until gen-audio-longevityos runs");
+}
+
 /* ————— 3. the arc: two volunteers, one team, real work, then they leave ————— */
 suite("live 3 — join → team → work → submit → leave");
 const A = await post("join", { name: "live-qa-a" });
@@ -162,6 +206,8 @@ async function drive(label, contextOpts) {
   const ctx = await browser.newContext(contextOpts);
   const page = await ctx.newPage();
   const errors = [];
+  let mp3Requests = 0;
+  page.on("request", (r) => { if (/\.mp3(\?|$)|audio\/manifest\.json/.test(r.url())) mp3Requests++; });
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => { if (m.type() === "error" && !/favicon/.test(m.text())) errors.push(m.text()); });
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
@@ -181,13 +227,36 @@ async function drive(label, contextOpts) {
   ok(/On a phone or tablet/.test(lab), label + ": the phone section is there");
   ok(/Teams/.test(lab), label + ": the teams section is there");
   ok(!/No swarm server here|not reachable from here/i.test(lab), label + ": the Lab reached the live swarm server");
+  ok(/UNDER THE LENS/i.test(lab), label + ": the lens is on the console");
+  ok(/Set up this browser/i.test(lab), label + ": the wizard entry is there");
+  const ledTwins = await page.$$eval("svg.led", (els) => els.map((svg) => {
+    const twin = svg.nextElementSibling;
+    return { has: !!(twin && twin.classList.contains("led-text")), text: twin ? twin.textContent : "", svgTitle: (svg.querySelector("title") || {}).textContent || "" };
+  }));
+  ok(ledTwins.length >= 1 && ledTwins.every((t) => t.has), label + ": every LED has a visible text twin (" + ledTwins.length + ")");
+  const strip = await page.locator("#strip").count();
+  ok(strip === 1, label + ": the telemetry strip is mounted");
+  const logLines = await page.locator(".hud-log li").count();
+  ok(logLines >= 1 && logLines <= 20, label + ": the strip's log twin has 1..20 lines (" + logLines + ")");
   await page.screenshot({ path: join(SHOTS, label + "-03-lab.png"), fullPage: true });
   await page.screenshot({ path: join(SHOTS, label + "-03-lab-viewport.png") });   // what a visitor actually sees first
+  await page.getByRole("button", { name: "Observatory" }).click();
+  await page.waitForTimeout(2500);
+  const figures = await page.locator("#view figure").count();
+  ok(figures >= 15, label + ": the Observatory renders its figures (" + figures + ")");
+  const closedDetails = await page.$$eval("#view figure details", (els) => els.filter((d) => !d.open).length);
+  ok(closedDetails === 0, label + ": every 'Read the numbers' table is open");
+  const captions = await page.locator("#view figure figcaption").count();
+  ok(captions >= 15, label + ": every figure has a caption (" + captions + ")");
+  await page.screenshot({ path: join(SHOTS, label + "-04-observatory.png"), fullPage: true });
+  await page.screenshot({ path: join(SHOTS, label + "-04-observatory-viewport.png") });
+  ok(mp3Requests === 0, label + ": no audio was requested without a tap (" + mp3Requests + " requests)");
   ok(errors.length === 0, label + ": zero page errors" + (errors.length ? " — " + errors.slice(0, 3).join(" | ") : ""));
   await ctx.close();
 }
 await drive("desktop", { viewport: { width: 1280, height: 900 }, userAgent: UA });
 await drive("phone", { ...devices["Pixel 5"], userAgent: UA });
+await drive("still", { ...devices["Pixel 5"], userAgent: UA, reducedMotion: "reduce" });
 await browser.close();
 
 /* ————— verdict ————— */

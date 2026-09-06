@@ -186,6 +186,31 @@ nothing but a tap. 3.0 ships the second half now:
   from, a payout turns every cheater into a paid attacker, and "mine
   immortality coin" is exactly the optics the honesty rule exists to prevent.
 
+### Phase 1.6 — The Observatory (4.0): make it a game-like instrument
+
+Owner's brief: "beef up UI to look amazing and game-like — see the actual
+molecule being built each time; extreme representation with animations,
+readouts, graphs, LED displays, sound effects; a constant live route of what
+is going on everywhere; a wizard for the setup; premium narration." A judge
+panel (first-time phone visitor, geroscientist, shipping engineer) chose an
+instrument-room design over an arcade HUD and a cinematic one, on every lens:
+the excitement must come from REAL events. Shipped as 4.0: the lens, the
+telemetry strip, the Observatory tab (15 figures), the 8-step wizard, eleven
+instrument sounds and a calm narrator (rendered on a runner, never
+committed), the bandwidth meter and quiet mode, and a frame-budget test.
+
+### Phase 1.7 — Everything in PubChem (4.1): Drive-backed bulk units
+
+The owner's Google Drive (cap **120 GB**, expected footprint < 10 GB) holds the
+unit files; the host holds only manifests, digests and hits. A runner pulls
+PubChem in bulk, filters to drug-like (~25–35M of 119M), partitions into unit
+files (gzipped CID+SMILES), uploads to Drive under a quota ledger, and
+publishes a signed manifest; browsers fetch units straight from Drive with a
+referrer-restricted API key; results return as compact digests + hits above a
+threshold; a nightly runner archives full results back to Drive. Owner
+actions: the one-time OAuth consent (helper page) for
+`LOS_GDRIVE_REFRESH_TOKEN`.
+
 ### Phase 2 — Community, credit and the hand-off (1–2 sessions + owner actions)
 
 **Contributors**
