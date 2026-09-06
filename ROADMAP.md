@@ -155,6 +155,37 @@ Exit criterion: **≥ 10 dossiers for approved drugs, each with ≥ 1 PubMed
 lifespan citation and a CT.gov status line, a downloadable dataset with a
 licence, and the Lab showing drug names.**
 
+### Phase 1.5 — Everyone can mine (shipped as 3.0, alongside the ledger)
+
+The owner's question — "why can't everyone help mine from their phones and
+tablets, with points they can be rewarded for?" — is the right one, and the
+answer is that they can, as long as two things are true: the work is heavy
+enough that a phone's minutes count (Phase 2.5 below), and joining costs
+nothing but a tap. 3.0 ships the second half now:
+
+- **A ledger of what has human evidence** (`app/js/evidence.js`, the "What
+  has evidence" tab): ~20 interventions with all-cause-mortality data from
+  randomised trials and large cohorts — and every rigorous null and harm —
+  each row a verified PubMed record, framed as "in people like those in the
+  trial". Nothing on it is advice; that is the whole point of it.
+- **Phone mode** in the Lab: keep-awake (Wake Lock, gesture-only), "only
+  while charging" (Battery API where the browser has it, honestly disabled
+  where it does not), three paces, and an installable home-screen icon
+  (manifest + icons, no service worker). A phone works only while the page
+  is open; the copy says so.
+- **Teams**: create by name, join by an 8-character code or a share link,
+  a public team page, a top-10 teams board. Team rivalry was SETI@home's and
+  Folding@home's biggest growth engine.
+- **Your record**: a public, shareable contributor page (`?c=<id>`) with
+  effort-only badges (1 / 10 / 100 / 1,000 / 10,000 verified units — never
+  a badge for a hit), and an honest "leave the swarm" that hides you from
+  every board while keeping your verified work counted.
+- **Rewards stay non-monetary**: points, teams, badges, named acknowledgement
+  in every dataset release. Later: points that vote on which candidate gets
+  a sponsored worm assay. No cash, no token — there is no revenue to pay
+  from, a payout turns every cheater into a paid attacker, and "mine
+  immortality coin" is exactly the optics the honesty rule exists to prevent.
+
 ### Phase 2 — Community, credit and the hand-off (1–2 sessions + owner actions)
 
 **Contributors**
@@ -189,10 +220,24 @@ licence, and the Lab showing drug names.**
   for. Both need a named PhD-level co-applicant; the plan's job is to make
   saying yes cheap for that person.
 
-### Phase 3 — Make a volunteer's CPU matter (3–5 sessions, go/no-go first)
+### Phase 2.5 — Docking in the browser (pulled forward; 3–5 sessions, go/no-go first)
 
-Today a tab finishes its unit in a blink, which is why nobody keeps one
-open. Two steps, each a new `ENGINE_VERSION`, each keeping the trust model
+The step that makes a thousand phones *matter*: AutoDock Vina already runs
+inside a browser (the Durrant lab's Webina, open source), and one molecule
+against one protein takes minutes on a phone rather than microseconds. With
+two-way verification, 1,000 phones charging overnight work through a
+100,000-molecule pool against 10 targets in about three weeks, and a
+million-molecule pool in about seven months — every extra device shortens
+the calendar. Same trust model (fixed seed, identical binaries, two strangers
+must agree, canaries). Still a shortlist, never a binding or efficacy
+prediction, and never called anything but a docking score.
+
+Go/no-go: Phase 1 shipped, ≥ 100 contributors, and a pool ≥ 100k so the
+heavier screen has something to rank.
+
+### Phase 3 — Deterministic pharmacophore + shape layers (the fallback if browser docking cannot be made bit-reproducible)
+
+Two steps, each a new `ENGINE_VERSION`, each keeping the trust model
 (integer math, two-party consensus, canaries) intact:
 
 - **`los-chem-3` — pharmacophore layer**: 2-point pharmacophore-pair

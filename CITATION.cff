@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use LongevityOS data or code, please cite it as below."
+title: "LongevityOS: an evidence atlas of longevity-drug candidates and a volunteer screening swarm"
+type: software
+authors:
+  - name: "PhotonBounce"
+  - name: "LongevityOS contributors"
+repository-code: "https://github.com/PhotonBounce/longevityos"
+url: "https://photon-bounce.com/longevityos/"
+license: MIT
+keywords:
+  - longevity
+  - geroscience
+  - virtual screening
+  - volunteer computing
+  - evidence atlas
+abstract: >-
+  LongevityOS is an open evidence atlas of compounds studied for lifespan and
+  healthspan (including every rigorous null), a human-evidence ledger of
+  interventions with all-cause-mortality data, and a browser-based volunteer
+  compute swarm that screens harvested molecules against known longevity-active
+  reference compounds with a deterministic, two-party-verified pipeline. The
+  screening output is a ranked shortlist of hypotheses, never a discovery or a
+  recommendation. Data is CC BY 4.0 (see LICENSE-DATA); code is MIT.

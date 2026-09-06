@@ -20,6 +20,7 @@ let serveFeed = false;
 const server = createServer((req, res) => {
   let p = req.url.split("?")[0];
   if (p === "/" || p === "/app/") p = "/app/index.html";
+  if (p === "/app/data/feed.json") p = "/data/feed.json";   // FEED_URL is app-relative
   if (p === "/data/feed.json" && !serveFeed) { res.writeHead(404); res.end(); return; }
   const file = p === "/data/feed.json" ? join(HERE, "fixtures", "feed.json") : join(ROOT, p);
   if (!file.startsWith(ROOT) && !file.startsWith(HERE)) { res.writeHead(403); res.end(); return; }

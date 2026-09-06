@@ -1,0 +1,75 @@
+name: Live QA (LongevityOS)
+
+# Local green is not shipped. This proves the DEPLOYED site from a runner:
+# freshness by build stamp and engine bytes, the swarm API and a real
+# join → team → work → submit → leave arc, and the app in a desktop and a
+# phone-sized browser. Screenshots go to the orphan qa-proof-longevityos
+# branch as well as to artifacts: artifact blob storage is unreachable from
+# the authoring sandbox, `git fetch` is not.
+#
+# Zero cost: this is a public repository, so the daily schedule is free.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Base URL of the deployed app"
+        type: string
+        default: "https://photon-bounce.com/longevityos/"
+  schedule:
+    - cron: "17 6 * * *"
+  push:
+    branches: [ main ]
+    paths: [ ".github/workflows/live-qa.yml", "qa/live.mjs" ]
+
+concurrency:
+  group: los-live
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # publishes screenshots to qa-proof-longevityos
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        working-directory: qa
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Prove the live site
+        env:
+          LOS_LIVE_BASE: ${{ inputs.base || 'https://photon-bounce.com/longevityos/' }}
+        run: node qa/live.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-shots-${{ github.run_number }}
+          path: live-shots/
+          if-no-files-found: ignore
+      - name: Publish screenshots to the qa-proof-longevityos branch
+        if: always()
+        run: |
+          set -e
+          if ! ls live-shots/*.png >/dev/null 2>&1; then
+            echo "No screenshots from this run — leaving the existing proof branch alone."
+            exit 0
+          fi
+          cp -R live-shots /tmp/los-shots
+          git config user.name "live-qa-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout --orphan qa-proof-longevityos
+          git rm -rf --cached . -q || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R /tmp/los-shots/. .
+          printf 'LongevityOS live-QA screenshots (run %s, %s)\n' "$GITHUB_RUN_ID" "$(date -u +%FT%TZ)" > README.txt
+          git add -A
+          git commit -m "Live QA screenshots (run $GITHUB_RUN_ID)"
+          git push -f origin qa-proof-longevityos

@@ -4,7 +4,7 @@
  * atlas's own citation library, labeled as such — a bundled library is never
  * dressed up as a live sweep (the reruns-labeled-as-reruns rule). */
 
-export const FEED_URL = "../data/feed.json";
+export const FEED_URL = "data/feed.json";   // deployed beside the app (deploy mirrors data/ → longevityos/data/)
 export const FEED_STALE_DAYS = 14;
 
 export function parseFeed(json) {

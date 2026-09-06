@@ -50,3 +50,17 @@ jobs:
         with:
           node-version: '22'
       - run: node qa/verify-sources.mjs
+
+  verify-molecules:
+    # Every reference active is fetched from PubChem and compared as a
+    # STRUCTURE (formula + Tanimoto 1000/1000 through molFromSmiles), never as
+    # a spelling. A wrong reference molecule would not error — it would quietly
+    # rank every candidate against something that does not exist.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node qa/verify-molecules.mjs

@@ -1,0 +1,29 @@
+LongevityOS data licence
+========================
+
+The curated corpora in this repository — the evidence atlas (app/js/data.js),
+the human-evidence ledger (app/js/evidence.js), the reference set
+(app/js/chem/targets.js), the literature feed (data/feed.json) and every
+dataset export the project publishes — are released under the
+
+    Creative Commons Attribution 4.0 International licence (CC BY 4.0)
+    https://creativecommons.org/licenses/by/4.0/
+
+You may copy, redistribute, remix and build on them for any purpose, including
+commercially, provided you give appropriate credit ("LongevityOS,
+https://github.com/PhotonBounce/longevityos"), link to the licence, and
+indicate if changes were made.
+
+Two things this licence does not change:
+
+1. Every row cites a primary source (a PubMed record, a registered trial, a
+   PubChem compound). The underlying papers and databases keep their own
+   terms; the CC BY licence covers our curation, wording and structure.
+2. Nothing here is medical advice. A dataset row describes what a study
+   reported in the people it enrolled; it is not a recommendation to anyone.
+
+Third-party data the swarm ingests (PubChem, and in later releases ChEMBL and
+DrugAge) carries its own licence, which the ingesting tool records alongside
+the data it fetched.
+
+The software itself is under the MIT licence in LICENSE.
