@@ -139,7 +139,12 @@ ok(wB.json.unit && wB.json.unit.unit_id === wA.json.unit.unit_id,
 /* ————— 4. consensus: one submission is never enough ————— */
 suite("api 4 — two independent agreements make a result");
 const unit = wA.json.unit;
-const results = unit.molecules.map((m, i) => ({ id: String(m.id), score: 500 + i, best: "mtor", flags: [] }));
+/* real submissions carry structural-alert flags; the hit list is where a
+   chemist reads them, so they have to survive the whole round trip */
+const results = unit.molecules.map((m, i) => ({
+  id: String(m.id), score: 500 + i, best: "mtor",
+  flags: i === 0 ? ["nitro_aromatic", "michael_acceptor"] : []
+}));
 const DIGEST = "a".repeat(64);
 
 const s1 = await call("a=submit", { token: alice.token, unit_id: unit.unit_id, digest: DIGEST, results });
@@ -156,6 +161,12 @@ ok(s2.json.status === "confirmed", `two independent agreeing digests confirm the
 const hits = await call("a=hits&limit=50");
 ok(hits.json.hits.length === unit.molecules.length, "the confirmed molecules reach the hit list");
 ok(hits.json.hits.every((h) => Number.isInteger(h.score)), "hit scores are integers");
+/* the flags the volunteers computed must arrive intact: this column read
+   "not reported" for every row until the hits query started selecting it */
+ok(hits.json.hits.every((h) => Array.isArray(h.flags)), "every hit carries a flags array");
+const flagged = hits.json.hits.find((h) => h.flags && h.flags.length);
+ok(flagged && flagged.flags.includes("nitro_aromatic"),
+   "the structural alerts a volunteer computed survive the round trip into the hit list");
 ok(hits.bytes < 10240, `the hits response stays under 10KB (${hits.bytes} bytes)`);
 
 /* ————— 5. disagreement is quarantined, not averaged ————— */

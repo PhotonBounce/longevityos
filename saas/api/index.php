@@ -1086,7 +1086,11 @@ function action_hits(PDO $db)
     }
     $limit = max(1, min(50, $limit));
 
-    $st = $db->prepare('SELECT cid, smiles, formula, score, best_target, verified_by
+    /* flags travel with the hit. They are the whole reason a chemist would look
+     * at a row twice — "this scores well AND carries a reactive-group alert" is
+     * a different story from a clean one — and leaving the column out of this
+     * SELECT is why the Lab could only ever print "not reported". */
+    $st = $db->prepare('SELECT cid, smiles, formula, score, best_target, flags, verified_by
                           FROM hits ORDER BY score DESC, cid ASC LIMIT ?');
     $st->bindValue(1, $limit, PDO::PARAM_INT);
     $st->execute();
@@ -1095,7 +1099,19 @@ function action_hits(PDO $db)
     $bytes = 0;
     foreach ($st->fetchAll() as $h) {
         $smiles = substr((string) $h['smiles'], 0, LOS_SMILES_MAX);
-        $bytes += strlen($smiles) + strlen((string) $h['cid']) + strlen((string) $h['formula']) + 90;
+        /* stored as a JSON list; a corrupt or oversized value degrades to an
+           empty list rather than breaking the response */
+        $flags = array();
+        $decoded = json_decode((string) $h['flags'], true);
+        if (los_is_list($decoded)) {
+            foreach (array_slice($decoded, 0, 8) as $f) {
+                if (is_string($f) || is_numeric($f)) {
+                    $flags[] = los_clean_short((string) $f, 32);
+                }
+            }
+        }
+        $bytes += strlen($smiles) + strlen((string) $h['cid']) + strlen((string) $h['formula'])
+                + strlen(implode(',', $flags)) + 100;
         if ($hits && $bytes > LOS_JSON_BUDGET) {
             break;
         }
@@ -1105,6 +1121,7 @@ function action_hits(PDO $db)
             'score'       => (int) $h['score'],
             'best_target' => (string) $h['best_target'],
             'formula'     => (string) $h['formula'],
+            'flags'       => $flags,
             'verified_by' => (int) $h['verified_by'],
         );
     }
