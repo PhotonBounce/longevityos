@@ -131,7 +131,10 @@ string drifts past those limits.
   zero requests until a trusted gesture) + `voice` (`NARRATION` ↔
   `qa/voice/lines.json` both ways) + `tools/gen-audio.mjs --selftest` + `e2e`
   + `evidence` (the ledger in a real browser). `npm run probes` = the
-  standing adversarial probes (`probe-consent` forges events and manifests);
+  standing adversarial probes (`probe-consent` forges events and manifests;
+  `probe-churn` is the fidgety visitor with a run going — sixty tab changes
+  and twenty visibility flips in seconds — and asks what leaked: timers,
+  observers, listeners, log hosts, DOM, and requests on the host);
   `bash cycle.sh` = the 5-clean-cycles bar. CI adds `verify-sources.mjs`
   (every citation checked against PubMed's API) and `verify-molecules.mjs`
   (every reference SMILES checked against PubChem). `live-qa.yml` proves the

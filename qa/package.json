@@ -18,7 +18,7 @@
     "test:evidence": "node evidence.mjs",
     "icons": "node gen-icons.mjs",
     "probe:teams": "node probe-teams.mjs",
-    "probes": "node probe-teams.mjs && node probe-deeplink.mjs && node probe-consent.mjs",
+    "probes": "node probe-teams.mjs && node probe-deeplink.mjs && node probe-consent.mjs && node probe-churn.mjs",
     "verify-sources": "node verify-sources.mjs",
     "verify-molecules": "node verify-molecules.mjs",
     "probe:deeplink": "node probe-deeplink.mjs",
@@ -29,6 +29,7 @@
     "test:perf": "node perf.mjs",
     "test:gen-audio": "node ../tools/gen-audio.mjs --selftest",
     "probe:consent": "node probe-consent.mjs",
+    "probe:churn": "node probe-churn.mjs",
     "lines": "node ../tools/gen-audio.mjs --lines"
   },
   "devDependencies": {

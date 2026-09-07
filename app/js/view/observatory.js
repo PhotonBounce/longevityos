@@ -120,6 +120,7 @@ const LIVE_MS = 45000;
 const QUIET_MS = 300000;
 const STALE_AMBER_S = 300;
 const STALE_WORD_S = 1800;
+const ROOM_REFRESH_MIN_MS = 5000;  // entering the room forces a round only if the strip's last landing is older than this
 
 /* ————— module state (survives tab switches; app.js rebuilds the DOM) ————— */
 
@@ -755,10 +756,18 @@ function subscribeStore() {
     if (!attached()) { unsubscribeStore(); return; }
     if (ev && FEED_KINDS[ev.kind]) feedFromStore(snap);
   });
-  feedFromStore(viewTelemetry.snapshot());
+  const snap = viewTelemetry.snapshot();
+  feedFromStore(snap);
   /* a fresh reading for a fresh room — refresh() re-polls stats and hits; the
    * five-minute endpoints keep their own cadence (a room re-entered a hundred
-   * times must not make a hundred history requests) */
+   * times must not make a hundred history requests). And not even those two
+   * when the strip landed a poll within the last five seconds: during a run
+   * the Lab already forces a round every five seconds, so a room re-entered
+   * thirty times in two seconds costs one request, not thirty — a visitor
+   * must never be able to rate-limit themselves out of the swarm by
+   * fidgeting (probe-churn, 4.0). */
+  const landed = snap && typeof snap.lastOkAt === "number" && snap.lastOkAt > 0 ? snap.lastOkAt : 0;
+  if (landed && Date.now() - landed < ROOM_REFRESH_MIN_MS) return;
   try { const r = viewTelemetry.refresh(); if (r && typeof r.then === "function") r.then(feedFromStore).catch(() => {}); } catch (_) { /* the store is optional in QA */ }
 }
 function unsubscribeStore() {

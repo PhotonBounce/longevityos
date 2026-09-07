@@ -466,6 +466,24 @@ await cdpA.send("Emulation.setCPUThrottlingRate", { rate: 1 });
 const longTasks = await A.evaluate(() => window.__lt.slice());
 ok(Math.max(0, ...longTasks) <= 80, `mounting the Observatory and repainting on the first polls under a 4x CPU throttle produce no long task over 80 ms (long tasks: ${JSON.stringify(longTasks)})`);
 
+/* ————— 5b. re-entered thirty times ————— */
+suite("observatory 5b — thirty re-entries in a few seconds are not thirty forced rounds");
+{
+  const s0 = mock.hits.stats, h0 = mock.hits.hits, y0 = mock.hits.history || 0;
+  for (let i = 0; i < 30; i++) {
+    await A.locator('[data-tab="atlas"]').click();
+    await sleep(30);
+    await A.locator('[data-tab="observatory"]').click();
+    await sleep(30);
+  }
+  await A.waitForFunction(() => document.querySelectorAll(".obs-fig").length === 15, null, { timeout: 5000 });
+  const d = { stats: mock.hits.stats - s0, hits: mock.hits.hits - h0, history: (mock.hits.history || 0) - y0 };
+  ok(d.stats <= 3 && d.hits <= 3, `thirty re-entries cost at most one forced round beside the cadence (stats +${d.stats}, hits +${d.hits})`);
+  ok(d.history <= 2, `…and the history endpoints kept their cadence (+${d.history})`);
+  ok((await A.evaluate(() => window.__losObs.snapshot().polling)) === true, "and the room is subscribed to the store");
+  ok((await A.evaluate(() => document.querySelectorAll(".obs-fig").length)) === 15, "fifteen figures, once");
+}
+
 /* ————— 6. empty states ————— */
 suite("observatory 6 — every empty state, verbatim");
 mock.mode = "empty";

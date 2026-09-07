@@ -578,6 +578,31 @@ suite("strip 9 — a hidden document suspends every timer; a visible one polls a
   ok(!!eps2, "…and the schedule is back");
 }
 
+/* ————— 9c. ten returns in a second are not ten rounds ————— */
+suite("strip 9c — ten returns in a second re-poll stats at most twice and the five-minute endpoints not at all");
+{
+  const n0 = { stats: reqsFor("stats").length, hits: reqsFor("hits").length, history: reqsFor("history").length };
+  for (let i = 0; i < 20; i++) {
+    await P.evaluate((s) => { window.__vis = s; document.dispatchEvent(new Event("visibilitychange")); }, i % 2 === 0 ? "hidden" : "visible");
+    await P.waitForTimeout(50);
+  }
+  await P.waitForTimeout(800);
+  const d = { stats: reqsFor("stats").length - n0.stats, hits: reqsFor("hits").length - n0.hits, history: reqsFor("history").length - n0.history };
+  ok(d.stats <= 2, `ten returns in a second re-polled stats at most twice (${d.stats})`);
+  ok(d.history === 0, `…and never the five-minute history (${d.history})`);
+  ok(d.hits <= 1, `…and hits at most once (${d.hits})`);
+  const eps = await until(async () => { const e = await P.evaluate(() => window.__losStrip.endpoints()); return e.stats.scheduled && e.hits.scheduled && e.history.scheduled ? e : null; }, 3000);
+  ok(!!eps, "every endpoint is scheduled again, keeping its place in the cadence");
+  /* the frames: a return is not a "next", and a swap frozen by a hidden document
+     leaves no stale listener behind to commit an old line over the next one */
+  const frames = await P.evaluate(() => window.__losStrip.frame());
+  ok(!!frames, "a frame is on the strip after the flips");
+  await P.evaluate(() => window.__losStrip.push({ tag: "CONF", text: "Probe 9c — a second volunteer's browser produced the same fingerprint as yours." }));
+  ok(!!(await until(async () => (await P.evaluate(() => document.querySelector("#strip .strip").getAttribute("data-frame-tag"))) === "CONF" ? true : null, 1500)), "a CONF pushed right after the flips reaches the strip");
+  await P.waitForTimeout(700);
+  ok((await P.evaluate(() => document.querySelector("#strip .strip").getAttribute("data-frame-tag"))) === "CONF" && /Probe 9c/.test(await rowText(P)), "…and no stale swap commits an old line over it (" + (await rowText(P)).slice(0, 40) + ")");
+}
+
 /* ————— 9b. a document hidden at mount makes no request ————— */
 suite("strip 9b — a document already hidden at mount polls nothing until it is visible");
 {

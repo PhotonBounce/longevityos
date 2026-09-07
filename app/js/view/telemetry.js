@@ -53,6 +53,7 @@ const FADE_MS = 120;
 const LOG_MAX = 20;
 const LINE_MAX = 160;
 const REQUEST_MS = 12000;
+const RETURN_MIN_MS = 2000;   // a return to a visible document re-polls stats only if the last landing is older than this
 const MAX_BODY = 262144;
 const HUD_KEY = "los.hud.v1";
 const TAGS = ["NET", "LAB", "YOU", "CONF", "ATLAS"];
@@ -437,6 +438,15 @@ function nextFrame() {
   return { tag, text, holdMs: FRAME_MS };
 }
 
+/* Back from hidden: the frame the visitor left on stays for one hold, then the
+ * strip moves on — a return is not a "next", so ten returns in a second are
+ * not ten frames skipped (probe-churn, 4.0). */
+function resumeFrames() {
+  if (frameTimer !== null) return;
+  if (!current) { showNext(); return; }
+  frameTimer = setTimeout(() => { frameTimer = null; showNext(); }, current.holdMs);
+}
+
 function showNext() {
   if (frameTimer !== null) { clearTimeout(frameTimer); frameTimer = null; }
   const f = nextFrame();
@@ -481,7 +491,7 @@ function buildStrip() {
   btn.addEventListener("click", () => { if (store.paused) resume(); else pause(); });
   right.appendChild(btn);
   strip.appendChild(right);
-  return { strip, tag, rows, rowA, rowB, word, btn, swapping: false, pending: null };
+  return { strip, tag, rows, rowA, rowB, word, btn, swapping: false, pending: null, onSwapEnd: null, swapTimer: null };
 }
 
 function commitRow(m, f) {
@@ -508,17 +518,29 @@ function paintFrame(f) {
   m.swapping = true;
   m.rowB.textContent = f.text;
   m.rows.classList.add("swap");
+  /* A swap that never finishes — the document went hidden mid-animation and
+   * the browser froze it, so the fallback timer committed the row — used to
+   * leave its once-listener behind, and the NEXT swap's animationend then ran
+   * the stale closure first: it committed the OLD frame over the new one and
+   * the new frame (a CONF, the one line a volunteer most wants to see) was
+   * lost from the strip. Every swap now owns exactly one listener and one
+   * timer, and done() retires both whichever fires first (probe-churn, 4.0). */
   const done = () => {
     if (!m.swapping) return;
     m.swapping = false;
+    if (m.onSwapEnd) { try { m.rows.removeEventListener("animationend", m.onSwapEnd); } catch (_) {} m.onSwapEnd = null; }
+    if (m.swapTimer !== null) { clearTimeout(m.swapTimer); m.swapTimer = null; }
     m.rows.classList.remove("swap");
     commitRow(m, f);
     const p = m.pending;
     m.pending = null;
     if (p) paintFrame(p);
   };
+  if (m.onSwapEnd) { try { m.rows.removeEventListener("animationend", m.onSwapEnd); } catch (_) {} }
+  m.onSwapEnd = done;
   try { m.rows.addEventListener("animationend", done, { once: true }); } catch (_) {}
-  setTimeout(done, SWAP_MS + 60);
+  if (m.swapTimer !== null) clearTimeout(m.swapTimer);
+  m.swapTimer = setTimeout(done, SWAP_MS + 60);
 }
 
 function linkState() {
@@ -615,6 +637,19 @@ function refresh() {
   return Promise.all([force(EP.stats), force(EP.hits)]).then(() => { paintLamp(); return snapshot(); });
 }
 
+/* A return from the background is not a new visitor. The cheap endpoint
+ * (stats — a 304 most of the time) re-polls at once so the lamp and the
+ * readouts are current, unless it landed within the last two seconds; the
+ * slower endpoints re-poll only if they are DUE, otherwise they keep their
+ * place in the cadence. A phone switched away and back ten times must not
+ * fetch ten copies of a five-minute history (probe-churn, 4.0). */
+function pollOnReturn(ep) {
+  const age = ep.lastAt ? Date.now() - ep.lastAt : Infinity;
+  const due = ep.name === "stats" ? RETURN_MIN_MS : nextDelay(ep);
+  if (age >= due) poll(ep);
+  else schedule(ep, due - age);
+}
+
 function hookVisibility() {
   if (visibilityHooked) return;
   visibilityHooked = true;
@@ -628,8 +663,8 @@ function hookVisibility() {
           for (const ep of Object.values(EP)) clearTimer(ep);
           if (frameTimer !== null) { clearTimeout(frameTimer); frameTimer = null; }
         } else {
-          if (!store.paused) for (const ep of Object.values(EP)) poll(ep);
-          showNext();
+          if (!store.paused) for (const ep of Object.values(EP)) pollOnReturn(ep);
+          resumeFrames();
         }
         notify({ kind: "visibility", hidden });
       } catch (_) {}
