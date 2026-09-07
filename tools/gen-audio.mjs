@@ -46,6 +46,12 @@ const OUTPUT_FORMAT = "mp3_44100_64";
 const PROMPT_INFLUENCE = 0.4;
 const TTS_URL = (voiceId) => "https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(voiceId) + "?output_format=" + OUTPUT_FORMAT;
 const SFX_URL = "https://api.elevenlabs.io/v1/sound-generation";
+/* The sound-generation endpoint renders between 0.5 s and 30 s and refuses
+ * anything outside that with invalid_generation_settings. Two of the app's
+ * ticks were written shorter than a tick needs to be told to a service, so
+ * the plan is checked here rather than discovered on a runner. */
+const SFX_MIN_SECONDS = 0.5;
+const SFX_MAX_SECONDS = 30;
 const CAP = Object.freeze({ sfx: 200 * 1024, voice: 1024 * 1024 });
 
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
@@ -71,6 +77,7 @@ export function plan(voiceId = VOICE_ID_DEFAULT) {
   for (const s of SFX) {
     items.push({
       kind: "sfx", name: s.file, prompt: s.prompt, seconds: s.seconds, loop: s.loop === true, file: s.file + ".mp3",
+      outOfRange: !(s.seconds >= SFX_MIN_SECONDS && s.seconds <= SFX_MAX_SECONDS),
       hash: sha256([s.prompt, String(s.seconds), String(s.loop === true)].join("|"))
     });
   }
@@ -147,6 +154,14 @@ export function detailOf(text) {
 async function bodyText(res) {
   if (!res || typeof res.text !== "function") return "";
   try { return await res.text(); } catch (_) { return ""; }
+}
+
+/* A duration the service cannot render is a fault in the app's own table, and
+ * the selftest says so offline instead of a runner saying it after paying for
+ * the eighteen items around it. */
+export function planFaults(voiceId = VOICE_ID_DEFAULT) {
+  return plan(voiceId).filter((it) => it.outOfRange)
+    .map((it) => it.kind + "/" + it.name + ": duration_seconds " + it.seconds + " is outside " + SFX_MIN_SECONDS + "–" + SFX_MAX_SECONDS + " s");
 }
 
 export async function run({ dir = AUDIO_DIR_DEFAULT, voiceId = VOICE_ID_DEFAULT, key = "", fetchImpl = globalThis.fetch, dryRun = false, log = () => {} } = {}) {
@@ -303,6 +318,7 @@ async function selftest() {
     ok(!/[0-9a-f]{32}/.test(detailOf("token " + "a1".repeat(20))), "a long hex string is redacted too");
     ok(detailOf("x".repeat(900)).length <= 304, "the detail is capped (" + detailOf("x".repeat(900)).length + " chars)");
     ok(detailOf("") === "" && detailOf(null) === "", "no body, no detail");
+    ok(planFaults().length === 0, "every sound the app asks for is a duration the service will render: " + JSON.stringify(planFaults()));
     const four00 = async () => ({ ok: false, status: 400, text: async () => '{"detail":{"status":"voice_not_found"}}' });
     const tmp5 = mkdtempSync(join(tmpdir(), "los-audio-400-"));
     const r8 = await run({ dir: tmp5, key: "KEY", fetchImpl: four00 });

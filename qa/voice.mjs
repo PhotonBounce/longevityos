@@ -88,7 +88,12 @@ ok(SFX.filter((s) => s.loop).length === 1 && SFX.find((s) => s.loop).file === "r
 ok(SFX.every((s) => s.loop || s.seconds <= 1.5), "every one-shot is 1.5 s or shorter");
 ok(SFX.every((s) => !/score|hit|jackpot|win|triumph/i.test(s.event)), "no event is keyed to a score or a win");
 ok(SFX.every((s) => !/music|melody|fanfare|alarm|buzzer/i.test(s.prompt.replace(/no (music|melody|alarm|buzzer)/gi, ""))), "no prompt asks for music, a fanfare, an alarm or a buzzer");
-const EXPECTED = { "console-wake": 1.4, "unit-issued": 0.5, "molecule-lock": 0.25, "unit-submitted": 0.6, confirmed: 1.2, conflict: 0.7, idle: 0.5, "link-lost": 0.6, "wizard-step": 0.18, stopped: 0.5, "room-tone": 12 };
+/* Every duration the app asks for must be one the generator will render: the
+ * sound-generation endpoint takes 0.5–30 s and refuses the rest. The two ticks
+ * were written at 0.25 and 0.18 and a runner refused them after paying for the
+ * eighteen items around them; their prompts now put the transient at the start
+ * of the shortest renderable clip, so what a visitor hears is unchanged. */
+const EXPECTED = { "console-wake": 1.4, "unit-issued": 0.5, "molecule-lock": 0.5, "unit-submitted": 0.6, confirmed: 1.2, conflict: 0.7, idle: 0.5, "link-lost": 0.6, "wizard-step": 0.5, stopped: 0.5, "room-tone": 12 };
 for (const [file, seconds] of Object.entries(EXPECTED)) { const s = SFX.find((x) => x.file === file); ok(s && s.seconds === seconds, file + " is " + seconds + " s"); }
 
 console.log(failed ? "voice: " + failed + " FAILED of " + checks : "voice: " + checks + " checks passed ✓");

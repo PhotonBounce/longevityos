@@ -42,8 +42,11 @@ export const SFX = Object.freeze([
     prompt: "Vintage lab instrument powering on: soft electrical thunk, low hum rising and settling, one relay click. Dry, no music." },
   { event: "unit arrives", file: "unit-issued", seconds: 0.5, loop: false,
     prompt: "One soft square-wave data blip with a tiny relay click. Dry, quiet, no melody." },
-  { event: "specimen drawn", file: "molecule-lock", seconds: 0.25, loop: false,
-    prompt: "A tiny glassy click like a lens element seating. Barely audible, no ring." },
+  /* 0.5 s is the shortest the generator will render (see SFX_MIN_SECONDS in
+   * tools/gen-audio.mjs); the transient is asked for at the very start and
+   * the rest is silence, so what the visitor hears is still a tick. */
+  { event: "specimen drawn", file: "molecule-lock", seconds: 0.5, loop: false,
+    prompt: "A tiny glassy click like a lens element seating, right at the start, then silence. Barely audible, no ring, no tail." },
   { event: "fingerprint sent", file: "unit-submitted", seconds: 0.6, loop: false,
     prompt: "Brief upward two-tone data chirp from an old telemetry console, dry, faint tape tick." },
   { event: "second volunteer matched", file: "confirmed", seconds: 1.2, loop: false,
@@ -54,8 +57,8 @@ export const SFX = Object.freeze([
     prompt: "Quiet descending two-note blip, thin, dry, ending in silence." },
   { event: "server unreachable", file: "link-lost", seconds: 0.6, loop: false,
     prompt: "Thin steady carrier tone cut by a soft click and brief hiss. Quiet, no alarm." },
-  { event: "wizard step", file: "wizard-step", seconds: 0.18, loop: false,
-    prompt: "Tiny rotary-selector detent click. Dry, single transient." },
+  { event: "wizard step", file: "wizard-step", seconds: 0.5, loop: false,
+    prompt: "Tiny rotary-selector detent click at the very start, then silence. Dry, single transient, no tail." },
   { event: "stopped", file: "stopped", seconds: 0.5, loop: false,
     prompt: "Short falling hum with one relay click at the end. Quiet, final." },
   { event: "room tone (opt-in)", file: "room-tone", seconds: 12, loop: true,
