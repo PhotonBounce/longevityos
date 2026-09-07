@@ -569,7 +569,21 @@ suite("api 13 — a re-pinned reference set retires the old units");
     const u = w1.json.unit;
     const res = screenUnit(u, referenceSet());
     const sub = await call("a=submit", { token: x.token, unit_id: u.unit_id, digest: res.digest, results: res.results });
-    ok(sub.status === 409 && sub.json && sub.json.error === "unit_stale", "the unit issued under the old digest is refused as stale (" + sub.status + " " + (sub.json && sub.json.error) + ")");
+    /* Roughly one issue in twenty is a canary, and a canary looks exactly like
+     * ordinary work on the wire — deliberately, so a fabricator cannot tell
+     * them apart. The two are retired differently: an ordinary unit is marked
+     * stale and keeps its row, a canary is DELETED (its known answer was
+     * computed under the old reference set). So the expected refusal depends
+     * on which kind was drawn, and the test asks the database rather than
+     * assuming. Both are a 4xx with a JSON code the client discards the unit
+     * on; a 1-in-20 draw must never decide whether this suite passes. */
+    const kind = sql(`SELECT canary_digest FROM units WHERE id = '${u.unit_id.replace(/'/g, "''")}'`);
+    const wasCanary = kind.length === 0 || kind[0].canary_digest !== null;
+    const expected = wasCanary ? { status: 404, error: "unknown_unit" } : { status: 409, error: "unit_stale" };
+    ok(sub.status === expected.status && sub.json && sub.json.error === expected.error,
+       `the ${wasCanary ? "canary" : "ordinary unit"} issued under the old digest is refused (${expected.status} ${expected.error}; got ${sub.status} ${sub.json && sub.json.error})`);
+    ok(sub.status >= 400 && sub.status < 500 && !/Fatal error|PDOException/i.test(sub.text), "…as a 4xx with nothing leaked, whichever kind it was");
+    ok(count(`results WHERE unit_id = '${u.unit_id.replace(/'/g, "''")}'`) === 0, "and the refused work was not recorded");
   }
   const w2 = await call("a=work&token=" + x.token);
   ok(w2.json && w2.json.unit && w2.json.unit.targets_digest === NEW_DIGEST, "the next unit carries the new digest");
