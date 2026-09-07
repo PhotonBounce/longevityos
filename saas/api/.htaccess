@@ -48,17 +48,30 @@ DirectoryIndex index.php
   AddType application/x-httpd-php .php
 </IfModule>
 
-# ——— never cache an API response ———
+# ——— the SHARED cache is off; the PER-RESPONSE policy belongs to the app ———
 # This host runs LiteSpeed with aggressive server-side caching; it has cached
 # 404s and day-old files before now. A cached work unit would hand two
 # volunteers the SAME "independent" answer and quietly destroy the redundancy
-# that makes a verified hit mean anything.
+# that makes a verified hit mean anything. So the server-side page cache stays
+# off, unconditionally, for everything under here.
 <IfModule LiteSpeed>
   CacheDisable public /
+  CacheDisable private /
 </IfModule>
+
+# What this file must NOT do is decide the policy for each response. Since 4.0
+# index.php splits it: a read (stats, hits, history, health) answers
+# `no-cache` WITH an ETag, so a poll that changes nothing costs a 304 and no
+# body — that is the whole bandwidth design, and the owner asked us to watch
+# the host's bandwidth. Work, submit, join and the personal actions answer
+# `no-store` and never carry one. Both are asserted in qa/api.mjs suite 14
+# against a real server.
+#
+# The 3.0 version of this file predated that split and stripped every ETag
+# (`Header always unset ETag` + `FileETag None`). It survived the release and
+# live QA caught it: every poll from every volunteer was transferring a full
+# body forever. Do not reintroduce a blanket rule here — a header this file
+# strips is one the application cannot send.
 <IfModule mod_headers.c>
-  Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
   Header always set X-Content-Type-Options "nosniff"
-  Header always unset ETag
 </IfModule>
-FileETag None

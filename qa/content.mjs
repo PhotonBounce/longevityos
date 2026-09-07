@@ -172,6 +172,16 @@ if (existsSync(join(apiDir, "index.php"))) {
      "a raw IP is never stored — only a hash, for rate limiting");
   const htaccess = existsSync(join(apiDir, ".htaccess")) ? readFileSync(join(apiDir, ".htaccess"), "utf8") : "";
   ok(/sqlite|data/i.test(htaccess), "the .htaccess blocks the database from the web");
+  /* 4.0: the cache split lives in index.php, per action. A blanket header rule
+   * here overrides it — the 3.0 file stripped every ETag and killed the 304s
+   * that the whole bandwidth design rests on, and only live QA noticed. The
+   * scan reads DIRECTIVES, not the comments that explain them. */
+  const directives = htaccess.split(/\n/).map((l) => l.replace(/^\s*#.*$/, "").trim()).filter(Boolean).join("\n");
+  ok(!/unset\s+ETag/i.test(directives) && !/FileETag\s+None/i.test(directives),
+     "the .htaccess does not strip ETags — a read answers with one so a poll costs a 304");
+  ok(!/Header[^\n]*\bset\s+Cache-Control/i.test(directives),
+     "…and does not force one Cache-Control on every response: index.php decides per action");
+  ok(/CacheDisable\s+public/i.test(directives), "…while the LiteSpeed shared page cache stays off");
 } else {
   ok(false, "saas/api/index.php is missing — the swarm has no server");
 }
