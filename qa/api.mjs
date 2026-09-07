@@ -722,7 +722,12 @@ suite("api 15 — history: a row per hour, written once a minute at most, pruned
   ok(full.json.hour[full.json.hour.length - 1] === thisHour() && full.json.hour.every((v, j) => j === 0 || v > full.json.hour[j - 1]), "what is kept is the newest, ascending");
   const fullDay = await call("a=history&bucket=day&hours=720&bw=1");
   ok(fullDay.bytes < 9000 && fullDay.json.hour.length === 30 && fullDay.json.rows.slice(1, 29).every((r) => r === 24), `the daily view of 720 rows is 30 days of 24 readings under 9,000 bytes (${fullDay.bytes})`);
-  ok(fullDay.json.screened.every((v, j) => j === 0 || v >= fullDay.json.screened[j - 1]), "a monotone counter aggregated by MAX stays monotone across days");
+  // Days 0..28 hold only seeded readings; today (index 29) also holds the LIVE
+  // hour's real row, and in the first hour after UTC midnight it holds nothing
+  // else — so today's MAX is the real count, not the seed (caught at 00:25 UTC).
+  const seededDays = fullDay.json.screened.slice(0, 29);
+  ok(seededDays.every((v, j) => j === 0 || v >= seededDays[j - 1]), "a monotone counter aggregated by MAX stays monotone across the seeded days");
+  ok(fullDay.json.rows[29] >= 1 && fullDay.json.screened[29] >= 0, `today carries at least the live hour's own reading (${fullDay.json.rows[29]} rows)`);
   sql(`DELETE FROM history WHERE hour <> ${thisHour()}`);
   ok((await call("a=history&hours=48")).status === 200 && (await call("a=health")).json.ok === true, "the server is healthy after the history pass");
 }
