@@ -137,13 +137,23 @@ const audioMan = await get(BASE + "audio/manifest.json");
 if (audioMan.status === 200) {
   let man = null; try { man = JSON.parse(audioMan.text); } catch (_) {}
   ok(man && man.sfx && man.voice, "the audio manifest parses (sfx + voice)");
-  const entries = man ? [...Object.values(man.sfx || {}), ...Object.values(man.voice || {})] : [];
+  /* The manifest stores a BASENAME per entry and the app prepends the group's
+   * directory itself (sound.js: base + "sfx/" + file; guide.js: base +
+   * "voice/" + file). A checker that flattens both groups loses that prefix
+   * and asks for audio/intro.mp3, which has never existed — it reported 0/20
+   * against a site serving all twenty. Ask for what the app asks for. */
+  const entries = man ? [
+    ...Object.values(man.sfx || {}).map((e) => ({ e, dir: "sfx/" })),
+    ...Object.values(man.voice || {}).map((e) => ({ e, dir: "voice/" }))
+  ] : [];
   let present = 0;
-  for (const e of entries) {
-    const r = await fetch(BASE + "audio/" + String(e.file).replace(/^\/+/, ""), { method: "HEAD", headers: { "user-agent": UA } });
-    if (r.status === 200) present++;
+  const missing = [];
+  for (const { e, dir } of entries) {
+    const path = "audio/" + dir + String(e.file).replace(/^\/+/, "");
+    const r = await fetch(BASE + path, { method: "HEAD", headers: { "user-agent": UA } });
+    if (r.status === 200) present++; else missing.push(path + " (" + r.status + ")");
   }
-  ok(entries.length > 0 && present === entries.length, "every file the manifest lists is served (" + present + "/" + entries.length + ")");
+  ok(entries.length > 0 && present === entries.length, "every file the manifest lists is served (" + present + "/" + entries.length + ")" + (missing.length ? ": " + missing.slice(0, 3).join(", ") : ""));
 } else if (process.env.LOS_REQUIRE_AUDIO === "1") {
   ok(false, "audio manifest missing (" + audioMan.status + ") and LOS_REQUIRE_AUDIO=1");
 } else {
