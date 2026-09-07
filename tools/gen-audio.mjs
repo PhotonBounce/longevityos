@@ -133,6 +133,22 @@ function writeManifest(dir, manifest, voiceId) {
 /* run(): renders every stale item through `fetchImpl`, writes files + manifest,
  * and returns a report. Never throws for a single item's failure; an oversized
  * or failed item is listed under `refused` and the run's `ok` is false. */
+/* A refusal that says only "HTTP 400" cannot be acted on. The service's own
+ * error body says which field it disliked, and that body is the service
+ * talking about the REQUEST — it never contains the key — but it is redacted
+ * and capped anyway, because a tool that prints a remote server's bytes into
+ * a public CI log should never be the reason a secret escapes. */
+const KEY_SHAPED = /\b(sk_[A-Za-z0-9_-]{8,}|xi-api-key\s*[:=]\s*\S+|[0-9a-f]{32,})\b/gi;
+export function detailOf(text) {
+  if (typeof text !== "string" || text === "") return "";
+  const clean = text.replace(KEY_SHAPED, "[redacted]").replace(/\s+/g, " ").trim();
+  return clean ? " — " + clean.slice(0, 300) : "";
+}
+async function bodyText(res) {
+  if (!res || typeof res.text !== "function") return "";
+  try { return await res.text(); } catch (_) { return ""; }
+}
+
 export async function run({ dir = AUDIO_DIR_DEFAULT, voiceId = VOICE_ID_DEFAULT, key = "", fetchImpl = globalThis.fetch, dryRun = false, log = () => {} } = {}) {
   const items = plan(voiceId);
   const manifest = readManifest(dir);
@@ -148,7 +164,7 @@ export async function run({ dir = AUDIO_DIR_DEFAULT, voiceId = VOICE_ID_DEFAULT,
     let bytes = null, reason = "";
     try {
       const res = await fetchImpl(req.url, req.init);
-      if (!res || !res.ok) reason = "HTTP " + (res && res.status);
+      if (!res || !res.ok) reason = "HTTP " + (res && res.status) + detailOf(await bodyText(res));
       else bytes = Buffer.from(await res.arrayBuffer());
     } catch (err) {
       reason = "request failed: " + (err && err.code ? err.code : "error");   // never the message: it could carry a URL with a key in it
@@ -278,6 +294,20 @@ async function selftest() {
     const r7 = await run({ dir: tmp4, key: "KEY", fetchImpl: boom });
     ok(r7.ok === false && r7.refused.every((x) => /ECONNREFUSED/.test(x.reason) && !/KEY/.test(x.reason)), "a network failure is reported by code, never by message");
     rmSync(tmp4, { recursive: true, force: true });
+
+    /* 7. a refusal carries the service's own reason — redacted and capped */
+    ok(detailOf('{"detail":{"status":"invalid_uid","message":"A voice ID is required"}}') === ' — {"detail":{"status":"invalid_uid","message":"A voice ID is required"}}',
+       "an error body is appended verbatim so a 400 can be acted on");
+    ok(!/sk_live/.test(detailOf('{"message":"bad key sk_live_abcdefgh12345678"}')) && /\[redacted\]/.test(detailOf('{"message":"bad key sk_live_abcdefgh12345678"}')),
+       "a key-shaped string in the body is redacted before it reaches a log");
+    ok(!/[0-9a-f]{32}/.test(detailOf("token " + "a1".repeat(20))), "a long hex string is redacted too");
+    ok(detailOf("x".repeat(900)).length <= 304, "the detail is capped (" + detailOf("x".repeat(900)).length + " chars)");
+    ok(detailOf("") === "" && detailOf(null) === "", "no body, no detail");
+    const four00 = async () => ({ ok: false, status: 400, text: async () => '{"detail":{"status":"voice_not_found"}}' });
+    const tmp5 = mkdtempSync(join(tmpdir(), "los-audio-400-"));
+    const r8 = await run({ dir: tmp5, key: "KEY", fetchImpl: four00 });
+    ok(r8.ok === false && r8.refused.every((x) => /HTTP 400 — .*voice_not_found/.test(x.reason)), "a 400 is refused WITH what the service said: " + (r8.refused[0] && r8.refused[0].reason));
+    rmSync(tmp5, { recursive: true, force: true });
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
