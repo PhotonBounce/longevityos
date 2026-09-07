@@ -4,7 +4,7 @@
  * a value it defines there wins.
  *
  * MOTION RULES. Only transform, opacity and stroke-dashoffset ever animate;
- * the build is eight composited wave groups (obs-grow), at most six
+ * the build is eight composited wave groups (lens-grow), at most six
  * ring-closure strokes staggered so no more than two run at once, one settle
  * scale on the whole drawing, one flip on the score LED, and ten bar
  * transitions. No filter, no backdrop-filter, no mix-blend-mode, no
@@ -152,7 +152,7 @@
  * it ends, and what the budget measures is what is actually moving (≤ 3
  * waves, ≤ 2 closures), not every group that has already landed. */
 .is-building .mol-wave {
-  animation: obs-grow 220ms calc(var(--d, 0) * 90ms) backwards;
+  animation: lens-grow 220ms calc(var(--d, 0) * 90ms) backwards;
 }
 /* ring closures draw as a stroke; --cd is assigned in JS so that no two
  * overlap by more than one (each is spaced at least 90ms from the last).
@@ -165,7 +165,7 @@
 }
 .is-settle { animation: obs-settle 180ms backwards; }
 
-@keyframes obs-grow {
+@keyframes lens-grow {
   from { opacity: 0; transform: scale(0.72); }
   to { opacity: 1; transform: scale(1); }
 }
@@ -177,7 +177,7 @@
   from { transform: scale(1.03); }
   to { transform: scale(1); }
 }
-@keyframes obs-flip {
+@keyframes lens-flip {
   from { opacity: 0.35; transform: translateY(-2px); }
   to { opacity: 1; transform: translateY(0); }
 }
@@ -224,18 +224,19 @@
 
 .lens-score-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .lens-score-row .lens-label { flex: 1 1 100%; }
-.led { display: block; height: 44px; width: auto; }
-.led .sa, .led .sb, .led .sc, .led .sd, .led .se, .led .sf, .led .sg {
+/* scoped to the lens: the console has LEDs of its own (view/led.js) */
+[data-lab="lens"] .led { display: block; height: 44px; width: auto; }
+[data-lab="lens"] .led .sa, [data-lab="lens"] .led .sb, [data-lab="lens"] .led .sc, [data-lab="lens"] .led .sd, [data-lab="lens"] .led .se, [data-lab="lens"] .led .sf, [data-lab="lens"] .led .sg {
   fill: var(--lens-phosphor);
 }
-.led .sa { fill-opacity: calc(0.11 + 0.89 * var(--a, 0)); }
-.led .sb { fill-opacity: calc(0.11 + 0.89 * var(--b, 0)); }
-.led .sc { fill-opacity: calc(0.11 + 0.89 * var(--c, 0)); }
-.led .sd { fill-opacity: calc(0.11 + 0.89 * var(--d, 0)); }
-.led .se { fill-opacity: calc(0.11 + 0.89 * var(--e, 0)); }
-.led .sf { fill-opacity: calc(0.11 + 0.89 * var(--f, 0)); }
-.led .sg { fill-opacity: calc(0.11 + 0.89 * var(--g, 0)); }
-.led.flip { animation: obs-flip 180ms backwards; }
+[data-lab="lens"] .led .sa { fill-opacity: calc(0.11 + 0.89 * var(--a, 0)); }
+[data-lab="lens"] .led .sb { fill-opacity: calc(0.11 + 0.89 * var(--b, 0)); }
+[data-lab="lens"] .led .sc { fill-opacity: calc(0.11 + 0.89 * var(--c, 0)); }
+[data-lab="lens"] .led .sd { fill-opacity: calc(0.11 + 0.89 * var(--d, 0)); }
+[data-lab="lens"] .led .se { fill-opacity: calc(0.11 + 0.89 * var(--e, 0)); }
+[data-lab="lens"] .led .sf { fill-opacity: calc(0.11 + 0.89 * var(--f, 0)); }
+[data-lab="lens"] .led .sg { fill-opacity: calc(0.11 + 0.89 * var(--g, 0)); }
+[data-lab="lens"] .led.flip { animation: lens-flip 180ms backwards; }
 .led-text {
   font-family: var(--lens-mono);
   font-size: 15px;
@@ -330,10 +331,10 @@
 /* ————— reduced motion: same DOM, fades only ————— */
 
 @media (prefers-reduced-motion: reduce) {
-  @keyframes obs-grow { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes lens-grow { from { opacity: 0; } to { opacity: 1; } }
   @keyframes obs-close { from { opacity: 0; } to { opacity: 1; } }
   @keyframes obs-settle { from { opacity: 1; } to { opacity: 1; } }
-  @keyframes obs-flip { from { opacity: 0.35; } to { opacity: 1; } }
+  @keyframes lens-flip { from { opacity: 0.35; } to { opacity: 1; } }
   .is-building .mol-wave { animation-duration: 120ms; }
   .is-building .mol-close { stroke-dasharray: none; stroke-dashoffset: 0; animation-duration: 120ms; }
   .is-settle { animation-duration: 120ms; }

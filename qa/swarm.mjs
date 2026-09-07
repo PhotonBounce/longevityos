@@ -204,6 +204,21 @@ const dead = await page.evaluate(async ({ base }) => {
   return events;
 }, { base: BASE });
 ok(dead.includes("error"), "an unreachable server surfaces an error event");
+/* the error event says structurally whether the LINK failed (no route, no
+ * answer) or the SERVER answered badly — the UI keys its 'server unreachable'
+ * sound to `transport`, so a 404 and a refused connection must differ */
+const linkKinds = await page.evaluate(async ({ base }) => {
+  const { createSwarmClient } = await import(base + "/app/js/swarm/client.js");
+  const run = async (apiBase) => {
+    const errs = [];
+    const client = createSwarmClient({ apiBase, onEvent: (e) => { if (e.type === "error") errs.push({ where: e.where, transport: e.transport }); } });
+    try { await client.join("qa"); } catch (_) {}
+    return errs;
+  };
+  return { refused: await run("http://127.0.0.1:1/"), notFound: await run("/nowhere-at-all/") };
+}, { base: BASE });
+ok(linkKinds.refused.length > 0 && linkKinds.refused.every((e) => e.transport === true), "a refused connection is a transport failure: every error event carries transport:true (" + JSON.stringify(linkKinds.refused) + ")");
+ok(linkKinds.notFound.length > 0 && linkKinds.notFound.every((e) => e.transport === false), "a server that answers 404 is NOT a transport failure: transport:false (" + JSON.stringify(linkKinds.notFound) + ")");
 
 /* ————— 7. a unit from a different engine build must be refused ————— */
 suite("swarm 7 — the client refuses incomparable work");

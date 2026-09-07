@@ -1,0 +1,32 @@
+{
+  "generated_from": "app/js/view/guide.js NARRATION",
+  "model": "eleven_multilingual_v2",
+  "voice_settings": {
+    "stability": 0.55,
+    "similarity_boost": 0.8,
+    "style": 0,
+    "use_speaker_boost": false
+  },
+  "lines": {
+    "intro": "This is LongevityOS. No drug has ever been shown to extend human lifespan; that sentence is why this instrument exists. An atlas of every compound people call an immortality drug, failures beside hopes. A ledger of what has lowered death rates in people, and what has not. And the Lab, where your browser compares newly harvested molecules against drugs that did something in a longevity experiment. Two strangers' machines must agree before anything is recorded. What comes out is a shortlist of hypotheses for researchers. Not a drug. Not advice. Nothing runs until you press the button.",
+    "atlas": "Every compound people call an immortality drug, with the published evidence beside it — including the failures. Each badge is computed from the rows underneath it, never typed in. Notice what sits on the top rung: nothing.",
+    "evidence": "Interventions with human all-cause-mortality data, and every rigorous null and harm on the same footing. Each result belongs to the people that trial enrolled. Nothing here is advice; the numbers are reported exactly as published.",
+    "feed": "A literature sweep of recent papers on the compounds in this atlas. When it is stale, the page says stale. When there is no live sweep, it shows the atlas's own citation library and labels it as exactly that.",
+    "lab": "The screening console. Under the lens, a real molecule is drawn as your browser scores it — chosen by position, never by score. The readouts are its similarity to known actives, its drug-likeness, its triage flags. Nothing is donated until you press the button.",
+    "ladder": "Organism and outcome decide the rung; nothing else does. Read it downward and notice the top rung: nothing at all. That empty rung is the most honest thing in the app.",
+    "observatory": "Every instrument the swarm has, in one room. Molecules screened each hour, how much of the pool is left, how scores are distributed, how often two volunteers agreed — and how often they did not. Every chart has its numbers printed underneath.",
+    "sources": "Every citation, linked to its primary source. Continuous integration re-fetches each link and checks the article title. A dead or wrong link fails the build.",
+    "wizard": "Eight short steps: pace, screen and power, a name, a team, sound. Nothing starts until the last step, and every choice can be changed afterwards."
+  },
+  "words": {
+    "intro": 97,
+    "atlas": 37,
+    "evidence": 35,
+    "feed": 39,
+    "lab": 44,
+    "ladder": 31,
+    "observatory": 42,
+    "sources": 25,
+    "wizard": 25
+  }
+}

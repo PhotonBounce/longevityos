@@ -51,6 +51,8 @@ import { viewLed, viewLedBar, viewPark } from "./view/led.js";
 import { viewTelemetry } from "./view/telemetry.js";
 import { viewLens } from "./view/lens.js";
 import { viewObservatory } from "./view/observatory.js";
+import { viewWizard } from "./view/wizard.js";
+import { viewSoundBoard } from "./view/sound.js";
 
 /* ————— style conventions, borrowed from app.js verbatim ————— */
 
@@ -117,6 +119,11 @@ let ui = null;
  * counters it prints (kept here so a tab click does not reset "this session") */
 let lens = null;
 const lensSession = { shown: 0, base: 0, cur: 0, dropped: 0, offered: 0 };
+/* 4.0: the setup wizard of the current render (null when closed) and the ONE
+ * sound board the whole page shares. Constructing the board makes no Audio —
+ * a remembered preference only ARMS it for the visitor's next gesture. */
+let wizard = null;
+const sound = viewSoundBoard({ base: "audio/" });
 let apiBase = "./api/";
 let visibilityHooked = false;
 let subscribed = false;
@@ -547,8 +554,12 @@ function subscribeTelemetry() {
       /* only a stats or hits event carries anything the Lab shapes; log,
        * running, link and pause events are the strip's own business */
       if (!ev || (ev.kind !== "stats" && ev.kind !== "hits")) return;
+      /* a poll the server answered 304 changed nothing: the panels already
+       * show it (a freshly mounted Lab paints once whatever the answer) */
+      if (ev.changed === false && ui && ui.painted) return;
       applyTelemetry(snap);
       if (!attached()) return;
+      ui.painted = true;
       if (ev.kind === "stats" && ev.changed && !refreshing) { refreshMine(); return; }
       paintStats(); paintBoard(); paintHits(); paintTeams();
     } catch (_) { /* the Lab's problem, never the strip's */ }
@@ -738,7 +749,7 @@ function buildLens(root) {
   sec.appendChild(host);
   root.appendChild(sec);
   if (lens) { try { lens.destroy(); } catch (_) {} }
-  lens = viewLens(host, { session: lensSession });
+  lens = viewLens(host, { session: lensSession, onDraw: () => sound.play("molecule-lock") });
   if (lens) {
     lens.setRunning(clientRunning());
     if (remote.hits) lens.setHits(remote.hits);
@@ -752,7 +763,8 @@ const STAT_FIELDS = [
   ["screened", "screened"],
   ["verified", "verified hits"],
   ["contributors", "contributors"],
-  ["unitsOpen", "open work units"]
+  ["unitsOpen", "open work units"],
+  ["active", "active this hour"]
 ];
 
 function buildStats(root) {
@@ -872,6 +884,10 @@ function buildContribute(root) {
   sec.setAttribute("data-lab", "contribute");
   sec.appendChild(labEl("h3", "sect", "Donate this browser"));
 
+  const wizardHost = labEl("div", "lab-wizard-host");
+  wizardHost.setAttribute("data-lab", "wizard");
+  sec.appendChild(wizardHost);
+
   const panel = labEl("div", "lab-panel");
 
   const costs = labEl("ul", "lab-cost");
@@ -892,6 +908,13 @@ function buildContribute(root) {
   const go = labEl("button", "lab-btn", "Donate this browser");
   go.addEventListener("click", () => { startDonating(); });
   actions.appendChild(go);
+
+  /* 4.0: the eight-step setup. Opening it starts nothing; its last step is
+   * the other of the app's two start sites. */
+  const setup = labEl("button", "lab-btn lab-btn-setup", "Set up this browser");
+  setup.setAttribute("data-wizard", "open");
+  setup.addEventListener("click", () => { openWizard(); });
+  actions.appendChild(setup);
 
   const stop = labEl("button", "lab-btn lab-btn-stop", "Stop");
   stop.addEventListener("click", () => { stopDonating(); });
@@ -922,6 +945,8 @@ function buildContribute(root) {
 
   ui.nameInput = nameInput;
   ui.goBtn = go;
+  ui.setupBtn = setup;
+  ui.wizardHost = wizardHost;
   ui.stopBtn = stop;
   ui.status = status;
   ui.unitBar = unitBar;
@@ -998,7 +1023,7 @@ async function startDonating() {
     return;
   }
 
-  try { c.start(); } catch (_) {}
+  runClient(c);
   donate.phase = "running";
   donate.message = joined
     ? "Screening. Thank you — you can leave this tab open and forget about it."
@@ -1013,6 +1038,124 @@ async function startDonating() {
 function paceLabel() {
   const p = PACES.find((x) => x[1] === phone.pace);
   return p ? p[2].toLowerCase() + " pace" : "full pace";
+}
+
+/* The ONE line in this file that starts CPU. Reached from Donate (a press)
+ * and from the charging gate resuming a run the visitor pressed for; the
+ * wizard's last step is the app's only other start site. */
+function runClient(c) {
+  try { c.start(); } catch (_) {}
+}
+
+/* ————— 4.0: the setup wizard ————— */
+
+function hitsSmiles() {
+  return Array.isArray(remote.hits) ? remote.hits.map((h) => h.smiles).filter((s) => typeof s === "string" && s) : [];
+}
+
+function openWizard() {
+  if (!ui || !ui.wizardHost || !ui.wizardHost.isConnected) return;
+  closeWizard();    // one wizard at a time: a superseded one is closed, never orphaned
+  ensureClient();   // bookkeeping about a token; starts nothing
+  wizard = viewWizard(ui.wizardHost, {
+    client: () => client,
+    molecules: hitsSmiles(),
+    onStart: wizardHook,
+    onClose: (info) => {
+      wizard = null;
+      /* the wizard persisted its choices; the panel catches up, and a run
+       * that never began leaves nothing behind */
+      readPhonePrefs();
+      if (client) { try { client.setPace(phone.pace); } catch (_) {} }
+      const reason = info && info.reason;
+      if (reason !== "started" && donate.phase === "joining") {
+        donate.phase = "stopped";   // a join landing later leaves this line alone
+        donate.message = "Setup closed. Nothing is using your CPU.";
+        donate.tone = "dim";
+        releaseWakeLock();
+      }
+      paintDonate();
+      paintPhone();
+      if (reason !== "started" && ui && ui.goBtn && ui.goBtn.isConnected) { try { ui.goBtn.focus(); } catch (_) {} }
+    }
+  });
+  sound.play("wizard-step");
+}
+
+/* A wizard is closed here before it can be replaced or orphaned: opening a
+ * second one, and rebuilding the Lab (a tab round-trip), both go through it,
+ * so a stale instance never keeps its document keydown listener. */
+function closeWizard() {
+  const w = wizard;
+  wizard = null;
+  if (w && !w.isClosed()) { try { w.close(); } catch (_) {} }
+}
+
+/* The wizard's three moments. "arm" runs synchronously inside its press (the
+ * wake lock and the battery hook are gesture-only things); "gate" runs after
+ * the join and may veto with a message; "started" paints the running state.
+ * Returning a string is a veto: the wizard prints it and starts nothing. */
+function wizardHook(phase, choices) {
+  readPhonePrefs();
+  if (choices && typeof choices.name === "string") donate.name = safeText(choices.name, NAME_MAX);
+  if (ui && ui.nameInput) ui.nameInput.value = donate.name;
+  const c = ensureClient();
+  if (!c) { paintDonate(); return "This browser could not start the screener."; }
+  if (phase === "arm") {
+    if (phone.wake) acquireWakeLock();
+    if (phone.charging) hookBattery();
+    donate.phase = "joining";
+    donate.message = "Signing up as a contributor…";
+    donate.tone = "dim";
+    paintDonate();
+    paintPhone();
+    return true;
+  }
+  if (phase === "gate") {
+    /* CONSENT, RE-CHECKED AFTER THE JOIN: Stop was live the whole time */
+    if (donate.phase !== "joining") return "Stopped before the run began. Nothing is using your CPU.";
+    if (phone.charging && phone.battery && !isCharging()) {
+      phone.wantRunning = true;
+      donate.phase = "paused";
+      donate.message = "Waiting for a charger — “only while charging” is on. Screening starts when one is connected.";
+      donate.tone = "dim";
+      paintDonate();
+      paintPhone();
+      scheduleRefresh();
+      return donate.message;
+    }
+    return true;
+  }
+  if (phase === "started") {
+    donate.phase = "running";
+    const joined = !(choices && choices.joined === false);
+    donate.message = joined
+      ? "Screening. Thank you — you can leave this tab open and forget about it."
+      : "Screening. (Still trying to sign in with the server; it will retry by itself.)";
+    donate.tone = joined ? "ok" : "warn";
+    paintDonate();
+    paintPhone();
+    scheduleRefresh();
+  }
+  return true;
+}
+
+/* ————— 4.0: which instrument sound a client event gets ————— */
+
+/* Keyed to the EVENT and never to a score. A conflict is the one submission
+ * status with its own sound; a confirmation is rate-limited by the board.
+ * "link-lost" is 'server unreachable' and nothing else: the client marks a
+ * transport failure (no route, no answer in time) with `transport: true`, so
+ * an unreadable unit, a screening exception, a stale engine or a canary
+ * mismatch never sounds like a cut carrier. "molecule-lock" ('specimen
+ * drawn') is NOT keyed here: it belongs to the code path that paints the
+ * specimen (the lens), which calls the shared board's play() itself — the
+ * sound and the drawing must be one event, not two gates that drift. */
+const SOUND_FOR = { unit: "unit-issued", idle: "idle", stopped: "stopped", confirmed: "confirmed" };
+function soundFor(ev) {
+  if (ev.type === "submitted") return ev.status === "conflict" ? "conflict" : "unit-submitted";
+  if (ev.type === "error") return ev.transport === true ? "link-lost" : null;
+  return SOUND_FOR[ev.type] || null;
 }
 
 function stopDonating() {
@@ -1037,12 +1180,32 @@ function stopDonating() {
 /* Every event the swarm client emits, turned into one line a person can read.
  * A UI listener may never throw back into the loop, so the whole body is
  * guarded. */
+/* progress arrives up to a hundred times a second on a fast device (a chunk of
+ * five molecules per message); every consumer below would lay the page out
+ * again for each one. The LATEST progress is delivered at most every 120 ms —
+ * nothing is lost (done/total are cumulative) and nothing counts up. */
+let pendingProgress = null, progressTimer = null;
+function flushProgress() {
+  progressTimer = null;
+  const ev = pendingProgress;
+  pendingProgress = null;
+  if (ev) onSwarmEvent(Object.assign({}, ev, { coalesced: true }));
+}
+
 function onSwarmEvent(ev) {
   try {
     if (!ev || typeof ev.type !== "string") return;
+    if (ev.type === "progress" && ev.coalesced !== true) {
+      pendingProgress = ev;
+      if (progressTimer === null) progressTimer = setTimeout(flushProgress, 120);
+      return;
+    }
     if (lens) lens.onEvent(ev);
     /* 4.0: the Observatory's SESSION LEDGER and YOUR SCOPE read the same events */
     viewObservatory.session(ev);
+    const key = soundFor(ev);
+    if (key) sound.play(key);
+    if (ev.type === "stopped") sound.suspend();   // room tone stops on Stop; the next gesture resumes it
     if (ev.type === "spotlight") return;   // display only — the lens has it; nothing else changes
     if (ev.type === "joined") {
       /* A join can land AFTER the visitor pressed Stop — the request was
@@ -1128,7 +1291,9 @@ function onSwarmEvent(ev) {
       paintTeams();
       paintRecord();
     }
-    paintDonate();
+    /* the readouts repaint at most every 120 ms behind a stream of events
+     * (a fast device submits several units a second); a stop paints at once */
+    if (ev.type === "stopped" || ev.type === "left" || ev.type === "error") paintDonate(); else schedulePaintDonate();
   } catch (_) { /* the UI's problem, never the swarm's */ }
 }
 
@@ -1144,10 +1309,19 @@ function describeStatus(status) {
 }
 
 let refreshQueued = false;
+let paintTimer = null;
+function schedulePaintDonate() {
+  if (paintTimer !== null) return;
+  paintTimer = setTimeout(() => { paintTimer = null; if (attached()) paintDonate(); }, 120);
+}
+
 function scheduleRefresh() {
   if (refreshQueued) return;
   refreshQueued = true;
-  setTimeout(() => { refreshQueued = false; if (attached()) refresh(); }, 1200);
+  /* a running client submits units several times a second on a fast device;
+   * one forced refresh every five seconds keeps the record honest without
+   * rebuilding every panel behind every submit (the strip polls anyway) */
+  setTimeout(() => { refreshQueued = false; if (attached()) refresh(); }, clientRunning() ? 5000 : 1200);
 }
 
 function paintDonate() {
@@ -1156,6 +1330,7 @@ function paintDonate() {
   if (lens) lens.setRunning(clientRunning());
   ui.goBtn.disabled = running;
   ui.goBtn.textContent = donate.phase === "joining" ? "Starting…" : "Donate this browser";
+  if (ui.setupBtn) ui.setupBtn.disabled = running;
   ui.stopBtn.disabled = !running;
   ui.stopBtn.hidden = !running;
   ui.nameInput.disabled = running;
@@ -1286,7 +1461,7 @@ function pauseForPower() {
 function resumeFromPower() {
   const c = ensureClient();
   if (!c) return;
-  try { c.start(); } catch (_) {}
+  runClient(c);
   donate.phase = "running";
   donate.message = "Charger connected — screening again.";
   donate.tone = "ok";
@@ -2161,6 +2336,10 @@ export function renderLab(root, options) {
   const links = deepLinks();
   if (links.team && !team.inviteCode) team.inviteCode = links.team;
   if (links.c && profile.id !== links.c) { profile.id = links.c; profile.state = "idle"; profile.data = null; }
+
+  /* A wizard left open on the previous render is closed before the new DOM
+   * exists: it must not outlive its host with a live Escape listener. */
+  closeWizard();
 
   const wrap = labEl("div", "lab");
   ui = { root: wrap };

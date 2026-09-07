@@ -161,7 +161,7 @@ html[data-dpr="2"] .led-text {
 #seg7 .sg { fill-opacity: calc(.11 + .89 * var(--g, 0)); }
 #seg7 .sp { fill-opacity: calc(.11 + .89 * var(--p, 0)); }
 .led use { transform-box: fill-box; transform-origin: center; }
-.led use.flip { animation: obs-flip 180ms ease-out; }
+.led.flip { animation: obs-flip 180ms ease-out; transform-origin: 50% 50%; }
 .led-text {
   font-family: var(--mono);
   font-size: 12.5px;
@@ -350,16 +350,21 @@ html[data-running] .strip-dot { animation: obs-bloom 1.6s ease-in-out infinite; 
   @keyframes obs-flip { from { opacity: 0; } to { opacity: 1; } }
   @keyframes obs-swap { from { opacity: 0; } to { opacity: 1; } }
   @keyframes obs-bloom { from { opacity: 0; } to { opacity: 1; } }
-  .led use.flip { animation-duration: 120ms; }
+  /* a digit changing needs no fade: it rolls old → new in one step */
+  .led.flip { animation: none; }
   .strip-rows.swap { animation-duration: 120ms; }
   .led-bar > i { transition: none; }
   .strip-dot { display: none; }
   html[data-running] .strip-dot { animation: none; }
 }
-html[data-still] .led use.flip { animation: obs-still 120ms ease-out; }
+html[data-still] .led.flip { animation: none; }
 html[data-still] .strip-rows.swap, html[data-still] .strip-rows.fade { animation: obs-still 120ms ease-out both; }
 html[data-still] .led-bar > i { transition: none; }
 html[data-still] .strip-dot { display: none; }
 html[data-still][data-running] .strip-dot { animation: none; }
 @keyframes obs-still { from { opacity: 0; } to { opacity: 1; } }
 
+
+/* 4.0: every tap target on the page is at least 44px tall (the nav tabs and the
+ * filter chips predate the Observatory and were 34px) */
+.tab, .chip { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }

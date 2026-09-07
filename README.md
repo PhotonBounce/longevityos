@@ -125,15 +125,23 @@ string drifts past those limits.
   crawler/harvester selftests + `api` (a real `php -S` driven through the
   whole protocol, teams included) + `swarm` (Node↔browser↔worker digest
   parity, pacing) + `phone` (Pixel 5 emulation: wake lock, charging gate,
-  teams, records, hostile data) + `e2e` + `evidence` (the ledger in a real
-  browser). `npm run probes` = the standing adversarial probes;
+  teams, records, hostile data) + `wizard` (the eight-step setup: Escape from
+  every step starts nothing, the last step is the only door to `?a=work`) +
+  `sound` (constructors wrapped: a remembered preference makes zero Audio and
+  zero requests until a trusted gesture) + `voice` (`NARRATION` ↔
+  `qa/voice/lines.json` both ways) + `tools/gen-audio.mjs --selftest` + `e2e`
+  + `evidence` (the ledger in a real browser). `npm run probes` = the
+  standing adversarial probes (`probe-consent` forges events and manifests);
   `bash cycle.sh` = the 5-clean-cycles bar. CI adds `verify-sources.mjs`
   (every citation checked against PubMed's API) and `verify-molecules.mjs`
   (every reference SMILES checked against PubChem). `live-qa.yml` proves the
   deployed site daily from a runner (`qa/live.mjs`), with screenshots on the
   orphan `qa-proof-longevityos` branch.
 - `tools/` — `harvest.mjs` (the molecule sweep), `crawl.mjs` (the literature
-  sweep), `dist.mjs` (single-file build).
+  sweep), `dist.mjs` (single-file build), `gen-audio.mjs` (renders the
+  instrument sounds and the spoken guide from the app's own `SFX` and
+  `NARRATION` on a runner that holds the ElevenLabs key — `app/audio/` is
+  never committed; see `app/audio/README.md`).
 
 ## Run it
 

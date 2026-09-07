@@ -30,6 +30,9 @@ const ORDER = [
   "js/view/lens.js",
   "js/view/charts.js",
   "js/view/observatory.js",
+  "js/view/sound.js",
+  "js/view/guide.js",
+  "js/view/wizard.js",
   "js/swarm/client.js",
   "js/data.js",
   "js/grades.js",
@@ -135,7 +138,7 @@ if (missing.length) {
  * anything running afterwards (the app's own entry code) sees a normal scope */
 const js = "const __M = {};\n" + parts.join("\n") +
   `\nconst { ${[...allExports].join(", ")} } = __M;\n`;
-const cssFiles = ["css/style.css", "css/lab.css", "css/observatory.css", "css/lens.css", "css/charts.css"].filter((f) => existsSync(join(APP, f)));
+const cssFiles = ["css/style.css", "css/lab.css", "css/observatory.css", "css/lens.css", "css/charts.css", "css/wizard.css"].filter((f) => existsSync(join(APP, f)));
 const css = cssFiles.map((f) => readFileSync(join(APP, f), "utf8")).join("\n");
 
 let html = readFileSync(join(APP, "index.html"), "utf8");
@@ -143,12 +146,12 @@ html = html.replace(/<link rel="stylesheet"[^>]*>\s*/g, "");
 html = html.replace("</head>", "<style>\n" + css + "\n</style>\n</head>");
 html = html.replace(/<script type="module"[^>]*><\/script>/,
   '<script>\n"use strict";\n/* single-file build: no module workers, no server — the client\n   screens on the main thread if it is ever pointed at a live swarm. */\nwindow.__LOS_SINGLE_FILE = true;\n(() => {\n' + js + "\n})();\n</script>");
-html = html.replace("los-3.0.0", "los-3.0.0-dist");
+html = html.replace("los-4.0.0", "los-4.0.0-dist");
 
 writeFileSync(join(OUTDIR, "longevityos.html"), html);
 
 /* a build that silently lost a module is worse than a failed build */
-for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab", "function viewTelemetry", "function viewLed", "function viewLayoutMolecule", "function viewLens", "function viewObservatory", "function viewChartStepArea"]) {
+for (const marker of ["const COMPOUNDS", "const HUMAN_EVIDENCE", "function screenUnit", "function morganFingerprint", "function renderLab", "function viewTelemetry", "function viewLed", "function viewLayoutMolecule", "function viewLens", "function viewObservatory", "function viewChartStepArea", "function viewWizard", "function viewSoundBoard", "function viewGuide", "const NARRATION", "const SFX"]) {
   if (!html.includes(marker)) { console.error(`dist: '${marker}' is missing from the bundle — inlining broke`); process.exit(1); }
 }
 if (/^\s*import\s/m.test(html)) { console.error("dist: an ES import survived into the bundle"); process.exit(1); }

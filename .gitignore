@@ -5,3 +5,7 @@ saas/api/data/
 los-private/
 data/harvest-latest.json
 live-shots/
+
+# 4.0 audio is rendered on a runner and FTP-uploaded — never committed
+app/audio/**/*.mp3
+app/audio/manifest.json

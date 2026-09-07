@@ -496,8 +496,8 @@ suite("strip 6 — every seven-segment readout decodes to its visible twin");
   const mid = (await ledReport(P)).find((l) => l.label === "screened");
   ok(mid && (mid.twin === "70,000" || mid.twin === "61,912"), "80ms after the poll the readout is either the old or the new figure, never in between (" + (mid && mid.twin) + ")");
   ok(!!(await until(async () => ((await ledReport(P)).find((l) => l.label === "screened") || {}).twin === "70,000", 3000)), "…and it lands on 70,000");
-  const flips = await P.evaluate(() => document.querySelectorAll('.led use.flip').length);
-  ok(flips <= 8, "only changed digits flip (" + flips + ")");
+  const flips = await P.evaluate(() => document.querySelectorAll('.led.flip').length);
+  ok(flips <= 8, "only changed readouts flip, one animation each (" + flips + ")");
   await P.locator('[data-lab="stats"]').screenshot({ path: join(SHOTS, "strip-leds.png") });
 }
 

@@ -126,9 +126,11 @@ function paintLed(svg, text) {
     const key = String(cells[i].seg) + (cells[i].point ? "." : "");
     if (use.getAttribute("data-seg") === key) continue;
     applyCell(use, cells[i]);
-    if (svg.__painted) flip(use);
     changed++;
   }
+  /* ONE flip per readout, never one per digit: a stats poll that lands on
+   * six readouts is six animations, not thirty (the page-wide budget is 12) */
+  if (svg.__painted && changed) flip(svg);
   svg.__painted = true;
   return changed;
 }

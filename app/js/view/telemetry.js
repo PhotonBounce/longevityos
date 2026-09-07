@@ -372,7 +372,7 @@ function pushLine(tag, text, holdMs) {
   const frame = { tag: t, text: s, holdMs: holdMs || (t === "CONF" ? CONF_MS : FRAME_MS) };
   if (t === "CONF") { queue.unshift(frame); trimQueue(t); showNext(); }
   else { queue.push(frame); trimQueue(t); }
-  paintLogs();
+  paintLogs(line);
   notify({ kind: "log", line });
   if (!current) showNext();
   return line;
@@ -549,26 +549,40 @@ function paintLamp() {
   m.btn.setAttribute("aria-pressed", store.paused ? "true" : "false");
 }
 
-function paintLogs() {
+function logItem(line) {
+  const li = el("li");
+  const time = el("time", "", utcStamp(line.at));
+  try { time.setAttribute("datetime", new Date(line.at).toISOString()); } catch (_) {}
+  li.appendChild(time);
+  li.appendChild(el("span", "hud-tag strip-tag-" + line.tag, line.tag));
+  li.appendChild(el("span", "hud-text", line.text));
+  return li;
+}
+
+/* One new line is ONE insertion at the top and one removal at the bottom — a
+ * running client writes several lines a second, and rebuilding twenty items
+ * for each of them was a layout per line (measured: the frame budget's
+ * biggest single cost). The full rebuild is kept for a host that has never
+ * been painted, or a log that was emptied. */
+function paintLogs(newLine) {
   for (const ol of logHosts) {
     /* the Lab builds its tree detached and mounts it in the same task, so a
      * list is fresh until that task ends; after that a detached list is an
      * orphan (a torn-down tab) and is dropped rather than repainted forever */
     if (!ol.isConnected && !ol.__fresh) { logHosts.delete(ol); continue; }
+    if (newLine && ol.__lines > 0 && ol.firstChild && !ol.firstChild.classList.contains("hud-empty")) {
+      ol.insertBefore(logItem(newLine), ol.firstChild);
+      while (ol.childNodes.length > LOG_MAX) ol.removeChild(ol.lastChild);
+      ol.__lines = ol.childNodes.length;
+      continue;
+    }
     ol.textContent = "";
     if (!store.log.length) {
       ol.appendChild(el("li", "hud-empty", "Nothing reported yet."));
       continue;
     }
-    for (const line of store.log) {
-      const li = el("li");
-      const time = el("time", "", utcStamp(line.at));
-      try { time.setAttribute("datetime", new Date(line.at).toISOString()); } catch (_) {}
-      li.appendChild(time);
-      li.appendChild(el("span", "hud-tag strip-tag-" + line.tag, line.tag));
-      li.appendChild(el("span", "hud-text", line.text));
-      ol.appendChild(li);
-    }
+    for (const line of store.log) ol.appendChild(logItem(line));
+    ol.__lines = store.log.length;
   }
 }
 

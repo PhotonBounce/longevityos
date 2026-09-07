@@ -5,6 +5,7 @@ import { FEED_URL, parseFeed, feedFreshness } from "./feed.js";
 import { renderLab } from "./lab.js";
 import { viewTelemetry } from "./view/telemetry.js";
 import { viewObservatory } from "./view/observatory.js";
+import { viewGuide } from "./view/guide.js";
 
 /* The Lab talks to the swarm server that ships beside the app. A page served
  * from photon-bounce.com/longevityos/ finds it at ./api/; QA overrides it. */
@@ -325,6 +326,7 @@ function render() {
   else if (state.tab === "ladder") renderLadder(root);
   else if (state.tab === "feed") renderFeed(root);
   else if (state.tab === "sources") renderSources(root);
+  guide.onTab(state.tab);   // 4.0: the transcript follows the tab; it plays nothing
   window.scrollTo(0, 0);
 }
 
@@ -339,6 +341,8 @@ async function loadFeed() {
 
 /* 4.0: the telemetry strip is mounted ONCE, outside #view, before the first render (a deep link may open the Lab at once), and is the app's only poller (reads, never CPU) */
 viewTelemetry($("#strip"), { apiBase: API_BASE, atlas: { compounds: COMPOUNDS.length, rows: COMPOUNDS.reduce((n, c) => n + c.evidence.length, 0), nulls: COMPOUNDS.filter(hasRigorousNull).length, ledger: HUMAN_EVIDENCE.length } });
+/* 4.0: the spoken guide + speaker are mounted ONCE in the header, before the first render; press-to-play only, nothing fetched until a press */
+const guide = viewGuide($("#guide"), { base: "audio/" });
 render();
 loadFeed();
 

@@ -261,7 +261,7 @@ export function createSwarmClient(options = {}) {
    * a response too large to be one of ours. The loop above never sees an
    * exception and never has to guess. */
   async function call(action, { params, body, readError } = {}) {
-    if (typeof fetch !== "function") return { ok: false, error: "this browser cannot reach the server" };
+    if (typeof fetch !== "function") return { ok: false, error: "this browser cannot reach the server", transport: true };
     let ctrl = null, timer = null;
     try {
       if (typeof AbortController === "function") {
@@ -304,8 +304,10 @@ export function createSwarmClient(options = {}) {
       if (typeof data.error === "string" && data.error) return { ok: false, error: data.error };
       return { ok: true, data };
     } catch (err) {
+      /* `transport: true` is the structural word for "the link, not the
+       * server, failed" — the UI keys its 'server unreachable' sound to it. */
       const msg = /abort/i.test(errText(err)) ? "the server did not answer in time" : "could not reach the server";
-      return { ok: false, error: msg };
+      return { ok: false, error: msg, transport: true };
     } finally {
       if (timer !== null) clearTimeout(timer);
     }
@@ -487,7 +489,7 @@ export function createSwarmClient(options = {}) {
     const res = await call("join", { body: { name: wanted } });
     if (!res.ok) {
       state.lastError = res.error;
-      emit("error", { where: "join", message: res.error });
+      emit("error", { where: "join", message: res.error, transport: res.transport === true });
       return null;   // join NEVER throws: a UI button must not blow up the page
     }
     const token = typeof res.data.token === "string" ? res.data.token : "";
@@ -689,7 +691,7 @@ export function createSwarmClient(options = {}) {
         if (!res.ok) {
           forgetIdentityOn(res);
           state.lastError = res.error;
-          emit("error", { where: "work", message: res.error, retryInMs: bumpBackoff() });
+          emit("error", { where: "work", message: res.error, transport: res.transport === true, retryInMs: bumpBackoff() });
           await sleep(state.backoffMs);
           continue;
         }
@@ -757,7 +759,7 @@ export function createSwarmClient(options = {}) {
         if (!sub.ok) {
           forgetIdentityOn(sub);
           state.lastError = sub.error;
-          emit("error", { where: "submit", unitId: unit.unit_id, message: sub.error, retryInMs: bumpBackoff() });
+          emit("error", { where: "submit", unitId: unit.unit_id, message: sub.error, transport: sub.transport === true, retryInMs: bumpBackoff() });
           await sleep(state.backoffMs);
           continue;
         }

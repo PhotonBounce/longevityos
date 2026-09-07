@@ -207,6 +207,9 @@ export function viewLens(host, options) {
   if (!host || typeof host.appendChild !== "function") return null;
   const opts = options && typeof options === "object" ? options : {};
   const onCaption = typeof opts.onCaption === "function" ? opts.onCaption : null;
+  /* "specimen drawn": the sound and the drawing must be ONE event, so the
+   * board is called from here, never from a second gate that could drift */
+  const onDraw = typeof opts.onDraw === "function" ? opts.onDraw : null;
   /* session counters live wherever the caller keeps them, so a re-render
    * of the Lab (every tab click) does not reset "this session" */
   const session = opts.session && typeof opts.session === "object" ? opts.session : {};
@@ -595,6 +598,7 @@ export function viewLens(host, options) {
     setMode(spec.source === "shortlist" ? "SHORTLIST" : "LIVE");
     stage.classList.remove("is-hold");
     stamp.hidden = true;
+    if (onDraw && spec.source !== "shortlist" && !instant) { try { onDraw(spec); } catch (_) {} }
 
     /* build (120–970 ms) */
     let lay = null;

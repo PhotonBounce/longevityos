@@ -244,7 +244,8 @@ for (const p of viewFiles) {
   ok(names.length > 0 && names.every((n) => /^view[A-Z]/.test(n) || /^[A-Z][A-Z0-9_]*$/.test(n)),
      name + ": every export is view* or UPPER_CASE data (" + names.join(", ") + ")");
   const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  ok(!/\.start\s*\(\s*\)/.test(code), name + ": never starts the client — CPU is the Lab's two handlers' business");
+  /* the wizard's last step is the app's ONE other sanctioned start site (section 14 counts them) */
+  if (!/wizard\.js$/.test(name)) ok(!/\.start\s*\(\s*\)/.test(code), name + ": never starts the client — CPU is the Lab's two handlers' business");
 }
 /* the strip: mounted once in index.html, the only poller, no polling left in lab.js */
 ok(/<div id="strip"><\/div>/.test(index), "index.html carries the #strip mount under #nav");
@@ -312,8 +313,9 @@ for (const p of viewFiles) {
    * proves lab.js delegates to it), and sound.js fetches the audio manifest only
    * after an arming gesture (section 14 proves the gesture) */
   if (!/telemetry\.js$|sound\.js$/.test(name)) ok(!/\bfetch\s*\(|XMLHttpRequest/.test(code), `${name}: no network — a view draws, it never polls`);
-  ok(!/\.start\s*\(/.test(code), `${name}: no .start( — a view can never donate CPU`);
-  ok(!/new\s+(Audio|AudioContext|webkitAudioContext)\b/.test(code), `${name}: constructs no audio`);
+  if (!/wizard\.js$/.test(name)) ok(!/\.start\s*\(/.test(code), `${name}: no .start( — a view can never donate CPU`);
+  /* sound.js and guide.js are the two sanctioned audio constructors (section 14 proves the gesture) */
+  if (!/sound\.js$|guide\.js$/.test(name)) ok(!/new\s+(Audio|AudioContext|webkitAudioContext)\b/.test(code), `${name}: constructs no audio`);
   ok(!/requestAnimationFrame/.test(code), `${name}: no rAF loop — every phase is a timer`);
   ok(!/\beval\s*\(|new Function/.test(code), `${name}: no eval`);
   for (const m of src.matchAll(/^\s*export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
@@ -321,7 +323,7 @@ for (const p of viewFiles) {
   }
   ok(!/\b(mining|miner|mine)\b/i.test(src), `${name}: never calls the activity mining`);
   ok(!/\b(streak|combo|jackpot|level up|loot|rare find)\b/i.test(src), `${name}: no game-economy words`);
-  ok(!/\b(discover(y|ed|s)?|breakthrough)\b/i.test(src), `${name}: no discovery language`);
+  ok(!/\b(discover(y|ed|s)?|breakthrough)\b/i.test(src.replace(/not a discovery/gi, "")), `${name}: no discovery language (a negation is allowed)`);
   ok(!/one in (\d|five|ten|twenty|forty|a hundred)/i.test(src), `${name}: no fixed sampling ratio — the caption computes it`);
   ok(!/✓|\bclean\b/.test(src), `${name}: zero flags is never a tick or 'clean'`);
 }
@@ -366,7 +368,8 @@ for (const m of lensCss.matchAll(/transition\s*:\s*([^;]+);/g)) {
 for (const m of lensCss.matchAll(/@keyframes[^{]*\{([\s\S]*?)\}\s*\}/g)) {
   ok(!/\b(width|height|top|left|right|bottom|margin|padding)\s*:/.test(m[1]), "no keyframe animates layout");
 }
-ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*@keyframes obs-grow[\s\S]*opacity/.test(lensCss), "prefers-reduced-motion REDEFINES the wave keyframe as an opacity fade");
+ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*@keyframes lens-grow[\s\S]*opacity/.test(lensCss), "prefers-reduced-motion REDEFINES the wave keyframe as an opacity fade");
+ok(!/@keyframes obs-(grow|flip|swap|bloom)\b/.test(lensCss), "lens.css never redefines the console's keyframes (it loads after observatory.css and would win)");
 ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.lens-bar-track i \{ transition: none; \}/.test(lensCss), "…and the bars set transition: none");
 ok(/html\[data-still\]/.test(lensCss), "the in-page 'hold the instruments still' switch is honoured by the same rules");
 ok(!/animation[^;]*(score|amber)/.test(lensCss), "no animation is keyed to a score");
@@ -401,12 +404,12 @@ suite("content 15 — the Observatory: every figure named, every table open, not
     ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(code), `${name}: no HTML sinks — every server string is textContent`);
     ok((name === "charts.js" ? /createElementNS/.test(code) : /createElement\(/.test(code)) && /textContent/.test(code), `${name} builds with createElement(NS) and writes with textContent`);
     ok(!/\.start\s*\(/.test(code), `${name} never calls .start( — the Observatory reads, it cannot donate`);
-    ok(!/new\s+(Audio|AudioContext|webkitAudioContext)\b/.test(code), `${name} constructs no audio`);
+    if (!/sound\.js$|guide\.js$/.test(name)) ok(!/new\s+(Audio|AudioContext|webkitAudioContext)\b/.test(code), `${name} constructs no audio`);
     ok(!/requestAnimationFrame/.test(code), `${name} has no rAF loop`);
     ok(!/toLocaleString|Intl\./.test(code), `${name} formats numbers without the locale`);
     ok(!/\b(mining|miner|mine)\b/i.test(src), `${name} never calls the activity mining`);
     ok(!/\b(streak|combo|jackpot|level up|loot|rare find)\b/i.test(src), `${name}: no game-economy words`);
-    ok(!/\b(discover(y|ed|s)?|breakthrough)\b/i.test(src), `${name}: no discovery language`);
+    ok(!/\b(discover(y|ed|s)?|breakthrough)\b/i.test(src.replace(/not a discovery/gi, "")), `${name}: no discovery language (a negation is allowed)`);
     ok(!/✓|\bclean\b/.test(src), `${name}: no tick and no 'clean'`);
     ok(!/one in (\d|five|ten|twenty|forty|a hundred)/i.test(src), `${name}: no fixed sampling ratio`);
     for (const m of src.matchAll(/^\s*export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
@@ -458,6 +461,88 @@ suite("content 15 — the Observatory: every figure named, every table open, not
   ok(/define\('LOS_BW_BUDGET', 2147483648\)/.test(php), "the daily bandwidth budget defaults to 2 GB");
   ok(/'canary:ok'/.test(php) && /'canary:bad'/.test(php), "canary counters are incremented in submit");
   ok(/CREATE TABLE IF NOT EXISTS history/.test(readFileSync(join(apiDir, "db.php"), "utf8")) && /ix_contrib_seen/.test(readFileSync(join(apiDir, "db.php"), "utf8")), "db.php creates the history table and the last_seen index idempotently");
+}
+
+}
+{ /* section 14 scope */
+/* ————— 12. 4.0: sound, voice and the wizard ————— */
+suite("content 14 — the console's sound, voice and wizard rules");
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const viewDir = join(APP, "js", "view");
+const soundSrc = text[join(viewDir, "sound.js")] || "";
+const guideSrc = text[join(viewDir, "guide.js")] || "";
+const wizardSrc = text[join(viewDir, "wizard.js")] || "";
+ok(soundSrc && guideSrc && wizardSrc, "sound.js, guide.js and wizard.js ship under js/view/");
+/* (a) Audio is constructed only in sound.js and guide.js, and only inside a
+ * function body — never at module scope, where it would run at load */
+for (const p of files.filter((f) => f.endsWith(".js"))) {
+  const code = stripComments(text[p]);
+  const name = p.slice(APP.length + 1);
+  const allowed = /js\/view\/(sound|guide)\.js$/.test(p);
+  const hits = [...code.matchAll(/new\s+Audio\s*\(|\bAudioContext\b|webkitAudioContext/g)];
+  if (!allowed) ok(hits.length === 0, `${name}: no Audio/AudioContext outside js/view/sound.js and js/view/guide.js`);
+  else {
+    for (const m of hits) {
+      const before = code.slice(0, m.index);
+      const depth = (before.match(/{/g) || []).length - (before.match(/}/g) || []).length;
+      ok(depth > 0, `${name}: '${m[0]}' at offset ${m.index} sits inside a function body (brace depth ${depth}), never at module scope`);
+    }
+  }
+}
+ok((stripComments(soundSrc).match(/new\s+Audio\s*\(/g) || []).length === 1, "sound.js has exactly one Audio construction site");
+ok((stripComments(guideSrc).match(/new\s+Audio\s*\(/g) || []).length === 1, "guide.js has exactly one Audio construction site (inside the press)");
+ok(!/AudioContext/.test(stripComments(soundSrc) + stripComments(guideSrc)), "no AudioContext anywhere — files, lazily, after a gesture");
+ok(/isTrusted [=!]== true/.test(soundSrc) && /isTrusted [=!]== true/.test(guideSrc) && /instanceof Event/.test(soundSrc), "a gesture means a TRUSTED event: a script-dispatched click arms nothing and plays nothing");
+/* (b) nothing autoplays */
+const codeAll = files.map((p) => (p.endsWith(".js") ? stripComments(text[p]) : text[p])).join("\n");
+ok(!/\bautoplay\b\s*[=:]|\.autoplay\s*=|<(audio|video)\b[^>]*\bautoplay/i.test(codeAll), "no autoplay attribute or property anywhere");
+ok(!/<audio\b|<video\b/i.test(codeAll), "no media element is written into the page as markup");
+/* (c) exactly two doors into someone's CPU: the classic Donate button and the wizard's last step */
+const startSites = (stripComments(lab).match(/\.start\(/g) || []).length + (stripComments(wizardSrc).match(/\.start\(/g) || []).length;
+ok(startSites <= 2, ".start( appears at most twice in lab.js + wizard.js combined (" + startSites + ")");
+ok((stripComments(wizardSrc).match(/\.start\(/g) || []).length === 1, "the wizard has exactly one start site — its last step");
+for (const p of files.filter((f) => f.includes("/js/view/"))) {
+  const code = stripComments(text[p]);
+  ok(!/^\s*[\w.]*\.start\(/m.test(code.replace(/^\s+/gm, "")) || /wizard\.js$/.test(p), `${p.slice(APP.length + 1)}: no start site outside the wizard`);
+}
+ok(!/\bfetch\s*\(/.test(stripComments(wizardSrc)) && !/\bfetch\s*\(/.test(stripComments(guideSrc)), "the wizard and the guide never fetch; the board owns the one manifest request");
+ok((stripComments(soundSrc).match(/\bfetch\s*\(/g) || []).length === 1 && /manifest\.json/.test(soundSrc), "sound.js fetches exactly one thing: the manifest, after a gesture");
+/* (d) the copy checklist (spec §12): never mining, never casino, never a breakthrough */
+const prose = files.map((p) => text[p]).join("\n");
+ok(!/\b(mining|miner|miners)\b/i.test(codeAll), "the activity is screening — never mining, never a miner");
+/* 'mine' is a legitimate identifier (team.mine: the visitor's own team) but
+ * never a word a visitor reads: every quoted string literal in the scripts,
+ * and every non-script file whole, is scanned for it */
+const literalsOf = (code) => [...code.matchAll(/"((?:[^"\\\n]|\\.)*)"|'((?:[^'\\\n]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? "");
+const visitorText = files.map((p) => (p.endsWith(".js") ? literalsOf(stripComments(text[p])).join("\n") : text[p])).join("\n");
+ok(!/\bmine\b/i.test(visitorText), "no visitor-facing string says 'mine' (string literals of every script + every non-script file)");
+ok(!/\b(streak|combo|jackpot|rare find|level up|loot)\b/i.test(prose), "no casino vocabulary: streak, combo, jackpot, rare find, level up, loot");
+for (const m of prose.matchAll(/\b(discovery|discovered|breakthrough)\b/gi)) {
+  const before = prose.slice(Math.max(0, m.index - 14), m.index);
+  ok(/\b(not a|never a|no|not)\s*$/i.test(before), `'${m[0]}' appears only negated ("…${before.trim()} ${m[0]}")`);
+}
+ok(!/\bone in (two|three|four|five|ten|twenty|a hundred)\b/i.test(prose), "no fixed sampling ratio in the copy — a ratio is computed from live counts");
+ok(!/\b(cheap|free) (immortality|life extension)\b/i.test(prose), "no promise of a cheap or free anything");
+/* (e) the SFX table: eleven events, one loop, no sound keyed to a score */
+const sfxNames = [...soundSrc.matchAll(/file: "([a-z-]+)"/g)].map((m) => m[1]);
+ok(sfxNames.length === 11 && new Set(sfxNames).size === 11, "SFX lists eleven distinct events (" + sfxNames.length + ")");
+ok((soundSrc.match(/loop: true/g) || []).length === 1 && /file: "room-tone", seconds: 12, loop: true/.test(soundSrc), "room tone is the only loop, and it is opt-in");
+ok(!/\bscore\b/.test(stripComments(soundSrc)), "sound.js never reads a score — no sound is keyed to one");
+ok(/press anywhere to start sound/.test(soundSrc), "a remembered preference arms and the speaker says so");
+/* (f) narration: every page has its one line, printed as text */
+for (const k of ["atlas", "evidence", "lab", "observatory", "ladder", "feed", "sources", "wizard"]) ok(new RegExp("^\\s+" + k + ":\\s*$", "m").test(guideSrc), "NARRATION has a line for " + k);
+ok(/intro:/.test(guideSrc) && /No drug has ever been shown to extend human lifespan/.test(guideSrc), "the intro opens with the headline truth");
+ok(/textContent/.test(guideSrc) && !/innerHTML|insertAdjacentHTML|document\.write/.test(guideSrc + soundSrc + wizardSrc), "the guide, the board and the wizard render via textContent only");
+/* (g) the wizard: eight verbatim headings, Escape leaves, Skip goes to the console */
+for (const h of ["What this console does", "What it costs you", "How hard this device works", "Screen and power", "Your name on the boards", "A team, if you want one", "Sound and voice", "Consent, and start"]) ok(wizardSrc.includes('heading: "' + h + '"'), "wizard heading: " + h);
+ok(/"Escape"/.test(wizardSrc) && /Skip setup — take me to the console/.test(wizardSrc), "Escape and Skip are real");
+ok(/registers a token; uses no CPU/.test(wizardSrc), "the team step labels itself as bookkeeping");
+ok(/Join the swarm and start screening/.test(wizardSrc), "the one start button carries its own name");
+ok(/Set up this browser/.test(lab), "the Lab offers the setup wizard");
+for (const m of stripComments(wizardSrc).matchAll(/sound\.(enable|play)\(/g)) {
+  const before = stripComments(wizardSrc).slice(0, m.index);
+  const depth = (before.match(/{/g) || []).length - (before.match(/}/g) || []).length;
+  ok(depth > 0, `wizard.js: '${m[0]}' sits inside a function body (depth ${depth}), never at module scope`);
 }
 
 }
