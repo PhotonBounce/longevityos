@@ -151,6 +151,20 @@ async function openLab(ctx, tag) {
 const state = (page) => page.evaluate(() => window.__losLens.api.state());
 const nodes = (page) => page.evaluate(() => window.__losLens.svg.querySelectorAll("*").length + 1);
 const anims = (page) => page.evaluate(() => document.getAnimations().length);
+/* The lens is not the only thing on this page. The telemetry strip rotates its
+ * own frames on a six-second cadence and pulses a carrier dot, and it was
+ * never told that a run stopped — a raw `stopped` event goes to the lens
+ * alone. So "nothing is moving" must be asked of the LENS, or the answer
+ * depends on whether a 260 ms strip swap happens to be in flight at the
+ * instant of the sample. CI caught exactly that, once, on a loaded runner. */
+const lensAnims = (page) => page.evaluate(() => {
+  const host = document.querySelector('[data-lab="lens"]') || document.querySelector(".lens-stage");
+  if (!host) return -1;
+  return document.getAnimations().filter((a) => {
+    const t = a.effect && a.effect.target;
+    return t && host.contains(t);
+  }).length;
+});
 const force = (page, spec) => page.evaluate((s) => window.__losLens.force(s), spec);
 const push = (page, spec) => page.evaluate((s) => window.__losLens.api.push(s), spec);
 const event = (page, ev) => page.evaluate((e) => window.__losLens.api.onEvent(e), ev);
@@ -301,7 +315,10 @@ ok(Math.abs(parseFloat(opacity) - 0.55) < 0.02, `the stage holds at 55% opacity 
 ok(s.stateLine === C.HOLD_LINE, "the HOLD line is verbatim");
 ok(!s.nextVisible, "no Next button after a live run");
 await sleep(2400);
-ok((await anims(A)) === 0, "nothing animates while nothing is running");
+{
+  const inLens = await lensAnims(A);
+  ok(inLens === 0, `nothing in the lens animates while nothing is running (${inLens}; ${await anims(A)} on the page, where the strip legitimately keeps rotating its own frames)`);
+}
 await A.locator('[data-lab="lens"]').screenshot({ path: join(SHOTS, "lens-hold.png") });
 
 /* ————— 6. failure cards ————— */
