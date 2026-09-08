@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "qa": "node unit.mjs && node chem.mjs && node content.mjs && node ../tools/crawl.mjs --selftest && node ../tools/harvest.mjs --selftest && node ../tools/gen-audio.mjs --selftest && node api.mjs && node swarm.mjs && node phone.mjs && node strip.mjs && node layout.mjs && node lens.mjs && node observatory.mjs && node wizard.mjs && node sound.mjs && node voice.mjs && node e2e.mjs && node evidence.mjs && node a11y.mjs && node perf.mjs",
+    "qa": "node unit.mjs && node chem.mjs && node content.mjs && node ../tools/crawl.mjs --selftest && node ../tools/harvest.mjs --selftest && node ../tools/gen-audio.mjs --selftest && node ../tools/drive.mjs --selftest && node ../tools/gdrive-consent.mjs --selftest && node api.mjs && node swarm.mjs && node phone.mjs && node strip.mjs && node layout.mjs && node lens.mjs && node observatory.mjs && node wizard.mjs && node sound.mjs && node voice.mjs && node e2e.mjs && node evidence.mjs && node a11y.mjs && node perf.mjs",
     "test:unit": "node unit.mjs",
     "test:chem": "node chem.mjs",
     "test:content": "node content.mjs",
@@ -18,7 +18,7 @@
     "test:evidence": "node evidence.mjs",
     "icons": "node gen-icons.mjs",
     "probe:teams": "node probe-teams.mjs",
-    "probes": "node probe-teams.mjs && node probe-deeplink.mjs && node probe-consent.mjs && node probe-churn.mjs",
+    "probes": "node probe-teams.mjs && node probe-deeplink.mjs && node probe-consent.mjs && node probe-churn.mjs && node probe-quota.mjs",
     "verify-sources": "node verify-sources.mjs",
     "verify-molecules": "node verify-molecules.mjs",
     "probe:deeplink": "node probe-deeplink.mjs",
@@ -30,7 +30,10 @@
     "test:gen-audio": "node ../tools/gen-audio.mjs --selftest",
     "probe:consent": "node probe-consent.mjs",
     "probe:churn": "node probe-churn.mjs",
-    "lines": "node ../tools/gen-audio.mjs --lines"
+    "lines": "node ../tools/gen-audio.mjs --lines",
+    "test:drive": "node ../tools/drive.mjs --selftest",
+    "test:consent": "node ../tools/gdrive-consent.mjs --selftest",
+    "probe:quota": "node probe-quota.mjs"
   },
   "devDependencies": {
     "playwright": "^1.56.1"

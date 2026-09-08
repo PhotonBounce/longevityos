@@ -556,5 +556,47 @@ for (const m of stripComments(wizardSrc).matchAll(/sound\.(enable|play)\(/g)) {
 }
 
 }
+
+/* ————— 16. the bulk store (4.1): the owner's limit, and where it may live ————— */
+suite("content 16 — the Drive bulk store stays a runner tool, and the cap stays the owner's number");
+{
+  const driveSrc = readFileSync(join(HERE, "..", "tools", "drive.mjs"), "utf8");
+  const consentSrc = readFileSync(join(HERE, "..", "tools", "gdrive-consent.mjs"), "utf8");
+
+  /* THE OWNER'S NUMBER. Written as an expression a human can read, and pinned
+   * here so a later edit cannot quietly raise it. */
+  ok(/CAP_BYTES\s*=\s*120\s*\*\s*GB/.test(driveSrc), "the hard cap in drive.mjs is 120 GB — the owner's limit, unchanged");
+  ok(/WARN_BYTES\s*=\s*100\s*\*\s*GB/.test(driveSrc), "…and the warning is raised at 100 GB, before the wall");
+
+  /* PURITY. The screening path is deterministic and offline; a Drive client
+   * with a clock, a network and a credential may never be reachable from it. */
+  for (const f of files.filter((p) => p.endsWith(".js"))) {
+    ok(!/tools\/drive|gdrive-consent|googleapis\.com/.test(text[f]),
+       f.split("/app/")[1] + " does not reach for the Drive tooling or Google's endpoints");
+  }
+
+  /* CREDENTIALS. Never a literal, never written to disk by the tool itself. */
+  for (const [name, src] of [["drive.mjs", driveSrc], ["gdrive-consent.mjs", consentSrc]]) {
+    /* Length is what separates a real credential from a selftest fixture: a
+     * Google access token runs to a hundred-odd characters, a client secret to
+     * thirty-plus. Short stand-ins like "ya29.SECRET" are mocks and must stay
+     * allowed, or the tools could not be tested offline at all. */
+    ok(!/(ya29\.[A-Za-z0-9._-]{30,}|GOCSPX-[A-Za-z0-9._-]{20,}|1\/\/0[A-Za-z0-9._-]{25,})/.test(src),
+       name + " carries no credential-shaped literal long enough to be a real one");
+    ok(!/writeFileSync\s*\(/.test(src), name + " never writes a file — a token it wrote would outlive the run");
+  }
+  /* The consent helper's only stdout of the token is behind an explicit flag,
+   * so a casual run cannot print it into a log. */
+  ok(/--emit/.test(consentSrc) && /process\.stdout\.write\(r\.refreshToken\)/.test(consentSrc),
+     "the refresh token reaches stdout only behind --emit, never from a plain run");
+  ok(/access_type: "offline"/.test(consentSrc) && /prompt: "consent"/.test(consentSrc),
+     "the consent asks for offline access — without it Google returns no refresh token at all");
+  ok(/drive\.file/.test(consentSrc) && !/auth\/drive["'\s]/.test(consentSrc),
+     "the scope is drive.file (files this app created), never the whole Drive");
+
+  /* HONESTY. A capacity figure printed from a synthetic sample must say so. */
+  ok(/SAMPLE figure, not a promise/.test(driveSrc), "the --plan capacity line says it is measured on a sample, not promised of PubChem");
+}
+
 console.log(failed ? "content: " + failed + " FAILED of " + checks : "content: " + checks + " checks passed ✓");
 process.exit(failed ? 1 : 0);

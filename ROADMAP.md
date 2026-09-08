@@ -208,8 +208,23 @@ files (gzipped CID+SMILES), uploads to Drive under a quota ledger, and
 publishes a signed manifest; browsers fetch units straight from Drive with a
 referrer-restricted API key; results return as compact digests + hits above a
 threshold; a nightly runner archives full results back to Drive. Owner
-actions: the one-time OAuth consent (helper page) for
-`LOS_GDRIVE_REFRESH_TOKEN`.
+actions: the one-time OAuth consent, which now needs **nothing installed** —
+dispatch `gdrive-consent-longevityos.yml` in the monorepo with `step=url`,
+open the printed link, approve, then dispatch it again with `step=exchange`
+and the address of the page that fails to load pasted in. The runner exchanges
+the code and uploads the refresh token to `/los-private/`, beside public_html
+and unreachable over HTTP, the same place the harvester's ingest key lives. The
+token is never printed, committed, or handed back.
+
+**Shipped ahead of the rest of 4.1** (2026-09-07): `tools/drive.mjs` (the
+bulk store and its quota ledger), `tools/gdrive-consent.mjs` (the door), the
+consent workflow, `qa/probe-quota.mjs` and `content.mjs` section 16. The cap
+is a gate, not a report: every upload is checked before the request against
+the LARGER of the ledger's own total and Drive's reported usage, a run stops
+at the wall rather than squeezing smaller files past it, 100 GB raises a
+warning, and the ledger only ever records bytes that actually landed. The
+scope requested is `drive.file`, so the job can see the files it created and
+nothing else in the owner's Drive.
 
 ### Phase 2 — Community, credit and the hand-off (1–2 sessions + owner actions)
 
