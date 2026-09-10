@@ -473,10 +473,47 @@ async function getJson(url) {
   throw lastErr || new Error("unknown fetch failure");
 }
 
-async function similarCids(cid, maxRecords) {
-  const url =
-    PUBCHEM + "/fastsimilarity_2d/cid/" + cid + "/cids/JSON?Threshold=" +
-    SIMILARITY_THRESHOLD + "&MaxRecords=" + maxRecords;
+/* WHY THIS PAGES, AND WHY IT HAS TO.
+ *
+ * fastsimilarity_2d ranks by Tanimoto and returns the TOP MaxRecords, and that
+ * ranking is deterministic — so asking for 60 around the same reference active
+ * every day returns the same 60 molecules every day. The first harvest filled
+ * the pool; every one after it ingested nothing. Measured on 2026-09-10: 1,043
+ * candidates retrieved, "ingested 0 new molecules (1043 already known)", with
+ * the swarm down to six open units and every one of its 1,044 molecules
+ * screened. A volunteer arriving then would have been told there was no work,
+ * and no amount of re-running would have changed it.
+ *
+ * The supply is not the limit — that run asked Aspirin for 60 and got exactly
+ * 60, so the CAP was binding, not PubChem's inventory. So take a different
+ * slice each day: request offset + want, then drop the first `offset`. The
+ * window rotates with the UTC date, which needs no stored cursor (this job
+ * runs on a fresh runner from a clone, with nowhere to write one) and never
+ * asks PubChem for more than one page's worth of property calls.
+ */
+export const SIMILARITY_PAGE_DEPTH = 600;   // how deep the rotation ever reaches
+
+/* The day's window. Exported so the selftest can prove it rotates and stays
+ * inside the depth without a network or a clock of its own. */
+export function pageOffsetFor(date, want) {
+  const w = Number.isFinite(want) && want >= 1 ? Math.floor(want) : 60;
+  const t = date instanceof Date && Number.isFinite(date.getTime()) ? date : new Date(0);
+  /* whole UTC days since the epoch: one step per day, and the same step for
+     every active in a run, so a run is one coherent slice of the ranking */
+  const day = Math.floor(t.getTime() / 86400000);
+  const pages = Math.max(1, Math.floor(SIMILARITY_PAGE_DEPTH / w));
+  return (day % pages) * w;
+}
+
+export function similarityUrl(cid, want, offset = 0) {
+  const w = Number.isFinite(want) && want >= 1 ? Math.floor(want) : 60;
+  const off = Number.isFinite(offset) && offset >= 0 ? Math.floor(offset) : 0;
+  return PUBCHEM + "/fastsimilarity_2d/cid/" + cid + "/cids/JSON?Threshold=" +
+    SIMILARITY_THRESHOLD + "&MaxRecords=" + (off + w);
+}
+
+async function similarCids(cid, maxRecords, offset = 0) {
+  const url = similarityUrl(cid, maxRecords, offset);
   const json = await getJson(url);
   /* FAIL CLOSED ON THE ASYNC PATH. PUG-REST may answer a similarity search with
    * 202 and a ListKey to poll instead of an IdentifierList. That body parses
@@ -489,7 +526,13 @@ async function similarCids(cid, maxRecords) {
       (json.Waiting || json.ListKey || (json.IdentifierList && json.IdentifierList.ListKey))) {
     throw new Error("PubChem answered asynchronously (ListKey/Waiting); this harvester does not poll");
   }
-  return parseSimilarityResponse(json);
+  const all = parseSimilarityResponse(json);
+  /* PubChem returns fewer than asked when the family is small; then the slice
+   * is empty and this active simply contributes nothing today, which is the
+   * honest outcome rather than silently falling back to the top of the list
+   * we already hold. */
+  const off = Number.isFinite(offset) && offset >= 0 ? Math.floor(offset) : 0;
+  return off > 0 ? all.slice(off) : all;
 }
 
 /* PubChem has renamed the structure column before (CanonicalSMILES -> SMILES /
@@ -625,6 +668,34 @@ export function selftest() {
     check(cids.length >= 20, "similarity fixture should yield >= 20 CIDs, got " + cids.length);
     check(cids.every((c) => Number.isInteger(c) && c > 0), "similarity CIDs must be positive integers");
     check(new Set(cids).size === cids.length, "parseSimilarityResponse must dedupe");
+
+    /* 2b. THE PAGING CONTRACT. A daily job that asks for the same top slice
+       every day ingests nothing after the first run — that is exactly what
+       happened on 2026-09-10 (0 new of 1,043 retrieved, six units left in the
+       swarm). These checks are what stop it happening again silently. */
+    {
+      const u0 = similarityUrl(2244, 60, 0);
+      const u1 = similarityUrl(2244, 60, 60);
+      check(/MaxRecords=60$/.test(u0), "offset 0 asks for exactly the page size: " + u0);
+      check(/MaxRecords=120$/.test(u1), "an offset asks for offset+page so the slice exists: " + u1);
+      check(u0.includes("Threshold=" + SIMILARITY_THRESHOLD), "the threshold is unchanged by paging");
+      check(similarityUrl(2244, 0, -5).endsWith("MaxRecords=60"), "nonsense want/offset fall back to the default page");
+
+      /* the window must MOVE day to day, and stay inside the declared depth */
+      const day = (n) => new Date(n * 86400000);
+      const offsets = [];
+      for (let d = 0; d < 20; d++) offsets.push(pageOffsetFor(day(d), 60));
+      check(new Set(offsets).size > 1, "the window rotates across days, it does not sit still");
+      check(offsets.every((o) => o >= 0 && o < SIMILARITY_PAGE_DEPTH), "every offset stays inside the depth");
+      check(offsets.every((o) => o % 60 === 0), "offsets land on page boundaries");
+      check(pageOffsetFor(day(3), 60) === pageOffsetFor(day(3), 60), "the same day yields the same window");
+      check(pageOffsetFor(day(0), 60) !== pageOffsetFor(day(1), 60), "consecutive days differ");
+      /* one full cycle returns to the start — bounded, and it says so */
+      const pages = Math.floor(SIMILARITY_PAGE_DEPTH / 60);
+      check(pageOffsetFor(day(pages), 60) === pageOffsetFor(day(0), 60), "the rotation is a cycle of " + pages + " pages");
+      check(pageOffsetFor(undefined, 60) === 0 && pageOffsetFor(new Date(NaN), 60) === 0,
+            "a missing or broken clock takes the top page rather than throwing");
+    }
 
     const rows = parsePropertyResponse(props);
     check(rows.length >= 20, "property fixture should yield >= 20 rows, got " + rows.length);
@@ -891,7 +962,17 @@ async function run({ dryRun }) {
     const n = Number(process.env.LOS_PER_ACTIVE);
     return Number.isFinite(n) && n >= 1 && n <= 500 ? Math.floor(n) : 60;
   })();
+  /* Which slice of each ranking today takes. LOS_HARVEST_OFFSET pins it for a
+   * deliberate back-fill; otherwise it rotates with the UTC date so a daily
+   * job keeps finding molecules the swarm has never seen. */
+  const pageOffset = (() => {
+    const raw = Number(process.env.LOS_HARVEST_OFFSET);
+    if (Number.isFinite(raw) && raw >= 0 && raw <= 5000) return Math.floor(raw);
+    return pageOffsetFor(new Date(), perActive);
+  })();
 
+  console.log("harvest window: " + perActive + " per active starting at rank " +
+              pageOffset + " (depth " + SIMILARITY_PAGE_DEPTH + ")");
   const ref = referenceIndex();
   const seen = new Set();      // CIDs accepted into the harvest
   const examined = new Set();  // every CID we have already fetched properties for
@@ -918,7 +999,7 @@ async function run({ dryRun }) {
 
       let hits = [];
       try {
-        hits = await similarCids(cid, perActive);
+        hits = await similarCids(cid, perActive, pageOffset);
         searched++;
       } catch (e) {
         // Never fabricate: a failed search contributes zero molecules and says so.
