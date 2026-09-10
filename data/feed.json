@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-09-09T11:28:42.994Z",
+  "fetched_at": "2026-09-10T11:28:30.617Z",
   "entries": [
+    {
+      "pmid": "42717163",
+      "title": "Copper and iron engage distinct metabolic programs for cellular survival.",
+      "journal": "GeroScience",
+      "date": "2026-09-09",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42708818",
       "title": "The pan-AMPK activator MK-8722 outperforms the AMPK activators SC4 and A-769662 in human endothelial cells.",
@@ -27,13 +34,6 @@
       "title": "Rapamycin attenuates age-related atrial remodeling and fibrillation by targeting HIF-1α-mediated metabolic dysregulation.",
       "journal": "Biochimica et biophysica acta. Molecular basis of disease",
       "date": "2026-08-26",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42644500",
-      "title": "TCR Signal Strength and Duration In Primary Mouse CD8+ T Cell Activation and Differentiation: A Standardized In Vitro Approach.",
-      "journal": "Journal of visualized experiments : JoVE",
-      "date": "2026-08-25",
       "topic": "rapamycin"
     },
     {
