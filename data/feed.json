@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-09-10T11:28:30.617Z",
+  "fetched_at": "2026-09-11T11:28:04.964Z",
   "entries": [
+    {
+      "pmid": "42723264",
+      "title": "EXPRESS: Rapamycin increases cerebral blood flow and modulates metabolic, inflammatory, and microbiome profiles in healthy middle-aged APOE4 carriers: a pilot single-arm trial.",
+      "journal": "Journal of cerebral blood flow and metabolism : official journal of the International Society of Cerebral Blood Flow and Metabolism",
+      "date": "2026-09-10",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42717163",
       "title": "Copper and iron engage distinct metabolic programs for cellular survival.",
@@ -23,6 +30,13 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42362467",
+      "title": "Metabolic control of RNA splicing by polyamines.",
+      "journal": "Trends in biochemical sciences",
+      "date": "2026-09-01",
+      "topic": "spermidine"
+    },
+    {
       "pmid": "42677553",
       "title": "\"Trojan\" Methionine Probe Reveals PKM2 as a Methionine-Sensing Protein in the mTORC1 Pathway.",
       "journal": "Journal of the American Chemical Society",
@@ -30,11 +44,32 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42648451",
-      "title": "Rapamycin attenuates age-related atrial remodeling and fibrillation by targeting HIF-1α-mediated metabolic dysregulation.",
-      "journal": "Biochimica et biophysica acta. Molecular basis of disease",
-      "date": "2026-08-26",
-      "topic": "rapamycin"
+      "pmid": "42670437",
+      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
+      "journal": "Drug design, development and therapy",
+      "date": "2026-08-24",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42646333",
+      "title": "Nicotinamide Mononucleotide Adenylyltransferase 1 and NAD(+) Homeostasis in Neuroprotection and Aging.",
+      "journal": "Metabolites",
+      "date": "2026-08-21",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42588134",
+      "title": "Natural Bioactive Compounds Targeting Key Hallmarks of Aging: Functional Food Potential of Spermidine, Fisetin, Berberine, and Urolithin A.",
+      "journal": "Nutrients",
+      "date": "2026-08-03",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42541426",
+      "title": "Neuroprotective Potential of Spermidine in Drosophila sws Neurodegenerative Model.",
+      "journal": "Archives of insect biochemistry and physiology",
+      "date": "2026-08-01",
+      "topic": "spermidine"
     },
     {
       "pmid": "42702600",
@@ -42,6 +77,55 @@
       "journal": "Nature communications",
       "date": "2026-07-31",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42477363",
+      "title": "Geroprotective insights into the natural metabolite spermidine in aging and age-related diseases.",
+      "journal": "npj aging",
+      "date": "2026-07-20",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42603990",
+      "title": "Nicotinamide Adenine Dinucleotide Augmentation in Diabetic Kidney Disease: Randomized Trial Study Protocol.",
+      "journal": "Kidney international reports",
+      "date": "2026-07-16",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42455181",
+      "title": "Longitudinal association of dietary spermidine with hepatic function indexes and cardiometabolic traits in older adults with metabolic syndrome.",
+      "journal": "European journal of nutrition",
+      "date": "2026-07-15",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42393428",
+      "title": "PROMETHEUS clinical trial protocol: tailoring healthy ageing with lifestyle and nutraceuticals.",
+      "journal": "GeroScience",
+      "date": "2026-07-03",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42444672",
+      "title": "Polyamine-mediated inhibition of ferroptosis contributes to geroprotection.",
+      "journal": "Cell stress",
+      "date": "2026-07-03",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42478598",
+      "title": "A phase-II randomized controlled pilot study of nicotinamide riboside supplementation in older adults with amnestic mild cognitive impairment.",
+      "journal": "Alzheimer's & dementia : the journal of the Alzheimer's Association",
+      "date": "2026-07-01",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42449929",
+      "title": "Transcriptional Profiling Shows Dampening of Interferon Gene Signatures by NAD(+) Augmentation in Ataxia-Telangiectasia.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-06-23",
+      "topic": "NAD+"
     }
   ]
 }
