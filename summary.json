@@ -1,0 +1,34 @@
+{
+  "base": "https://photon-bounce.com/longevityos/",
+  "stamp": "los-4.0.0",
+  "at": "2026-09-12T06:38:26.822Z",
+  "checks": 100,
+  "failed": 0,
+  "notes": [],
+  "health": {
+    "ok": true,
+    "engine": "los-chem-2",
+    "targets_digest": "708d0936835e4a38b8026cc2af0175bc0f043c7f4785ae88a6676a9e57b9fbe3",
+    "molecules": 3053,
+    "screened": 1084,
+    "verified": 1084,
+    "contributors": 1,
+    "ingest_armed": true,
+    "bandwidth": {
+      "today_bytes": 0,
+      "budget_bytes": 2147483648,
+      "quiet": false
+    }
+  },
+  "totals": {
+    "harvested": 3053,
+    "screened": 1084,
+    "verified": 1084,
+    "contributors": 1,
+    "units_open": 0,
+    "pending": 1969,
+    "issued": 0,
+    "conflict": 0,
+    "active_1h": 0
+  }
+}
