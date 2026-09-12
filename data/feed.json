@@ -1,12 +1,33 @@
 {
-  "fetched_at": "2026-09-11T11:28:04.964Z",
+  "fetched_at": "2026-09-12T11:26:13.332Z",
   "entries": [
+    {
+      "pmid": "42725387",
+      "title": "[Expression of Concern] Rapamycin‑induced miR‑30a downregulation inhibits senescence of VSMCs by targeting Beclin1.",
+      "journal": "International journal of molecular medicine",
+      "date": "2026-11-01",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "42727655",
+      "title": "Ambrisentan rescues doxorubicin-induced cardiac apoptosis and mitochondrial bioenergetic dysfunction: Mechanistic insights into p53 and mTOR signaling.",
+      "journal": "Biochemical pharmacology",
+      "date": "2026-09-11",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42723264",
       "title": "EXPRESS: Rapamycin increases cerebral blood flow and modulates metabolic, inflammatory, and microbiome profiles in healthy middle-aged APOE4 carriers: a pilot single-arm trial.",
       "journal": "Journal of cerebral blood flow and metabolism : official journal of the International Society of Cerebral Blood Flow and Metabolism",
       "date": "2026-09-10",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42721966",
+      "title": "Blocking PD-L2 prevents senescent cell accumulation and age-related dysfunction.",
+      "journal": "Cell metabolism",
+      "date": "2026-09-10",
+      "topic": "senolytics"
     },
     {
       "pmid": "42717163",
@@ -23,53 +44,88 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42686641",
-      "title": "Mitochondrial Microautophagy: An Emerging Pathway in Maintaining Mitochondrial Homeostasis.",
-      "journal": "Antioxidants & redox signaling",
-      "date": "2026-09-02",
-      "topic": "rapamycin"
+      "pmid": "42710714",
+      "title": "Cellular senescence as endocrine information failure in aging.",
+      "journal": "Ageing research reviews",
+      "date": "2026-09-08",
+      "topic": "senolytics"
     },
     {
-      "pmid": "42362467",
-      "title": "Metabolic control of RNA splicing by polyamines.",
-      "journal": "Trends in biochemical sciences",
+      "pmid": "42700866",
+      "title": "Mitochondria-endoplasmic reticulum contact sites (MERCS/MAM): Multi-layered upstream regulators of microglial senescence in Alzheimer's disease.",
+      "journal": "Ageing research reviews",
+      "date": "2026-09-06",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42692117",
+      "title": "Metformin therapy increases leukocyte telomere length, telomerase activity, and longevity gene expression in Asian Indians with prediabetes: A 24-week participant-blind, outcome-assessor-blinded randomized controlled trial.",
+      "journal": "Mechanisms of ageing and development",
+      "date": "2026-09-03",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42717261",
+      "title": "NAD(+) Metabolic Reprogramming Drives CD8(+) T Cells Senescence and Exacerbates Ulcerative Colitis.",
+      "journal": "Aging cell",
       "date": "2026-09-01",
-      "topic": "spermidine"
+      "topic": "senolytics"
     },
     {
-      "pmid": "42677553",
-      "title": "\"Trojan\" Methionine Probe Reveals PKM2 as a Methionine-Sensing Protein in the mTORC1 Pathway.",
-      "journal": "Journal of the American Chemical Society",
-      "date": "2026-08-26",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42670437",
-      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
-      "journal": "Drug design, development and therapy",
+      "pmid": "42707630",
+      "title": "Senescent immune cells, inflammaging, and bone loss: therapeutic potential and translational challenges of senolytics in osteoporosis.",
+      "journal": "Frontiers in endocrinology",
       "date": "2026-08-24",
-      "topic": "NAD+"
+      "topic": "senolytics"
     },
     {
-      "pmid": "42646333",
-      "title": "Nicotinamide Mononucleotide Adenylyltransferase 1 and NAD(+) Homeostasis in Neuroprotection and Aging.",
-      "journal": "Metabolites",
-      "date": "2026-08-21",
-      "topic": "NAD+"
+      "pmid": "42579881",
+      "title": "Metformin at the convergence of aging and longevity.",
+      "journal": "Aging",
+      "date": "2026-08-10",
+      "topic": "metformin"
     },
     {
-      "pmid": "42588134",
-      "title": "Natural Bioactive Compounds Targeting Key Hallmarks of Aging: Functional Food Potential of Spermidine, Fisetin, Berberine, and Urolithin A.",
-      "journal": "Nutrients",
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42654410",
+      "title": "Beyond Diabetes: Continuous Glucose Monitoring as a Candidate Precision Tool for Cardiovascular Prevention and Healthy Longevity-A Hypothesis-Generating Narrative Review.",
+      "journal": "Medicina (Kaunas, Lithuania)",
+      "date": "2026-08-06",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42529830",
+      "title": "Targeting chaperone-mediated autophagy by nutritional interventions mitigates age-related cardiac fibrosis and diastolic dysfunction.",
+      "journal": "Autophagy",
       "date": "2026-08-03",
-      "topic": "spermidine"
+      "topic": "glycine"
     },
     {
-      "pmid": "42541426",
-      "title": "Neuroprotective Potential of Spermidine in Drosophila sws Neurodegenerative Model.",
-      "journal": "Archives of insect biochemistry and physiology",
+      "pmid": "42579353",
+      "title": "Metformin: A Promising Candidate for Slowing the Progression of Cardiovascular Aging.",
+      "journal": "Aging and disease",
       "date": "2026-08-01",
-      "topic": "spermidine"
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42572918",
+      "title": "A Systems Pharmacology Model of Aging Identifies Optimal Combination Therapies With Secondary Benefits on Weight Loss and Metabolic Health.",
+      "journal": "CPT: pharmacometrics & systems pharmacology",
+      "date": "2026-08-01",
+      "topic": "metformin"
     },
     {
       "pmid": "42702600",
@@ -79,53 +135,32 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42477363",
-      "title": "Geroprotective insights into the natural metabolite spermidine in aging and age-related diseases.",
-      "journal": "npj aging",
-      "date": "2026-07-20",
-      "topic": "spermidine"
+      "pmid": "42620010",
+      "title": "A Randomized Clinical Trial of Metformin to Reduce Frailty in Older Adults with Glucose Intolerance.",
+      "journal": "medRxiv : the preprint server for health sciences",
+      "date": "2026-07-28",
+      "topic": "metformin"
     },
     {
-      "pmid": "42603990",
-      "title": "Nicotinamide Adenine Dinucleotide Augmentation in Diabetic Kidney Disease: Randomized Trial Study Protocol.",
-      "journal": "Kidney international reports",
-      "date": "2026-07-16",
-      "topic": "NAD+"
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
     },
     {
-      "pmid": "42455181",
-      "title": "Longitudinal association of dietary spermidine with hepatic function indexes and cardiometabolic traits in older adults with metabolic syndrome.",
-      "journal": "European journal of nutrition",
-      "date": "2026-07-15",
-      "topic": "spermidine"
+      "pmid": "42727200",
+      "title": "Promotion of tumor cell senescence by the antibody-drug conjugate, sacituzumab govitecan.",
+      "journal": "Molecular pharmacology",
+      "date": "2026-07-21",
+      "topic": "senolytics"
     },
     {
-      "pmid": "42393428",
-      "title": "PROMETHEUS clinical trial protocol: tailoring healthy ageing with lifestyle and nutraceuticals.",
-      "journal": "GeroScience",
-      "date": "2026-07-03",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42444672",
-      "title": "Polyamine-mediated inhibition of ferroptosis contributes to geroprotection.",
-      "journal": "Cell stress",
-      "date": "2026-07-03",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42478598",
-      "title": "A phase-II randomized controlled pilot study of nicotinamide riboside supplementation in older adults with amnestic mild cognitive impairment.",
-      "journal": "Alzheimer's & dementia : the journal of the Alzheimer's Association",
-      "date": "2026-07-01",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42449929",
-      "title": "Transcriptional Profiling Shows Dampening of Interferon Gene Signatures by NAD(+) Augmentation in Ataxia-Telangiectasia.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-06-23",
-      "topic": "NAD+"
+      "pmid": "42353443",
+      "title": "Epimedii Folium Supplementation Improves Semen Quality, Hormonal Profile, and Immune Function by Modulating Gut Microbiota and Seminal Metabolites in Aged Boars.",
+      "journal": "Animals : an open access journal from MDPI",
+      "date": "2026-06-14",
+      "topic": "glycine"
     }
   ]
 }
