@@ -1,6 +1,20 @@
 {
-  "fetched_at": "2026-09-23T11:29:40.794Z",
+  "fetched_at": "2026-09-24T11:30:08.903Z",
   "entries": [
+    {
+      "pmid": "42775680",
+      "title": "Therapeutic Immune Reprogramming by Rapamycin Attenuates Plaque Inflammation and Lymphoid Immune Responses in Aged Atherosclerotic Mice.",
+      "journal": "Aging cell",
+      "date": "2026-10-01",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "42778591",
+      "title": "Lsp2 links mTORC1 to TOP mRNA translation and lifespan in Drosophila.",
+      "journal": "Nature",
+      "date": "2026-09-23",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42771094",
       "title": "Tissue-specific aging clocks map structured aging-modulatory drug-score patterns across 49 human tissue and cell-line categories.",
@@ -28,62 +42,6 @@
       "journal": "Inflammopharmacology",
       "date": "2026-09-19",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42759606",
-      "title": "Rapamycin in Frail Older Subjects with Heart Failure with Preserved Ejection Fraction.",
-      "journal": "Mayo Clinic proceedings",
-      "date": "2026-09-18",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42735389",
-      "title": "Cardiometabolic medication exposures and cognitive outcomes in Alzheimer's disease.",
-      "journal": "Age and ageing",
-      "date": "2026-09-04",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42692117",
-      "title": "Metformin therapy increases leukocyte telomere length, telomerase activity, and longevity gene expression in Asian Indians with prediabetes: A 24-week participant-blind, outcome-assessor-blinded randomized controlled trial.",
-      "journal": "Mechanisms of ageing and development",
-      "date": "2026-09-03",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42737424",
-      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-08-22",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42746326",
-      "title": "The Coupled Physico-Biochemical Mechanisms of Skin Aging: From Dermal Fluid Dynamics and Mechanotransduction to Nutrient-Sensing Dysfunction.",
-      "journal": "Cureus",
-      "date": "2026-08-16",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42579881",
-      "title": "Metformin at the convergence of aging and longevity.",
-      "journal": "Aging",
-      "date": "2026-08-10",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42654410",
-      "title": "Beyond Diabetes: Continuous Glucose Monitoring as a Candidate Precision Tool for Cardiovascular Prevention and Healthy Longevity-A Hypothesis-Generating Narrative Review.",
-      "journal": "Medicina (Kaunas, Lithuania)",
-      "date": "2026-08-06",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42620010",
-      "title": "A Randomized Clinical Trial of Metformin to Reduce Frailty in Older Adults with Glucose Intolerance.",
-      "journal": "medRxiv : the preprint server for health sciences",
-      "date": "2026-07-28",
-      "topic": "metformin"
     }
   ]
 }
