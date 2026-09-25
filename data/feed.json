@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-09-24T11:30:08.903Z",
+  "fetched_at": "2026-09-25T11:29:57.206Z",
   "entries": [
     {
       "pmid": "42775680",
@@ -30,18 +30,53 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42765942",
-      "title": "mTOR signaling in aging: from causality to geroprotective interventions and hallmark-level outcomes.",
-      "journal": "Aging",
+      "pmid": "42781074",
+      "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
+      "journal": "Clinical interventions in aging",
       "date": "2026-09-19",
       "topic": "rapamycin"
     },
     {
-      "pmid": "42762380",
-      "title": "Evaluation the role of quinoa seeds in attenuation the brain cellular senescence and aging induced by D-galactose and γ-radiation in rats: insights into autophagy, telomerase activity, amyloid-β and tau proteins.",
-      "journal": "Inflammopharmacology",
-      "date": "2026-09-19",
+      "pmid": "42735389",
+      "title": "Cardiometabolic medication exposures and cognitive outcomes in Alzheimer's disease.",
+      "journal": "Age and ageing",
+      "date": "2026-09-04",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42692117",
+      "title": "Metformin therapy increases leukocyte telomere length, telomerase activity, and longevity gene expression in Asian Indians with prediabetes: A 24-week participant-blind, outcome-assessor-blinded randomized controlled trial.",
+      "journal": "Mechanisms of ageing and development",
+      "date": "2026-09-03",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42783734",
+      "title": "Plasma as Proxy for Tissue Metabolism When Extending Lifespan in Mice.",
+      "journal": "Metabolites",
+      "date": "2026-08-25",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42737424",
+      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-08-22",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42654410",
+      "title": "Beyond Diabetes: Continuous Glucose Monitoring as a Candidate Precision Tool for Cardiovascular Prevention and Healthy Longevity-A Hypothesis-Generating Narrative Review.",
+      "journal": "Medicina (Kaunas, Lithuania)",
+      "date": "2026-08-06",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42620010",
+      "title": "A Randomized Clinical Trial of Metformin to Reduce Frailty in Older Adults with Glucose Intolerance.",
+      "journal": "medRxiv : the preprint server for health sciences",
+      "date": "2026-07-28",
+      "topic": "metformin"
     }
   ]
 }
