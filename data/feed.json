@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-09-27T11:28:31.079Z",
+  "fetched_at": "2026-09-28T11:31:54.994Z",
   "entries": [
     {
       "pmid": "42775680",
@@ -7,13 +7,6 @@
       "journal": "Aging cell",
       "date": "2026-10-01",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42790830",
-      "title": "Berberine induces pleiotropic beneficial effects via hormesis.",
-      "journal": "Pharmacological research",
-      "date": "2026-09-25",
-      "topic": "metformin"
     },
     {
       "pmid": "42778591",
@@ -44,20 +37,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42735389",
-      "title": "Cardiometabolic medication exposures and cognitive outcomes in Alzheimer's disease.",
-      "journal": "Age and ageing",
-      "date": "2026-09-04",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42692117",
-      "title": "Metformin therapy increases leukocyte telomere length, telomerase activity, and longevity gene expression in Asian Indians with prediabetes: A 24-week participant-blind, outcome-assessor-blinded randomized controlled trial.",
-      "journal": "Mechanisms of ageing and development",
-      "date": "2026-09-03",
-      "topic": "metformin"
-    },
-    {
       "pmid": "42783734",
       "title": "Plasma as Proxy for Tissue Metabolism When Extending Lifespan in Mice.",
       "journal": "Metabolites",
@@ -65,18 +44,32 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42737424",
-      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-08-22",
-      "topic": "metformin"
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
     },
     {
-      "pmid": "42654410",
-      "title": "Beyond Diabetes: Continuous Glucose Monitoring as a Candidate Precision Tool for Cardiovascular Prevention and Healthy Longevity-A Hypothesis-Generating Narrative Review.",
-      "journal": "Medicina (Kaunas, Lithuania)",
-      "date": "2026-08-06",
-      "topic": "metformin"
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42529830",
+      "title": "Targeting chaperone-mediated autophagy by nutritional interventions mitigates age-related cardiac fibrosis and diastolic dysfunction.",
+      "journal": "Autophagy",
+      "date": "2026-08-03",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
     }
   ]
 }
