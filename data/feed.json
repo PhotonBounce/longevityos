@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-09-28T11:31:54.994Z",
+  "fetched_at": "2026-09-29T11:31:06.889Z",
   "entries": [
     {
       "pmid": "42775680",
@@ -7,6 +7,20 @@
       "journal": "Aging cell",
       "date": "2026-10-01",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42806572",
+      "title": "uPAR-Targeting T Cell Engager Exerts Senolytic Effects in Mice and Non-Human Primates With Serum Aminotransferase Activity as a Safety Monitor.",
+      "journal": "Aging cell",
+      "date": "2026-10-01",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42806154",
+      "title": "UHRF1 overexpression generates distinct senescent states with different Tp53 dependencies.",
+      "journal": "EMBO reports",
+      "date": "2026-09-28",
+      "topic": "senolytics"
     },
     {
       "pmid": "42778591",
@@ -30,6 +44,20 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42794649",
+      "title": "Chronic Radiation-Induced Wounds: Pathogenesis, Current Therapeutic Strategies, and Emerging Regenerative Approaches.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-09-15",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42796982",
+      "title": "Clinical Translation of Fisetin for Age-Related Diseases: Current Evidence and Future Opportunities.",
+      "journal": "Nutrients",
+      "date": "2026-09-14",
+      "topic": "senolytics"
+    },
+    {
       "pmid": "42794419",
       "title": "MORG1 Haploinsufficiency Is Associated with Stage- and Sex-Dependent Renoprotection and Signalling Alterations in Diabetic Kidney Disease.",
       "journal": "International journal of molecular sciences",
@@ -37,39 +65,25 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42795343",
+      "title": "Crataegus Species as a Source of Geroprotective Phytochemicals: Biological Activities, Molecular Mechanisms and Therapeutic Perspectives.",
+      "journal": "Life (Basel, Switzerland)",
+      "date": "2026-09-04",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42792722",
+      "title": "Aging Biology of Bone-to-Tendon Healing and the Epigenetic Clock: A Biological-Age Readout of Rotator Cuff Healing Capacity.",
+      "journal": "Biomedicines",
+      "date": "2026-09-02",
+      "topic": "senolytics"
+    },
+    {
       "pmid": "42783734",
       "title": "Plasma as Proxy for Tissue Metabolism When Extending Lifespan in Mice.",
       "journal": "Metabolites",
       "date": "2026-08-25",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42620424",
-      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
-      "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-08-07",
-      "topic": "ITP"
-    },
-    {
-      "pmid": "42566035",
-      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
-      "journal": "Archives of microbiology",
-      "date": "2026-08-07",
-      "topic": "glycine"
-    },
-    {
-      "pmid": "42529830",
-      "title": "Targeting chaperone-mediated autophagy by nutritional interventions mitigates age-related cardiac fibrosis and diastolic dysfunction.",
-      "journal": "Autophagy",
-      "date": "2026-08-03",
-      "topic": "glycine"
-    },
-    {
-      "pmid": "42583471",
-      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
-      "journal": "Frontiers in microbiology",
-      "date": "2026-07-28",
-      "topic": "glycine"
     }
   ]
 }
