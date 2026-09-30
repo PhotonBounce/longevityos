@@ -1,9 +1,9 @@
 {
-  "fetched_at": "2026-09-29T11:31:06.889Z",
+  "fetched_at": "2026-09-30T11:30:09.865Z",
   "entries": [
     {
-      "pmid": "42775680",
-      "title": "Therapeutic Immune Reprogramming by Rapamycin Attenuates Plaque Inflammation and Lymphoid Immune Responses in Aged Atherosclerotic Mice.",
+      "pmid": "42808563",
+      "title": "Dietary CoQ10 Ameliorates Age-Related Megakaryocyte Dysfunction via COPS3-Mediated Activation of Autophagy.",
       "journal": "Aging cell",
       "date": "2026-10-01",
       "topic": "rapamycin"
@@ -13,6 +13,27 @@
       "title": "uPAR-Targeting T Cell Engager Exerts Senolytic Effects in Mice and Non-Human Primates With Serum Aminotransferase Activity as a Safety Monitor.",
       "journal": "Aging cell",
       "date": "2026-10-01",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42811603",
+      "title": "Long-Term Human Skin Platform for Modeling Chronic Inflammation, Environmental Stress, and Therapeutic Intervention.",
+      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
+      "date": "2026-09-29",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42811336",
+      "title": "Cellular senescence and regulated cell death in cancer: mechanisms, cross-regulatory networks and therapeutic implications.",
+      "journal": "Journal of hematology & oncology",
+      "date": "2026-09-29",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42809069",
+      "title": "Autologous cytokine-induced NK cells as candidate cellular senolytics: evidence, obstacles, and the experiments still needed.",
+      "journal": "GeroScience",
+      "date": "2026-09-29",
       "topic": "senolytics"
     },
     {
@@ -30,13 +51,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42771094",
-      "title": "Tissue-specific aging clocks map structured aging-modulatory drug-score patterns across 49 human tissue and cell-line categories.",
-      "journal": "Biogerontology",
-      "date": "2026-09-22",
-      "topic": "rapamycin"
-    },
-    {
       "pmid": "42781074",
       "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
       "journal": "Clinical interventions in aging",
@@ -44,18 +58,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42794649",
-      "title": "Chronic Radiation-Induced Wounds: Pathogenesis, Current Therapeutic Strategies, and Emerging Regenerative Approaches.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-09-15",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42796982",
-      "title": "Clinical Translation of Fisetin for Age-Related Diseases: Current Evidence and Future Opportunities.",
-      "journal": "Nutrients",
+      "pmid": "42807283",
+      "title": "Caenorhabditis Intervention Testing Program: the putative mTOR inhibitors Cinnarizine and Meclizine do not extend lifespan in C. elegans.",
+      "journal": "microPublication biology",
       "date": "2026-09-14",
-      "topic": "senolytics"
+      "topic": "rapamycin"
     },
     {
       "pmid": "42794419",
@@ -65,16 +72,9 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42795343",
-      "title": "Crataegus Species as a Source of Geroprotective Phytochemicals: Biological Activities, Molecular Mechanisms and Therapeutic Perspectives.",
-      "journal": "Life (Basel, Switzerland)",
-      "date": "2026-09-04",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42792722",
-      "title": "Aging Biology of Bone-to-Tendon Healing and the Epigenetic Clock: A Biological-Age Readout of Rotator Cuff Healing Capacity.",
-      "journal": "Biomedicines",
+      "pmid": "42807404",
+      "title": "Decoding Vascular Senescence: Cellular Insights and Therapeutic Strategies.",
+      "journal": "International journal of biological sciences",
       "date": "2026-09-02",
       "topic": "senolytics"
     },
