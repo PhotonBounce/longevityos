@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-10-01T11:31:05.709Z",
+  "fetched_at": "2026-10-02T11:31:21.607Z",
   "entries": [
+    {
+      "pmid": "42804599",
+      "title": "Personalized whole-body modeling links gut microbiota to metabolic perturbations in Alzheimer's disease.",
+      "journal": "Gut microbes",
+      "date": "2026-12-31",
+      "topic": "taurine"
+    },
     {
       "pmid": "42808563",
       "title": "Dietary CoQ10 Ameliorates Age-Related Megakaryocyte Dysfunction via COPS3-Mediated Activation of Autophagy.",
@@ -23,11 +30,25 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42780013",
+      "title": "Engineered nanosponges mitigate peripheral stress-induced neuroinflammation and restore cognitive function.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-09-18",
+      "topic": "taurine"
+    },
+    {
       "pmid": "42807283",
       "title": "Caenorhabditis Intervention Testing Program: the putative mTOR inhibitors Cinnarizine and Meclizine do not extend lifespan in C. elegans.",
       "journal": "microPublication biology",
       "date": "2026-09-14",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42730881",
+      "title": "Urinary metabolomics data and cognitive performance in an adult population.",
+      "journal": "Metabolic brain disease",
+      "date": "2026-09-12",
+      "topic": "taurine"
     },
     {
       "pmid": "42794419",
@@ -44,11 +65,25 @@
       "topic": "spermidine"
     },
     {
+      "pmid": "42729457",
+      "title": "Should taurine be pursued further as a supportive nutraceutical for Duchenne muscular dystrophy? Gathering evidence in a zebrafish disease model to confirm or refute the benefits - Stage 1 Report.",
+      "journal": "Frontiers in nutrition",
+      "date": "2026-08-28",
+      "topic": "taurine"
+    },
+    {
       "pmid": "42783734",
       "title": "Plasma as Proxy for Tissue Metabolism When Extending Lifespan in Mice.",
       "journal": "Metabolites",
       "date": "2026-08-25",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42737424",
+      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-08-22",
+      "topic": "taurine"
     },
     {
       "pmid": "42588134",
@@ -63,6 +98,13 @@
       "journal": "Archives of insect biochemistry and physiology",
       "date": "2026-08-01",
       "topic": "spermidine"
+    },
+    {
+      "pmid": "42581953",
+      "title": "Intestinal pooling of taurine conjugated bile acids is associated with tissue aging and senescent immune evasion.",
+      "journal": "Frontiers in immunology",
+      "date": "2026-07-28",
+      "topic": "taurine"
     },
     {
       "pmid": "42477363",
