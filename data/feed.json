@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-10-03T12:49:15.937Z",
+  "fetched_at": "2026-10-04T13:21:41.145Z",
   "entries": [
     {
       "pmid": "42804599",
@@ -44,11 +44,25 @@
       "topic": "senolytics"
     },
     {
+      "pmid": "42810392",
+      "title": "Direct Pharmacological Activation of AMPK Extends Lifespan in Yeast, Worms and Flies.",
+      "journal": "Aging cell",
+      "date": "2026-10-01",
+      "topic": "metformin"
+    },
+    {
       "pmid": "42821418",
       "title": "Crosstalk between exosomes and cellular senescence: A core vicious loop promoting α-synuclein pathology in Parkinson's disease.",
       "journal": "Neural regeneration research",
       "date": "2026-09-30",
       "topic": "senolytics"
+    },
+    {
+      "pmid": "42790830",
+      "title": "Berberine induces pleiotropic beneficial effects via hormesis.",
+      "journal": "Pharmacological research",
+      "date": "2026-09-25",
+      "topic": "metformin"
     },
     {
       "pmid": "42778591",
@@ -100,6 +114,27 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42735389",
+      "title": "Cardiometabolic medication exposures and cognitive outcomes in Alzheimer's disease.",
+      "journal": "Age and ageing",
+      "date": "2026-09-04",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42692117",
+      "title": "Metformin therapy increases leukocyte telomere length, telomerase activity, and longevity gene expression in Asian Indians with prediabetes: A 24-week participant-blind, outcome-assessor-blinded randomized controlled trial.",
+      "journal": "Mechanisms of ageing and development",
+      "date": "2026-09-03",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42734829",
+      "title": "Polyamine metabolic enzyme SAT1 remodels the neuronal transcriptome and rescues α-synuclein toxicity in Drosophila.",
+      "journal": "Amino acids",
+      "date": "2026-08-30",
+      "topic": "spermidine"
+    },
+    {
       "pmid": "42729457",
       "title": "Should taurine be pursued further as a supportive nutraceutical for Duchenne muscular dystrophy? Gathering evidence in a zebrafish disease model to confirm or refute the benefits - Stage 1 Report.",
       "journal": "Frontiers in nutrition",
@@ -118,7 +153,21 @@
       "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
       "journal": "International journal of molecular sciences",
       "date": "2026-08-22",
-      "topic": "taurine"
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42588134",
+      "title": "Natural Bioactive Compounds Targeting Key Hallmarks of Aging: Functional Food Potential of Spermidine, Fisetin, Berberine, and Urolithin A.",
+      "journal": "Nutrients",
+      "date": "2026-08-03",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42541426",
+      "title": "Neuroprotective Potential of Spermidine in Drosophila sws Neurodegenerative Model.",
+      "journal": "Archives of insect biochemistry and physiology",
+      "date": "2026-08-01",
+      "topic": "spermidine"
     },
     {
       "pmid": "42581953",
@@ -126,6 +175,27 @@
       "journal": "Frontiers in immunology",
       "date": "2026-07-28",
       "topic": "taurine"
+    },
+    {
+      "pmid": "42477363",
+      "title": "Geroprotective insights into the natural metabolite spermidine in aging and age-related diseases.",
+      "journal": "npj aging",
+      "date": "2026-07-20",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42455181",
+      "title": "Longitudinal association of dietary spermidine with hepatic function indexes and cardiometabolic traits in older adults with metabolic syndrome.",
+      "journal": "European journal of nutrition",
+      "date": "2026-07-15",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42444672",
+      "title": "Polyamine-mediated inhibition of ferroptosis contributes to geroprotection.",
+      "journal": "Cell stress",
+      "date": "2026-07-03",
+      "topic": "spermidine"
     }
   ]
 }
