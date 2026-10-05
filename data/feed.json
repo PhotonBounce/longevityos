@@ -1,19 +1,12 @@
 {
-  "fetched_at": "2026-10-04T13:21:41.145Z",
+  "fetched_at": "2026-10-05T11:32:24.672Z",
   "entries": [
     {
-      "pmid": "42804599",
-      "title": "Personalized whole-body modeling links gut microbiota to metabolic perturbations in Alzheimer's disease.",
-      "journal": "Gut microbes",
-      "date": "2026-12-31",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "42827203",
-      "title": "Cellular senescence: six decades of discovery and reinvention.",
-      "journal": "The EMBO journal",
-      "date": "2026-10-02",
-      "topic": "senolytics"
+      "pmid": "42830439",
+      "title": "Klotho Deficiency Impairs Distal Potassium Homeostasis Through mTORC1-Dependent Suppression of ROMK.",
+      "journal": "Acta physiologica (Oxford, England)",
+      "date": "2026-11-01",
+      "topic": "rapamycin"
     },
     {
       "pmid": "42808563",
@@ -23,74 +16,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42823536",
-      "title": "Senolytics dasatinib and quercetin in metabolic dysfunction-associated steatohepatitis: a proof-of-principle randomized, controlled trial.",
-      "journal": "Nature metabolism",
-      "date": "2026-10-01",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42823204",
-      "title": "Future directions of osteoanabolic therapies in osteoporosis: Integrating current anabolic agents and emerging senescence-targeted strategies.",
-      "journal": "Best practice & research. Clinical rheumatology",
-      "date": "2026-10-01",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42822052",
-      "title": "Senescence-associated prostate cancer cells promote fibroblast reprogramming and extracellular matrix remodeling.",
-      "journal": "Neoplasia (New York, N.Y.)",
-      "date": "2026-10-01",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42810392",
-      "title": "Direct Pharmacological Activation of AMPK Extends Lifespan in Yeast, Worms and Flies.",
-      "journal": "Aging cell",
-      "date": "2026-10-01",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42821418",
-      "title": "Crosstalk between exosomes and cellular senescence: A core vicious loop promoting α-synuclein pathology in Parkinson's disease.",
-      "journal": "Neural regeneration research",
-      "date": "2026-09-30",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42790830",
-      "title": "Berberine induces pleiotropic beneficial effects via hormesis.",
-      "journal": "Pharmacological research",
-      "date": "2026-09-25",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42778591",
-      "title": "Lsp2 links mTORC1 to TOP mRNA translation and lifespan in Drosophila.",
-      "journal": "Nature",
-      "date": "2026-09-23",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42817936",
-      "title": "Age-associated Autoimmunity Driven by T cell Immunosenescence.",
-      "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-09-22",
-      "topic": "senolytics"
-    },
-    {
       "pmid": "42781074",
       "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
       "journal": "Clinical interventions in aging",
       "date": "2026-09-19",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42780013",
-      "title": "Engineered nanosponges mitigate peripheral stress-induced neuroinflammation and restore cognitive function.",
-      "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-09-18",
-      "topic": "taurine"
     },
     {
       "pmid": "42807283",
@@ -100,11 +30,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42730881",
-      "title": "Urinary metabolomics data and cognitive performance in an adult population.",
-      "journal": "Metabolic brain disease",
-      "date": "2026-09-12",
-      "topic": "taurine"
+      "pmid": "42787547",
+      "title": "Narrative review of intravenous NAD(+) and NAD(+) precursors in wellness and translational medicine.",
+      "journal": "Frontiers in aging",
+      "date": "2026-09-10",
+      "topic": "NAD+"
     },
     {
       "pmid": "42794419",
@@ -114,34 +44,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42735389",
-      "title": "Cardiometabolic medication exposures and cognitive outcomes in Alzheimer's disease.",
-      "journal": "Age and ageing",
-      "date": "2026-09-04",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42692117",
-      "title": "Metformin therapy increases leukocyte telomere length, telomerase activity, and longevity gene expression in Asian Indians with prediabetes: A 24-week participant-blind, outcome-assessor-blinded randomized controlled trial.",
-      "journal": "Mechanisms of ageing and development",
-      "date": "2026-09-03",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42734829",
-      "title": "Polyamine metabolic enzyme SAT1 remodels the neuronal transcriptome and rescues α-synuclein toxicity in Drosophila.",
-      "journal": "Amino acids",
-      "date": "2026-08-30",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42729457",
-      "title": "Should taurine be pursued further as a supportive nutraceutical for Duchenne muscular dystrophy? Gathering evidence in a zebrafish disease model to confirm or refute the benefits - Stage 1 Report.",
-      "journal": "Frontiers in nutrition",
-      "date": "2026-08-28",
-      "topic": "taurine"
-    },
-    {
       "pmid": "42783734",
       "title": "Plasma as Proxy for Tissue Metabolism When Extending Lifespan in Mice.",
       "journal": "Metabolites",
@@ -149,53 +51,32 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42737424",
-      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-08-22",
-      "topic": "metformin"
+      "pmid": "42670437",
+      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
+      "journal": "Drug design, development and therapy",
+      "date": "2026-08-24",
+      "topic": "NAD+"
     },
     {
-      "pmid": "42588134",
-      "title": "Natural Bioactive Compounds Targeting Key Hallmarks of Aging: Functional Food Potential of Spermidine, Fisetin, Berberine, and Urolithin A.",
-      "journal": "Nutrients",
-      "date": "2026-08-03",
-      "topic": "spermidine"
+      "pmid": "42646333",
+      "title": "Nicotinamide Mononucleotide Adenylyltransferase 1 and NAD(+) Homeostasis in Neuroprotection and Aging.",
+      "journal": "Metabolites",
+      "date": "2026-08-21",
+      "topic": "NAD+"
     },
     {
-      "pmid": "42541426",
-      "title": "Neuroprotective Potential of Spermidine in Drosophila sws Neurodegenerative Model.",
-      "journal": "Archives of insect biochemistry and physiology",
-      "date": "2026-08-01",
-      "topic": "spermidine"
+      "pmid": "42603990",
+      "title": "Nicotinamide Adenine Dinucleotide Augmentation in Diabetic Kidney Disease: Randomized Trial Study Protocol.",
+      "journal": "Kidney international reports",
+      "date": "2026-07-16",
+      "topic": "NAD+"
     },
     {
-      "pmid": "42581953",
-      "title": "Intestinal pooling of taurine conjugated bile acids is associated with tissue aging and senescent immune evasion.",
-      "journal": "Frontiers in immunology",
-      "date": "2026-07-28",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "42477363",
-      "title": "Geroprotective insights into the natural metabolite spermidine in aging and age-related diseases.",
-      "journal": "npj aging",
-      "date": "2026-07-20",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42455181",
-      "title": "Longitudinal association of dietary spermidine with hepatic function indexes and cardiometabolic traits in older adults with metabolic syndrome.",
-      "journal": "European journal of nutrition",
-      "date": "2026-07-15",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42444672",
-      "title": "Polyamine-mediated inhibition of ferroptosis contributes to geroprotection.",
-      "journal": "Cell stress",
-      "date": "2026-07-03",
-      "topic": "spermidine"
+      "pmid": "42478598",
+      "title": "A phase-II randomized controlled pilot study of nicotinamide riboside supplementation in older adults with amnestic mild cognitive impairment.",
+      "journal": "Alzheimer's & dementia : the journal of the Alzheimer's Association",
+      "date": "2026-07-01",
+      "topic": "NAD+"
     }
   ]
 }
