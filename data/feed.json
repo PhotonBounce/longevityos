@@ -1,11 +1,18 @@
 {
-  "fetched_at": "2026-10-06T11:31:06.158Z",
+  "fetched_at": "2026-10-07T11:31:41.063Z",
   "entries": [
     {
       "pmid": "42830439",
       "title": "Klotho Deficiency Impairs Distal Potassium Homeostasis Through mTORC1-Dependent Suppression of ROMK.",
       "journal": "Acta physiologica (Oxford, England)",
       "date": "2026-11-01",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "42837017",
+      "title": "Sex-stratified immune patterns across the canine lifespan and short-term responses to geroprotective interventions.",
+      "journal": "Biogerontology",
+      "date": "2026-10-06",
       "topic": "rapamycin"
     },
     {
@@ -30,18 +37,39 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42794419",
-      "title": "MORG1 Haploinsufficiency Is Associated with Stage- and Sex-Dependent Renoprotection and Signalling Alterations in Diabetic Kidney Disease.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-09-08",
+      "pmid": "42839800",
+      "title": "Exercise-Induced Activation of IGF-1/mTOR Signaling and Hippocampal BDNF/PGC-1α Expression Reverses Age-Related Motor Decline.",
+      "journal": "International neurourology journal",
+      "date": "2026-09-01",
       "topic": "rapamycin"
     },
     {
-      "pmid": "42783734",
-      "title": "Plasma as Proxy for Tissue Metabolism When Extending Lifespan in Mice.",
-      "journal": "Metabolites",
-      "date": "2026-08-25",
-      "topic": "rapamycin"
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42529830",
+      "title": "Targeting chaperone-mediated autophagy by nutritional interventions mitigates age-related cardiac fibrosis and diastolic dysfunction.",
+      "journal": "Autophagy",
+      "date": "2026-08-03",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
     }
   ]
 }
