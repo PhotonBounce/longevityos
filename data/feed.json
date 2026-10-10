@@ -1,11 +1,18 @@
 {
-  "fetched_at": "2026-10-09T11:30:50.412Z",
+  "fetched_at": "2026-10-10T11:30:20.395Z",
   "entries": [
     {
-      "pmid": "42830439",
-      "title": "Klotho Deficiency Impairs Distal Potassium Homeostasis Through mTORC1-Dependent Suppression of ROMK.",
-      "journal": "Acta physiologica (Oxford, England)",
-      "date": "2026-11-01",
+      "pmid": "42854373",
+      "title": "Sodium arsenite accelerates aging of Caenorhabditis elegans parents and offspring through the insulin signaling pathway, oxidative stress, and autophagy.",
+      "journal": "Ecotoxicology and environmental safety",
+      "date": "2026-10-09",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "42852863",
+      "title": "Beyond the cerebrospinal fluid: Preclinical and clinical evidence on central nervous system penetration and functional activity of oral rapamycin (sirolimus).",
+      "journal": "Journal of Alzheimer's disease : JAD",
+      "date": "2026-10-09",
       "topic": "rapamycin"
     },
     {
@@ -27,13 +34,6 @@
       "title": "Caloric restriction mimetics rewire the AMPK-mTOR-ULK1 signaling nexus to restore autophagic proteostasis in the aging brain.",
       "journal": "Molecular and cellular neurosciences",
       "date": "2026-10-05",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42808563",
-      "title": "Dietary CoQ10 Ameliorates Age-Related Megakaryocyte Dysfunction via COPS3-Mediated Activation of Autophagy.",
-      "journal": "Aging cell",
-      "date": "2026-10-01",
       "topic": "rapamycin"
     },
     {
