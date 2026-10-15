@@ -1,40 +1,12 @@
 {
-  "fetched_at": "2026-10-14T11:31:38.242Z",
+  "fetched_at": "2026-10-15T11:30:29.648Z",
   "entries": [
     {
-      "pmid": "42863771",
-      "title": "Tumor-Associated Immunosenescence: Mechanisms, Biomarkers, and Age-Adaptive Immunotherapy.",
-      "journal": "Critical reviews in oncology/hematology",
-      "date": "2026-10-12",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42863579",
-      "title": "Cellular Senescence in Heart Failure with Preserved Ejection Fraction: Mechanisms and Therapeutic Opportunities.",
-      "journal": "Ageing research reviews",
-      "date": "2026-10-12",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42863418",
-      "title": "The role of immune aging in rheumatoid arthritis and its clinical and therapeutic significance.",
-      "journal": "International immunopharmacology",
-      "date": "2026-10-12",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42863347",
-      "title": "Immunosenescence as a modifiable driver of neurodegenerative diseases: Pathways and multidimensional emerging strategies for Alzheimer's and Parkinson's diseases.",
-      "journal": "Neurotherapeutics : the journal of the American Society for Experimental NeuroTherapeutics",
-      "date": "2026-10-12",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42860854",
-      "title": "Metformin Partially Modulates Cisplatin-Induced Neuronal Senescence but Does Not Prevent Rat Peripheral Sensory Hypersensitivity.",
-      "journal": "Toxicology mechanisms and methods",
-      "date": "2026-10-12",
-      "topic": "senolytics"
+      "pmid": "42875857",
+      "title": "Mitochondrial Quality Control in Degenerative Musculoskeletal Diseases: Signaling Networks and Therapeutic Landscapes.",
+      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
+      "date": "2026-10-14",
+      "topic": "metformin"
     },
     {
       "pmid": "42854373",
@@ -51,13 +23,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42858321",
-      "title": "Effects of Spermidine Supplementation on Vascular Brain Health in Older Individuals with Subjective Cognitive Decline - An Exploratory MRI Analysis.",
-      "journal": "Aging and disease",
-      "date": "2026-10-09",
-      "topic": "spermidine"
-    },
-    {
       "pmid": "42843464",
       "title": "Is there a role for senotherapeutics in the treatment of giant cell arteritis?",
       "journal": "Ageing research reviews",
@@ -70,13 +35,6 @@
       "journal": "Aging and disease",
       "date": "2026-10-02",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42865293",
-      "title": "Plant-Derived Senolytic Ingredient, Camellia sinensis Root Extract, Ameliorates Skin Aging-Associated Phenotypes.",
-      "journal": "Experimental dermatology",
-      "date": "2026-10-01",
-      "topic": "senolytics"
     },
     {
       "pmid": "42810392",
@@ -100,88 +58,18 @@
       "topic": "metformin"
     },
     {
-      "pmid": "42852089",
-      "title": "Polyamines, cardiorespiratory fitness, body composition, and mitochondrial function in older patients with coronary artery disease.",
-      "journal": "European heart journal open",
-      "date": "2026-09-21",
-      "topic": "spermidine"
-    },
-    {
       "pmid": "42781074",
       "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
       "journal": "Clinical interventions in aging",
       "date": "2026-09-19",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42787547",
-      "title": "Narrative review of intravenous NAD(+) and NAD(+) precursors in wellness and translational medicine.",
-      "journal": "Frontiers in aging",
-      "date": "2026-09-10",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42839800",
-      "title": "Exercise-Induced Activation of IGF-1/mTOR Signaling and Hippocampal BDNF/PGC-1α Expression Reverses Age-Related Motor Decline.",
-      "journal": "International neurourology journal",
-      "date": "2026-09-01",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42734829",
-      "title": "Polyamine metabolic enzyme SAT1 remodels the neuronal transcriptome and rescues α-synuclein toxicity in Drosophila.",
-      "journal": "Amino acids",
-      "date": "2026-08-30",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42670437",
-      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
-      "journal": "Drug design, development and therapy",
-      "date": "2026-08-24",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42737424",
-      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-08-22",
       "topic": "metformin"
     },
     {
-      "pmid": "42646333",
-      "title": "Nicotinamide Mononucleotide Adenylyltransferase 1 and NAD(+) Homeostasis in Neuroprotection and Aging.",
-      "journal": "Metabolites",
-      "date": "2026-08-21",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42588134",
-      "title": "Natural Bioactive Compounds Targeting Key Hallmarks of Aging: Functional Food Potential of Spermidine, Fisetin, Berberine, and Urolithin A.",
-      "journal": "Nutrients",
-      "date": "2026-08-03",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42541426",
-      "title": "Neuroprotective Potential of Spermidine in Drosophila sws Neurodegenerative Model.",
-      "journal": "Archives of insect biochemistry and physiology",
-      "date": "2026-08-01",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42603990",
-      "title": "Nicotinamide Adenine Dinucleotide Augmentation in Diabetic Kidney Disease: Randomized Trial Study Protocol.",
-      "journal": "Kidney international reports",
-      "date": "2026-07-16",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42478598",
-      "title": "A phase-II randomized controlled pilot study of nicotinamide riboside supplementation in older adults with amnestic mild cognitive impairment.",
-      "journal": "Alzheimer's & dementia : the journal of the Alzheimer's Association",
-      "date": "2026-07-01",
-      "topic": "NAD+"
+      "pmid": "42872291",
+      "title": "Aging rate indicators and the search for anti-aging drugs.",
+      "journal": "Frontiers in science",
+      "date": "2026-01-01",
+      "topic": "rapamycin"
     }
   ]
 }
