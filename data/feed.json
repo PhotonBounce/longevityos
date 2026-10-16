@@ -1,32 +1,18 @@
 {
-  "fetched_at": "2026-10-15T11:30:29.648Z",
+  "fetched_at": "2026-10-16T11:30:17.918Z",
   "entries": [
     {
-      "pmid": "42875857",
-      "title": "Mitochondrial Quality Control in Degenerative Musculoskeletal Diseases: Signaling Networks and Therapeutic Landscapes.",
-      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
-      "date": "2026-10-14",
-      "topic": "metformin"
+      "pmid": "42880581",
+      "title": "The potential role of the gephyrin-CNTNAP4 interface in brain aging: Mechanisms of inhibitory circuit dysfunction and cognitive decline.",
+      "journal": "Progress in neuro-psychopharmacology & biological psychiatry",
+      "date": "2026-10-15",
+      "topic": "rapamycin"
     },
     {
       "pmid": "42854373",
       "title": "Sodium arsenite accelerates aging of Caenorhabditis elegans parents and offspring through the insulin signaling pathway, oxidative stress, and autophagy.",
       "journal": "Ecotoxicology and environmental safety",
       "date": "2026-10-09",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42852863",
-      "title": "Beyond the cerebrospinal fluid: Preclinical and clinical evidence on central nervous system penetration and functional activity of oral rapamycin (sirolimus).",
-      "journal": "Journal of Alzheimer's disease : JAD",
-      "date": "2026-10-09",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42843464",
-      "title": "Is there a role for senotherapeutics in the treatment of giant cell arteritis?",
-      "journal": "Ageing research reviews",
-      "date": "2026-10-07",
       "topic": "rapamycin"
     },
     {
@@ -37,11 +23,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42810392",
-      "title": "Direct Pharmacological Activation of AMPK Extends Lifespan in Yeast, Worms and Flies.",
-      "journal": "Aging cell",
-      "date": "2026-10-01",
-      "topic": "metformin"
+      "pmid": "42876744",
+      "title": "Selective autophagy inhibition alleviates oxidative stress-associated neurodegeneration in an AD+CCH model.",
+      "journal": "Frontiers in aging neuroscience",
+      "date": "2026-09-30",
+      "topic": "rapamycin"
     },
     {
       "pmid": "42858326",
@@ -49,20 +35,6 @@
       "journal": "Aging and disease",
       "date": "2026-09-28",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42790830",
-      "title": "Berberine induces pleiotropic beneficial effects via hormesis.",
-      "journal": "Pharmacological research",
-      "date": "2026-09-25",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42781074",
-      "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
-      "journal": "Clinical interventions in aging",
-      "date": "2026-09-19",
-      "topic": "metformin"
     },
     {
       "pmid": "42872291",
