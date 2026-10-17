@@ -1,18 +1,18 @@
 {
-  "fetched_at": "2026-10-16T11:30:17.918Z",
+  "fetched_at": "2026-10-17T11:28:19.049Z",
   "entries": [
+    {
+      "pmid": "42886693",
+      "title": "S-adenosyl-L-homocysteine triggers an adaptive response that extends lifespan through the YBT1 ABC transporter.",
+      "journal": "Proceedings of the National Academy of Sciences of the United States of America",
+      "date": "2026-10-20",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42880581",
       "title": "The potential role of the gephyrin-CNTNAP4 interface in brain aging: Mechanisms of inhibitory circuit dysfunction and cognitive decline.",
       "journal": "Progress in neuro-psychopharmacology & biological psychiatry",
       "date": "2026-10-15",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42854373",
-      "title": "Sodium arsenite accelerates aging of Caenorhabditis elegans parents and offspring through the insulin signaling pathway, oxidative stress, and autophagy.",
-      "journal": "Ecotoxicology and environmental safety",
-      "date": "2026-10-09",
       "topic": "rapamycin"
     },
     {
