@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-10-18T11:28:44.942Z",
+  "fetched_at": "2026-10-19T11:31:45.195Z",
   "entries": [
     {
       "pmid": "42886693",
@@ -9,32 +9,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42887676",
-      "title": "The triad of vascular ageing: Cellular senescence, inflammaging, and epigenetic remodelling in atherosclerosis.",
-      "journal": "Mechanisms of ageing and development",
-      "date": "2026-10-16",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42885981",
-      "title": "Targeting Vascular Smooth Muscle Cell Senescence for Cardiovascular Pharmacology: Mechanisms and Therapeutic Perspectives.",
-      "journal": "Journal of cardiovascular pharmacology",
-      "date": "2026-10-16",
-      "topic": "senolytics"
-    },
-    {
       "pmid": "42880581",
       "title": "The potential role of the gephyrin-CNTNAP4 interface in brain aging: Mechanisms of inhibitory circuit dysfunction and cognitive decline.",
       "journal": "Progress in neuro-psychopharmacology & biological psychiatry",
       "date": "2026-10-15",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42882898",
-      "title": "The Molecular Landscape of the Senescence-EMT Interplay: Deciphering Tumour Plasticity Through Molecular Signatures and Multi-Omic Profiling.",
-      "journal": "Cancers",
-      "date": "2026-10-04",
-      "topic": "senolytics"
     },
     {
       "pmid": "42858331",
@@ -56,27 +35,6 @@
       "journal": "Aging and disease",
       "date": "2026-09-28",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42883920",
-      "title": "Effects and Therapeutic Strategies of Intra-Hepatic Cellular Senescence and Regeneration.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-09-28",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42882779",
-      "title": "Therapy-Induced Senescence in Cancer Treatment Resistance: Mechanisms, Evidence, and Translational Opportunities.",
-      "journal": "Cancers",
-      "date": "2026-09-23",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42887433",
-      "title": "Harnessing autophagy and its transcriptional regulation in tumorigenesis and neurodegeneration: Potential and existing therapeutic strategies.",
-      "journal": "Pharmacological reviews",
-      "date": "2026-08-22",
-      "topic": "senolytics"
     },
     {
       "pmid": "42872291",
