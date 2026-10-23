@@ -1,12 +1,40 @@
 {
-  "fetched_at": "2026-10-22T11:31:43.126Z",
+  "fetched_at": "2026-10-23T11:31:58.474Z",
   "entries": [
+    {
+      "pmid": "42906793",
+      "title": "Mitochondrial pharmacology of cardiovascular and antidiabetic drugs: Mechanistic basis of cardioprotection and cardiotoxicity in the diseased heart.",
+      "journal": "Biochimica et biophysica acta. Molecular basis of disease",
+      "date": "2026-10-21",
+      "topic": "metformin"
+    },
     {
       "pmid": "42886693",
       "title": "S-adenosyl-L-homocysteine triggers an adaptive response that extends lifespan through the YBT1 ABC transporter.",
       "journal": "Proceedings of the National Academy of Sciences of the United States of America",
       "date": "2026-10-20",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42900294",
+      "title": "An exploratory study of the effect of metformin on the whole blood transcriptome of nondiabetic older adults with age-related macular degeneration.",
+      "journal": "GeroScience",
+      "date": "2026-10-20",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42887676",
+      "title": "The triad of vascular ageing: Cellular senescence, inflammaging, and epigenetic remodelling in atherosclerosis.",
+      "journal": "Mechanisms of ageing and development",
+      "date": "2026-10-16",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42885981",
+      "title": "Targeting Vascular Smooth Muscle Cell Senescence for Cardiovascular Pharmacology: Mechanisms and Therapeutic Perspectives.",
+      "journal": "Journal of cardiovascular pharmacology",
+      "date": "2026-10-16",
+      "topic": "senolytics"
     },
     {
       "pmid": "42880581",
@@ -16,11 +44,32 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42875857",
+      "title": "Mitochondrial Quality Control in Degenerative Musculoskeletal Diseases: Signaling Networks and Therapeutic Landscapes.",
+      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
+      "date": "2026-10-14",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42882898",
+      "title": "The Molecular Landscape of the Senescence-EMT Interplay: Deciphering Tumour Plasticity Through Molecular Signatures and Multi-Omic Profiling.",
+      "journal": "Cancers",
+      "date": "2026-10-04",
+      "topic": "senolytics"
+    },
+    {
       "pmid": "42858331",
       "title": "Ginkgolide B as a Candidate Gerotherapeutic: Evidence, Evidentiary Limits, and Translational Requirements.",
       "journal": "Aging and disease",
       "date": "2026-10-02",
-      "topic": "rapamycin"
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42810392",
+      "title": "Direct Pharmacological Activation of AMPK Extends Lifespan in Yeast, Worms and Flies.",
+      "journal": "Aging cell",
+      "date": "2026-10-01",
+      "topic": "metformin"
     },
     {
       "pmid": "42876744",
@@ -30,10 +79,108 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42883920",
+      "title": "Effects and Therapeutic Strategies of Intra-Hepatic Cellular Senescence and Regeneration.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-09-28",
+      "topic": "senolytics"
+    },
+    {
       "pmid": "42858326",
       "title": "Lysosomal Competence in Skeletal Muscle Aging: Autophagic Flux, Measurement Gaps, and Human Translation.",
       "journal": "Aging and disease",
       "date": "2026-09-28",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42882779",
+      "title": "Therapy-Induced Senescence in Cancer Treatment Resistance: Mechanisms, Evidence, and Translational Opportunities.",
+      "journal": "Cancers",
+      "date": "2026-09-23",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42884572",
+      "title": "Dietary Zinc Glycine Supplementation Attenuates Aging-Driven Cochlear Hair Cell Oxidative Injury and Hearing Loss.",
+      "journal": "Nutrients",
+      "date": "2026-09-23",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42781074",
+      "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
+      "journal": "Clinical interventions in aging",
+      "date": "2026-09-19",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42787547",
+      "title": "Narrative review of intravenous NAD(+) and NAD(+) precursors in wellness and translational medicine.",
+      "journal": "Frontiers in aging",
+      "date": "2026-09-10",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42670437",
+      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
+      "journal": "Drug design, development and therapy",
+      "date": "2026-08-24",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42887433",
+      "title": "Harnessing autophagy and its transcriptional regulation in tumorigenesis and neurodegeneration: Potential and existing therapeutic strategies.",
+      "journal": "Pharmacological reviews",
+      "date": "2026-08-22",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42646333",
+      "title": "Nicotinamide Mononucleotide Adenylyltransferase 1 and NAD(+) Homeostasis in Neuroprotection and Aging.",
+      "journal": "Metabolites",
+      "date": "2026-08-21",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42529830",
+      "title": "Targeting chaperone-mediated autophagy by nutritional interventions mitigates age-related cardiac fibrosis and diastolic dysfunction.",
+      "journal": "Autophagy",
+      "date": "2026-08-03",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42907440",
+      "title": "Apelin-13 prevents GATA4-mediated neuronal senescence by restoring autophagy through mTORC1 inhibition.",
+      "journal": "Cell death & disease",
+      "date": "2026-07-27",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "42603990",
+      "title": "Nicotinamide Adenine Dinucleotide Augmentation in Diabetic Kidney Disease: Randomized Trial Study Protocol.",
+      "journal": "Kidney international reports",
+      "date": "2026-07-16",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42903823",
+      "title": "Ex-Tregs: From controversial artifact to therapeutic target.",
+      "journal": "hLife",
+      "date": "2026-05-19",
       "topic": "rapamycin"
     },
     {
