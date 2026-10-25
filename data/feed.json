@@ -1,47 +1,19 @@
 {
-  "fetched_at": "2026-10-24T11:30:06.009Z",
+  "fetched_at": "2026-10-25T11:29:23.744Z",
   "entries": [
+    {
+      "pmid": "42925516",
+      "title": "Targeting the central-peripheral-effector muscle axis: Rapamycin promotes functional recovery in injured peripheral nerves.",
+      "journal": "Neural regeneration research",
+      "date": "2026-10-24",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42918558",
       "title": "Human serum collected after fermented whey protein supplementation stimulates myocellular growth and protein synthesis: A randomized, double-blind, active-controlled crossover trial.",
       "journal": "Experimental gerontology",
       "date": "2026-10-23",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42918485",
-      "title": "Cellular Senescence and Vascular Ageing in Pulmonary Hypertension: Molecular Mechanisms, Therapeutic Strategies, and Translational Endpoints.",
-      "journal": "Pulmonary pharmacology & therapeutics",
-      "date": "2026-10-23",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42918387",
-      "title": "Cellular senescence in ageing and neurodegenerative disorders: Molecular mechanisms, biomarkers, and therapeutic strategies.",
-      "journal": "Progress in neuro-psychopharmacology & biological psychiatry",
-      "date": "2026-10-23",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42912996",
-      "title": "Death receptors regulate entry to therapy-induced senescence and orchestrate addiction to IAPs.",
-      "journal": "Science advances",
-      "date": "2026-10-23",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42914031",
-      "title": "Mapping cellular senescence in heart failure: knowledge evolution, mechanistic modules, and senotherapeutic opportunities.",
-      "journal": "Ageing research reviews",
-      "date": "2026-10-22",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42911667",
-      "title": "Cellular Senescence as a Core Mechanistic Link between CKD, Cardiac Fibrosis, and Aging.",
-      "journal": "Kidney360",
-      "date": "2026-10-22",
-      "topic": "senolytics"
     },
     {
       "pmid": "42886693",
@@ -51,18 +23,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42880581",
-      "title": "The potential role of the gephyrin-CNTNAP4 interface in brain aging: Mechanisms of inhibitory circuit dysfunction and cognitive decline.",
-      "journal": "Progress in neuro-psychopharmacology & biological psychiatry",
-      "date": "2026-10-15",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42918808",
-      "title": "Inducible chronic NAD deficiency in mice reveals multi-systemic phenotypical, metabolic, and transcriptional changes.",
-      "journal": "Nature communications",
+      "pmid": "42884572",
+      "title": "Dietary Zinc Glycine Supplementation Attenuates Aging-Driven Cochlear Hair Cell Oxidative Injury and Hearing Loss.",
+      "journal": "Nutrients",
       "date": "2026-09-23",
-      "topic": "senolytics"
+      "topic": "glycine"
     },
     {
       "pmid": "42915574",
@@ -70,6 +35,27 @@
       "journal": "ACS chemical neuroscience",
       "date": "2026-09-16",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42529830",
+      "title": "Targeting chaperone-mediated autophagy by nutritional interventions mitigates age-related cardiac fibrosis and diastolic dysfunction.",
+      "journal": "Autophagy",
+      "date": "2026-08-03",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
     },
     {
       "pmid": "42907440",
