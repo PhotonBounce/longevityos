@@ -1,6 +1,20 @@
 {
-  "fetched_at": "2026-10-28T11:25:57.542Z",
+  "fetched_at": "2026-10-29T11:25:55.747Z",
   "entries": [
+    {
+      "pmid": "42804599",
+      "title": "Personalized whole-body modeling links gut microbiota to metabolic perturbations in Alzheimer's disease.",
+      "journal": "Gut microbes",
+      "date": "2026-12-31",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "42949363",
+      "title": "Survey of the human proteostasis network: the autophagy-lysosome pathway.",
+      "journal": "Autophagy",
+      "date": "2026-10-28",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42946698",
       "title": "Ginsenoside Rb1 alleviates uterine aging via AMPK-mediated mTOR inactivation.",
@@ -30,6 +44,20 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42914977",
+      "title": "Taurine lowers inflammaging by regulating the NLRP3 inflammasome in macrophages.",
+      "journal": "Cell",
+      "date": "2026-10-23",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "42880618",
+      "title": "Mitofusin-2 (MFN2) is a critical regulator of metabolic homeostasis in neuronal cells: A metabolomic and proteomic study.",
+      "journal": "Mitochondrion",
+      "date": "2026-10-15",
+      "topic": "taurine"
+    },
+    {
       "pmid": "42941778",
       "title": "Cellular Senescence in Ocular Surface Diseases: Molecular Mechanisms and Therapeutic Perspectives.",
       "journal": "International journal of molecular sciences",
@@ -37,60 +65,25 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42781074",
-      "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
-      "journal": "Clinical interventions in aging",
-      "date": "2026-09-19",
-      "topic": "NAD+"
+      "pmid": "42915856",
+      "title": "Gestational Exposure to the Food Processing Contaminant 3-MCPD Impairs Fetal Growth by Disrupting Placental Taurine Metabolism to Drive Vascular Senescence.",
+      "journal": "Journal of agricultural and food chemistry",
+      "date": "2026-09-30",
+      "topic": "taurine"
     },
     {
-      "pmid": "42915574",
-      "title": "Pharmacological Activation of Autophagy Ameliorates Neuromuscular-Associated Defects and Extends Lifespan in a Caenorhabditis elegans Model of Spinal Muscular Atrophy.",
-      "journal": "ACS chemical neuroscience",
-      "date": "2026-09-16",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42787547",
-      "title": "Narrative review of intravenous NAD(+) and NAD(+) precursors in wellness and translational medicine.",
-      "journal": "Frontiers in aging",
-      "date": "2026-09-10",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42670437",
-      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
-      "journal": "Drug design, development and therapy",
-      "date": "2026-08-24",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42646333",
-      "title": "Nicotinamide Mononucleotide Adenylyltransferase 1 and NAD(+) Homeostasis in Neuroprotection and Aging.",
-      "journal": "Metabolites",
-      "date": "2026-08-21",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42620424",
-      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "pmid": "42780013",
+      "title": "Engineered nanosponges mitigate peripheral stress-induced neuroinflammation and restore cognitive function.",
       "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-08-07",
-      "topic": "ITP"
+      "date": "2026-09-18",
+      "topic": "taurine"
     },
     {
-      "pmid": "42603990",
-      "title": "Nicotinamide Adenine Dinucleotide Augmentation in Diabetic Kidney Disease: Randomized Trial Study Protocol.",
-      "journal": "Kidney international reports",
-      "date": "2026-07-16",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42872291",
-      "title": "Aging rate indicators and the search for anti-aging drugs.",
-      "journal": "Frontiers in science",
-      "date": "2026-01-01",
-      "topic": "ITP"
+      "pmid": "42737424",
+      "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-08-22",
+      "topic": "taurine"
     }
   ]
 }
