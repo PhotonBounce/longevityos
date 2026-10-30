@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-10-29T11:25:55.747Z",
+  "fetched_at": "2026-10-30T11:25:28.851Z",
   "entries": [
     {
       "pmid": "42804599",
@@ -7,6 +7,27 @@
       "journal": "Gut microbes",
       "date": "2026-12-31",
       "topic": "taurine"
+    },
+    {
+      "pmid": "42951861",
+      "title": "Senescent Mesenchymal Stromal Cells Drive Stem Cell Aging Through Dysregulated Chemokine Synthesis.",
+      "journal": "Aging cell",
+      "date": "2026-11-01",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42956890",
+      "title": "Immunotherapy targeting an endogenous retrovirus decreases islet senescence markers and preserves glucose control in a mouse model of type 2 diabetes.",
+      "journal": "Molecular metabolism",
+      "date": "2026-10-29",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42954328",
+      "title": "Standard treatment against paediatric BRAF-V600E glioma promotes senescence and sensitizes tumours to BCL-xL inhibition.",
+      "journal": "Neuro-oncology",
+      "date": "2026-10-29",
+      "topic": "senolytics"
     },
     {
       "pmid": "42949363",
@@ -21,6 +42,13 @@
       "journal": "Signal transduction and targeted therapy",
       "date": "2026-10-28",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42949633",
+      "title": "A Bi-Adjuvant Senolytic Nanovaccine Modulating Dendritic Cell Senescence Ameliorates Aging-Related Metabolic Dysfunction.",
+      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
+      "date": "2026-10-28",
+      "topic": "senolytics"
     },
     {
       "pmid": "42946113",
@@ -58,11 +86,32 @@
       "topic": "taurine"
     },
     {
+      "pmid": "42720309",
+      "title": "Extension of host lifespan by polyamines derived from gut bacteria.",
+      "journal": "mBio",
+      "date": "2026-10-14",
+      "topic": "spermidine"
+    },
+    {
       "pmid": "42941778",
       "title": "Cellular Senescence in Ocular Surface Diseases: Molecular Mechanisms and Therapeutic Perspectives.",
       "journal": "International journal of molecular sciences",
       "date": "2026-10-11",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42858321",
+      "title": "Effects of Spermidine Supplementation on Vascular Brain Health in Older Individuals with Subjective Cognitive Decline - An Exploratory MRI Analysis.",
+      "journal": "Aging and disease",
+      "date": "2026-10-09",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42858331",
+      "title": "Ginkgolide B as a Candidate Gerotherapeutic: Evidence, Evidentiary Limits, and Translational Requirements.",
+      "journal": "Aging and disease",
+      "date": "2026-10-02",
+      "topic": "spermidine"
     },
     {
       "pmid": "42915856",
@@ -72,6 +121,20 @@
       "topic": "taurine"
     },
     {
+      "pmid": "42953165",
+      "title": "A Dual-Locked β‑Galactosidase/pH Near-Infrared Sensor Enables High-Fidelity Monitoring of Therapy-Induced Senescence.",
+      "journal": "JACS Au",
+      "date": "2026-09-22",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42852089",
+      "title": "Polyamines, cardiorespiratory fitness, body composition, and mitochondrial function in older patients with coronary artery disease.",
+      "journal": "European heart journal open",
+      "date": "2026-09-21",
+      "topic": "spermidine"
+    },
+    {
       "pmid": "42780013",
       "title": "Engineered nanosponges mitigate peripheral stress-induced neuroinflammation and restore cognitive function.",
       "journal": "bioRxiv : the preprint server for biology",
@@ -79,11 +142,39 @@
       "topic": "taurine"
     },
     {
+      "pmid": "42734829",
+      "title": "Polyamine metabolic enzyme SAT1 remodels the neuronal transcriptome and rescues α-synuclein toxicity in Drosophila.",
+      "journal": "Amino acids",
+      "date": "2026-08-30",
+      "topic": "spermidine"
+    },
+    {
       "pmid": "42737424",
       "title": "Geroprotective Effects of Drugs Modulating Metabolic Pathways: Perspectives of Pharmacology in Anti-Aging Therapy.",
       "journal": "International journal of molecular sciences",
       "date": "2026-08-22",
       "topic": "taurine"
+    },
+    {
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "42588134",
+      "title": "Natural Bioactive Compounds Targeting Key Hallmarks of Aging: Functional Food Potential of Spermidine, Fisetin, Berberine, and Urolithin A.",
+      "journal": "Nutrients",
+      "date": "2026-08-03",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42872291",
+      "title": "Aging rate indicators and the search for anti-aging drugs.",
+      "journal": "Frontiers in science",
+      "date": "2026-01-01",
+      "topic": "ITP"
     }
   ]
 }
