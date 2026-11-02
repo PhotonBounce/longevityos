@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-11-01T11:25:01.764Z",
+  "fetched_at": "2026-11-02T11:25:18.975Z",
   "entries": [
+    {
+      "pmid": "42967595",
+      "title": "Long-Term Post-Mitotic Culture of Human Fibroblasts Recapitulates and Accelerates Features of In Vivo Aging and Enables Dynamic Testing of Anti-Aging Compounds.",
+      "journal": "Aging cell",
+      "date": "2026-11-01",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42965647",
       "title": "Correction to: Rapamycin restores peripheral blood flow in aged mice and in mouse models of atherosclerosis and Alzheimer's disease.",
@@ -9,17 +16,17 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42966467",
-      "title": "A three-hit sequential model of chemo-brain: from peripheral inflammation to central oxidative stress and synaptic dysfunction.",
-      "journal": "Journal of advanced research",
+      "pmid": "42966746",
+      "title": "SIRT3 deficiency triggers mitochondrial dysfunction-associated senescence to suppress colorectal cancer progression via SLC25A13 acetylation.",
+      "journal": "Oncogene",
       "date": "2026-10-31",
       "topic": "senolytics"
     },
     {
-      "pmid": "42961467",
-      "title": "Senotherapeutics for Age-Related Musculoskeletal Disorders: A Systematic Review of Preclinical Evidence.",
-      "journal": "Calcified tissue international",
-      "date": "2026-10-30",
+      "pmid": "42966467",
+      "title": "A three-hit sequential model of chemo-brain: from peripheral inflammation to central oxidative stress and synaptic dysfunction.",
+      "journal": "Journal of advanced research",
+      "date": "2026-10-31",
       "topic": "senolytics"
     },
     {
@@ -33,13 +40,6 @@
       "pmid": "42965583",
       "title": "Cellular senescence in calcific aortic valve disease: are we ready for senolytic therapy?",
       "journal": "Molecular biology reports",
-      "date": "2026-10-29",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42956890",
-      "title": "Immunotherapy targeting an endogenous retrovirus decreases islet senescence markers and preserves glucose control in a mouse model of type 2 diabetes.",
-      "journal": "Molecular metabolism",
       "date": "2026-10-29",
       "topic": "senolytics"
     },
@@ -58,13 +58,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42946113",
-      "title": "Hemocytes as nutrient-sensing regulators of immune function, lifespan, and intergenerational fitness in Drosophila melanogaster.",
-      "journal": "Developmental biology",
-      "date": "2026-10-27",
-      "topic": "rapamycin"
-    },
-    {
       "pmid": "42966158",
       "title": "Identification of cepharanthine as a novel senolytic that selectively eliminates senescent cells by regulating cell survival signaling pathways.",
       "journal": "Phytomedicine : international journal of phytotherapy and phytopharmacology",
@@ -79,11 +72,53 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42941778",
-      "title": "Cellular Senescence in Ocular Surface Diseases: Molecular Mechanisms and Therapeutic Perspectives.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-10-11",
+      "pmid": "42884572",
+      "title": "Dietary Zinc Glycine Supplementation Attenuates Aging-Driven Cochlear Hair Cell Oxidative Injury and Hearing Loss.",
+      "journal": "Nutrients",
+      "date": "2026-09-23",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42967947",
+      "title": "RICTOR regulates an interspecies crosstalk that influences longevity through a methionine cycle-mitophagy axis.",
+      "journal": "Nature communications",
+      "date": "2026-09-14",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42968248",
+      "title": "Lactitol Reduces Renal Dysfunction and a Senescence Marker in Aged Mice with Adenine-Induced CKD.",
+      "journal": "Journal of nutritional science and vitaminology",
+      "date": "2026-01-01",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42872291",
+      "title": "Aging rate indicators and the search for anti-aging drugs.",
+      "journal": "Frontiers in science",
+      "date": "2026-01-01",
+      "topic": "ITP"
     }
   ]
 }
