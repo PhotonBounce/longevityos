@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-11-02T11:25:18.975Z",
+  "fetched_at": "2026-11-03T11:25:15.895Z",
   "entries": [
+    {
+      "pmid": "42970081",
+      "title": "Age: a modifiable risk factor for cardiovascular disease?",
+      "journal": "Herz",
+      "date": "2026-11-02",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42967595",
       "title": "Long-Term Post-Mitotic Culture of Human Fibroblasts Recapitulates and Accelerates Features of In Vivo Aging and Enables Dynamic Testing of Anti-Aging Compounds.",
@@ -16,53 +23,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42966746",
-      "title": "SIRT3 deficiency triggers mitochondrial dysfunction-associated senescence to suppress colorectal cancer progression via SLC25A13 acetylation.",
-      "journal": "Oncogene",
-      "date": "2026-10-31",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42966467",
-      "title": "A three-hit sequential model of chemo-brain: from peripheral inflammation to central oxidative stress and synaptic dysfunction.",
-      "journal": "Journal of advanced research",
-      "date": "2026-10-31",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42965765",
-      "title": "Intervening in Adipocyte Senescence: Lipid Prodrugs as an Emerging Strategy for Metabolic Disease Treatment.",
-      "journal": "Current medical science",
-      "date": "2026-10-29",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42965583",
-      "title": "Cellular senescence in calcific aortic valve disease: are we ready for senolytic therapy?",
-      "journal": "Molecular biology reports",
-      "date": "2026-10-29",
-      "topic": "senolytics"
-    },
-    {
       "pmid": "42949363",
       "title": "Survey of the human proteostasis network: the autophagy-lysosome pathway.",
       "journal": "Autophagy",
       "date": "2026-10-28",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42946698",
-      "title": "Ginsenoside Rb1 alleviates uterine aging via AMPK-mediated mTOR inactivation.",
-      "journal": "Signal transduction and targeted therapy",
-      "date": "2026-10-28",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42966158",
-      "title": "Identification of cepharanthine as a novel senolytic that selectively eliminates senescent cells by regulating cell survival signaling pathways.",
-      "journal": "Phytomedicine : international journal of phytotherapy and phytopharmacology",
-      "date": "2026-10-24",
-      "topic": "senolytics"
     },
     {
       "pmid": "42959881",
@@ -72,53 +37,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42884572",
-      "title": "Dietary Zinc Glycine Supplementation Attenuates Aging-Driven Cochlear Hair Cell Oxidative Injury and Hearing Loss.",
-      "journal": "Nutrients",
-      "date": "2026-09-23",
-      "topic": "glycine"
-    },
-    {
       "pmid": "42967947",
       "title": "RICTOR regulates an interspecies crosstalk that influences longevity through a methionine cycle-mitophagy axis.",
       "journal": "Nature communications",
       "date": "2026-09-14",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42620424",
-      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
-      "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-08-07",
-      "topic": "ITP"
-    },
-    {
-      "pmid": "42566035",
-      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
-      "journal": "Archives of microbiology",
-      "date": "2026-08-07",
-      "topic": "glycine"
-    },
-    {
-      "pmid": "42583471",
-      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
-      "journal": "Frontiers in microbiology",
-      "date": "2026-07-28",
-      "topic": "glycine"
-    },
-    {
-      "pmid": "42968248",
-      "title": "Lactitol Reduces Renal Dysfunction and a Senescence Marker in Aged Mice with Adenine-Induced CKD.",
-      "journal": "Journal of nutritional science and vitaminology",
-      "date": "2026-01-01",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42872291",
-      "title": "Aging rate indicators and the search for anti-aging drugs.",
-      "journal": "Frontiers in science",
-      "date": "2026-01-01",
-      "topic": "ITP"
     }
   ]
 }
