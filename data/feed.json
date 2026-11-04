@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-11-03T11:25:15.895Z",
+  "fetched_at": "2026-11-04T11:24:56.987Z",
   "entries": [
     {
       "pmid": "42970081",
@@ -30,6 +30,27 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42906793",
+      "title": "Mitochondrial pharmacology of cardiovascular and antidiabetic drugs: Mechanistic basis of cardioprotection and cardiotoxicity in the diseased heart.",
+      "journal": "Biochimica et biophysica acta. Molecular basis of disease",
+      "date": "2026-10-21",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42900294",
+      "title": "An exploratory study of the effect of metformin on the whole blood transcriptome of nondiabetic older adults with age-related macular degeneration.",
+      "journal": "GeroScience",
+      "date": "2026-10-20",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42875857",
+      "title": "Mitochondrial Quality Control in Degenerative Musculoskeletal Diseases: Signaling Networks and Therapeutic Landscapes.",
+      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
+      "date": "2026-10-14",
+      "topic": "metformin"
+    },
+    {
       "pmid": "42959881",
       "title": "Cadmium Exposure Aggravates SREBP-1c-Mediated Hepatic Steatosis and Liver Injury in High-Fat Diet-Fed Mice.",
       "journal": "ACS omega",
@@ -37,11 +58,67 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42858331",
+      "title": "Ginkgolide B as a Candidate Gerotherapeutic: Evidence, Evidentiary Limits, and Translational Requirements.",
+      "journal": "Aging and disease",
+      "date": "2026-10-02",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42939546",
+      "title": "Metformin, SGLT2 Inhibitors, and Intermittent Fasting: Convergent Pathways to Healthspan Extension, Cardiovascular Longevity, and Cancer Prevention-A Narrative Review.",
+      "journal": "Current issues in molecular biology",
+      "date": "2026-09-30",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42858326",
+      "title": "Lysosomal Competence in Skeletal Muscle Aging: Autophagic Flux, Measurement Gaps, and Human Translation.",
+      "journal": "Aging and disease",
+      "date": "2026-09-28",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42884572",
+      "title": "Dietary Zinc Glycine Supplementation Attenuates Aging-Driven Cochlear Hair Cell Oxidative Injury and Hearing Loss.",
+      "journal": "Nutrients",
+      "date": "2026-09-23",
+      "topic": "glycine"
+    },
+    {
       "pmid": "42967947",
       "title": "RICTOR regulates an interspecies crosstalk that influences longevity through a methionine cycle-mitophagy axis.",
       "journal": "Nature communications",
       "date": "2026-09-14",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "42566035",
+      "title": "Host Gnmt coordinates with Limosilactobacillus reuteri to alleviate ionizing radiation injury via microbiota remodeling and metabolic regulation in Drosophila melanogaster.",
+      "journal": "Archives of microbiology",
+      "date": "2026-08-07",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42583471",
+      "title": "Different ages of gut microbiota diversity and metabolic pattern in rhesus macaques.",
+      "journal": "Frontiers in microbiology",
+      "date": "2026-07-28",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "42872291",
+      "title": "Aging rate indicators and the search for anti-aging drugs.",
+      "journal": "Frontiers in science",
+      "date": "2026-01-01",
+      "topic": "ITP"
     }
   ]
 }
