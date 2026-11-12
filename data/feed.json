@@ -1,40 +1,12 @@
 {
-  "fetched_at": "2026-11-11T11:25:06.291Z",
+  "fetched_at": "2026-11-12T11:24:54.787Z",
   "entries": [
-    {
-      "pmid": "42804599",
-      "title": "Personalized whole-body modeling links gut microbiota to metabolic perturbations in Alzheimer's disease.",
-      "journal": "Gut microbes",
-      "date": "2026-12-31",
-      "topic": "taurine"
-    },
     {
       "pmid": "42980248",
       "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
       "journal": "COPD",
       "date": "2026-12-01",
       "topic": "metformin"
-    },
-    {
-      "pmid": "43002794",
-      "title": "Senescence-targeted engineered CAR-T immunotherapy: advances, challenges and perspectives for engineered senolytic immunotherapy.",
-      "journal": "EBioMedicine",
-      "date": "2026-11-09",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42995257",
-      "title": "Altered protein cysteine reactivity in senescent cells is a vulnerability for senolysis to ameliorate aging.",
-      "journal": "Nature aging",
-      "date": "2026-11-06",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42989592",
-      "title": "The stroma-vascular compartment: central facilitator of the damage response and repair across organs.",
-      "journal": "Cardiovascular research",
-      "date": "2026-11-06",
-      "topic": "senolytics"
     },
     {
       "pmid": "42989006",
@@ -51,13 +23,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42977036",
-      "title": "Evidence for spermine oxidase (SMOX) as a regulator of skeletal muscle mass throughout the lifespan.",
-      "journal": "Ageing research reviews",
-      "date": "2026-11-03",
-      "topic": "spermidine"
-    },
-    {
       "pmid": "42970081",
       "title": "Age: a modifiable risk factor for cardiovascular disease?",
       "journal": "Herz",
@@ -72,32 +37,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42989704",
-      "title": "Mitochondrial Dysfunction as a Context-Dependent Driver and Amplifier of the SASP: Targeting the mtDNA-cGAS-STING Axis for Next-Generation Senotherapeutics.",
-      "journal": "Journal of cellular and molecular medicine",
-      "date": "2026-11-01",
-      "topic": "senolytics"
-    },
-    {
       "pmid": "43005570",
       "title": "Context-dependent mTOR pharmacology in atherosclerotic plaque stability and exposure-guided modulation.",
       "journal": "Frontiers in pharmacology",
       "date": "2026-10-26",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "43005881",
-      "title": "The aging secretome as a candidate driver of bone remodeling imbalance: myokines, adipokines, and senescence-associated secretory factors.",
-      "journal": "Frontiers in endocrinology",
-      "date": "2026-10-26",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42914977",
-      "title": "Taurine lowers inflammaging by regulating the NLRP3 inflammasome in macrophages.",
-      "journal": "Cell",
-      "date": "2026-10-23",
-      "topic": "taurine"
     },
     {
       "pmid": "42906793",
@@ -114,32 +58,11 @@
       "topic": "metformin"
     },
     {
-      "pmid": "42880618",
-      "title": "Mitofusin-2 (MFN2) is a critical regulator of metabolic homeostasis in neuronal cells: A metabolomic and proteomic study.",
-      "journal": "Mitochondrion",
-      "date": "2026-10-15",
-      "topic": "taurine"
-    },
-    {
       "pmid": "42875857",
       "title": "Mitochondrial Quality Control in Degenerative Musculoskeletal Diseases: Signaling Networks and Therapeutic Landscapes.",
       "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
       "date": "2026-10-14",
       "topic": "metformin"
-    },
-    {
-      "pmid": "42720309",
-      "title": "Extension of host lifespan by polyamines derived from gut bacteria.",
-      "journal": "mBio",
-      "date": "2026-10-14",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42858321",
-      "title": "Effects of Spermidine Supplementation on Vascular Brain Health in Older Individuals with Subjective Cognitive Decline - An Exploratory MRI Analysis.",
-      "journal": "Aging and disease",
-      "date": "2026-10-09",
-      "topic": "spermidine"
     },
     {
       "pmid": "42858331",
@@ -156,60 +79,11 @@
       "topic": "metformin"
     },
     {
-      "pmid": "42915856",
-      "title": "Gestational Exposure to the Food Processing Contaminant 3-MCPD Impairs Fetal Growth by Disrupting Placental Taurine Metabolism to Drive Vascular Senescence.",
-      "journal": "Journal of agricultural and food chemistry",
-      "date": "2026-09-30",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "42852089",
-      "title": "Polyamines, cardiorespiratory fitness, body composition, and mitochondrial function in older patients with coronary artery disease.",
-      "journal": "European heart journal open",
-      "date": "2026-09-21",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "42780013",
-      "title": "Engineered nanosponges mitigate peripheral stress-induced neuroinflammation and restore cognitive function.",
-      "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-09-18",
-      "topic": "taurine"
-    },
-    {
       "pmid": "42967947",
       "title": "RICTOR regulates an interspecies crosstalk that influences longevity through a methionine cycle-mitophagy axis.",
       "journal": "Nature communications",
       "date": "2026-09-14",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42734829",
-      "title": "Polyamine metabolic enzyme SAT1 remodels the neuronal transcriptome and rescues α-synuclein toxicity in Drosophila.",
-      "journal": "Amino acids",
-      "date": "2026-08-30",
-      "topic": "spermidine"
-    },
-    {
-      "pmid": "43000445",
-      "title": "JUND-DNAJB1-p21 axis drives fibroblast senescence to recruit CD4⁺ T cells in salivary gland pathogenesis of Sjögren's disease.",
-      "journal": "Immunity & ageing : I & A",
-      "date": "2026-08-11",
-      "topic": "senolytics"
-    },
-    {
-      "pmid": "42620424",
-      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
-      "journal": "bioRxiv : the preprint server for biology",
-      "date": "2026-08-07",
-      "topic": "ITP"
-    },
-    {
-      "pmid": "42872291",
-      "title": "Aging rate indicators and the search for anti-aging drugs.",
-      "journal": "Frontiers in science",
-      "date": "2026-01-01",
-      "topic": "ITP"
     }
   ]
 }
