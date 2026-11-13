@@ -1,6 +1,13 @@
 {
-  "fetched_at": "2026-11-12T11:24:54.787Z",
+  "fetched_at": "2026-11-13T11:25:16.426Z",
   "entries": [
+    {
+      "pmid": "42976689",
+      "title": "Cell type-dependent activation of autophagic flux by D-amino acids.",
+      "journal": "Biochemical and biophysical research communications",
+      "date": "2026-12-03",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "42980248",
       "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
@@ -23,17 +30,17 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42970081",
-      "title": "Age: a modifiable risk factor for cardiovascular disease?",
-      "journal": "Herz",
-      "date": "2026-11-02",
-      "topic": "rapamycin"
-    },
-    {
       "pmid": "42992583",
       "title": "Constitutive Activation of Skeletal Muscle mTORC1 Drives Pro-Inflammatory Gene Expression in Skeletal Muscle of Aged Mice.",
       "journal": "Aging cell",
       "date": "2026-11-01",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "43016566",
+      "title": "Aging remodels progenitor and niche interactions in lung regeneration.",
+      "journal": "Frontiers in aging",
+      "date": "2026-10-28",
       "topic": "rapamycin"
     },
     {
@@ -77,13 +84,6 @@
       "journal": "Current issues in molecular biology",
       "date": "2026-09-30",
       "topic": "metformin"
-    },
-    {
-      "pmid": "42967947",
-      "title": "RICTOR regulates an interspecies crosstalk that influences longevity through a methionine cycle-mitophagy axis.",
-      "journal": "Nature communications",
-      "date": "2026-09-14",
-      "topic": "rapamycin"
     }
   ]
 }
