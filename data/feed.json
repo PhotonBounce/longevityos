@@ -1,32 +1,25 @@
 {
-  "fetched_at": "2026-11-13T11:25:16.426Z",
+  "fetched_at": "2026-11-14T11:24:51.416Z",
   "entries": [
     {
-      "pmid": "42976689",
-      "title": "Cell type-dependent activation of autophagic flux by D-amino acids.",
-      "journal": "Biochemical and biophysical research communications",
-      "date": "2026-12-03",
+      "pmid": "43031490",
+      "title": "NDR1 Promotes Osteoblast Differentiation by Sustaining PI3K-AKT Signaling and Autophagic Flux.",
+      "journal": "FASEB journal : official publication of the Federation of American Societies for Experimental Biology",
+      "date": "2026-11-30",
       "topic": "rapamycin"
     },
     {
-      "pmid": "42980248",
-      "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
-      "journal": "COPD",
-      "date": "2026-12-01",
-      "topic": "metformin"
+      "pmid": "43026677",
+      "title": "Sex, but not age, drives transcriptome-wide gene expression variation in a turtle with female-biased longevity.",
+      "journal": "The Journal of heredity",
+      "date": "2026-11-14",
+      "topic": "rapamycin"
     },
     {
       "pmid": "42989006",
       "title": "Rapamycin and human longevity among kidney transplant recipients surviving the first year.",
       "journal": "GeroScience",
       "date": "2026-11-05",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42980333",
-      "title": "FOS and SGK1 as Senescence-Associated Hub Genes in Osteoarthritis: A Bioinformatics and Experimental Validation Study.",
-      "journal": "Journal of visualized experiments : JoVE",
-      "date": "2026-11-03",
       "topic": "rapamycin"
     },
     {
@@ -49,41 +42,6 @@
       "journal": "Frontiers in pharmacology",
       "date": "2026-10-26",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "42906793",
-      "title": "Mitochondrial pharmacology of cardiovascular and antidiabetic drugs: Mechanistic basis of cardioprotection and cardiotoxicity in the diseased heart.",
-      "journal": "Biochimica et biophysica acta. Molecular basis of disease",
-      "date": "2026-10-21",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42900294",
-      "title": "An exploratory study of the effect of metformin on the whole blood transcriptome of nondiabetic older adults with age-related macular degeneration.",
-      "journal": "GeroScience",
-      "date": "2026-10-20",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42875857",
-      "title": "Mitochondrial Quality Control in Degenerative Musculoskeletal Diseases: Signaling Networks and Therapeutic Landscapes.",
-      "journal": "Advanced science (Weinheim, Baden-Wurttemberg, Germany)",
-      "date": "2026-10-14",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42858331",
-      "title": "Ginkgolide B as a Candidate Gerotherapeutic: Evidence, Evidentiary Limits, and Translational Requirements.",
-      "journal": "Aging and disease",
-      "date": "2026-10-02",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42939546",
-      "title": "Metformin, SGLT2 Inhibitors, and Intermittent Fasting: Convergent Pathways to Healthspan Extension, Cardiovascular Longevity, and Cancer Prevention-A Narrative Review.",
-      "journal": "Current issues in molecular biology",
-      "date": "2026-09-30",
-      "topic": "metformin"
     }
   ]
 }
