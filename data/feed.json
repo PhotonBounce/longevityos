@@ -1,13 +1,6 @@
 {
-  "fetched_at": "2026-11-15T11:25:02.998Z",
+  "fetched_at": "2026-11-16T11:29:42.649Z",
   "entries": [
-    {
-      "pmid": "42980248",
-      "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
-      "journal": "COPD",
-      "date": "2026-12-01",
-      "topic": "metformin"
-    },
     {
       "pmid": "43031490",
       "title": "NDR1 Promotes Osteoblast Differentiation by Sustaining PI3K-AKT Signaling and Autophagic Flux.",
@@ -20,20 +13,6 @@
       "title": "Sex, but not age, drives transcriptome-wide gene expression variation in a turtle with female-biased longevity.",
       "journal": "The Journal of heredity",
       "date": "2026-11-14",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "43025890",
-      "title": "Metformin and the ageing brain: what biomarkers can and cannot tell us.",
-      "journal": "Journal of neurology, neurosurgery, and psychiatry",
-      "date": "2026-11-13",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42992583",
-      "title": "Constitutive Activation of Skeletal Muscle mTORC1 Drives Pro-Inflammatory Gene Expression in Skeletal Muscle of Aged Mice.",
-      "journal": "Aging cell",
-      "date": "2026-11-01",
       "topic": "rapamycin"
     },
     {
@@ -51,20 +30,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42906793",
-      "title": "Mitochondrial pharmacology of cardiovascular and antidiabetic drugs: Mechanistic basis of cardioprotection and cardiotoxicity in the diseased heart.",
-      "journal": "Biochimica et biophysica acta. Molecular basis of disease",
-      "date": "2026-10-21",
-      "topic": "metformin"
-    },
-    {
-      "pmid": "42900294",
-      "title": "An exploratory study of the effect of metformin on the whole blood transcriptome of nondiabetic older adults with age-related macular degeneration.",
-      "journal": "GeroScience",
-      "date": "2026-10-20",
-      "topic": "metformin"
-    },
-    {
       "pmid": "43034819",
       "title": "Translating Geroscience Into Clinical Practice: Molecular Targets, Emerging Therapies, and Lifestyle Strategies for Healthy Longevity.",
       "journal": "Cureus",
@@ -72,11 +37,11 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42939546",
-      "title": "Metformin, SGLT2 Inhibitors, and Intermittent Fasting: Convergent Pathways to Healthspan Extension, Cardiovascular Longevity, and Cancer Prevention-A Narrative Review.",
-      "journal": "Current issues in molecular biology",
-      "date": "2026-09-30",
-      "topic": "metformin"
+      "pmid": "43035650",
+      "title": "High-concentration hydrogen ameliorates sepsis-induced multiple organ dysfunction with attenuation cellular senescence.",
+      "journal": "BMC infectious diseases",
+      "date": "2026-08-18",
+      "topic": "rapamycin"
     }
   ]
 }
