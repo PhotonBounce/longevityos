@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-11-16T11:29:42.649Z",
+  "fetched_at": "2026-11-17T11:25:07.448Z",
   "entries": [
     {
       "pmid": "43031490",
@@ -9,11 +9,60 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "43038987",
+      "title": "Microbial bile acid deconjugation counters metabolic decline in aging.",
+      "journal": "Cell metabolism",
+      "date": "2026-11-16",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43037734",
+      "title": "Taurine metabolism: a potential target for neuroprotection in age-related neurodegenerative diseases.",
+      "journal": "Mammalian genome : official journal of the International Mammalian Genome Society",
+      "date": "2026-11-16",
+      "topic": "taurine"
+    },
+    {
       "pmid": "43026677",
       "title": "Sex, but not age, drives transcriptome-wide gene expression variation in a turtle with female-biased longevity.",
       "journal": "The Journal of heredity",
       "date": "2026-11-14",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "43034621",
+      "title": "Nanotherapeutic Strategies Targeting Senescent Microenvironment for Aging-Related Chronic Diseases.",
+      "journal": "International journal of nanomedicine",
+      "date": "2026-11-10",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43032633",
+      "title": "Cellular Senescence Phenotypes in Cardiovascular Aging: Mechanisms and Therapeutic Potential.",
+      "journal": "Clinical interventions in aging",
+      "date": "2026-11-09",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43038554",
+      "title": "Cellular Senescence and White-Matter Injury: A Proposed Glial Cascade in AD and Cerebral SVD.",
+      "journal": "Aging and disease",
+      "date": "2026-11-05",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42970081",
+      "title": "Age: a modifiable risk factor for cardiovascular disease?",
+      "journal": "Herz",
+      "date": "2026-11-02",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43032637",
+      "title": "Immunosenescence remodels the osteoimmune microenvironment in osteoarthritis: from cellular crosstalk to regenerative therapeutics.",
+      "journal": "Frontiers in immunology",
+      "date": "2026-10-30",
+      "topic": "senolytics"
     },
     {
       "pmid": "43016566",
@@ -23,11 +72,25 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "43017153",
+      "title": "Integrated gut microbiome and fecal metabolome profiling identifies taurine-associated microbial dysbiosis across the Alzheimer's disease clinical spectrum.",
+      "journal": "Frontiers in aging neuroscience",
+      "date": "2026-10-28",
+      "topic": "taurine"
+    },
+    {
       "pmid": "43005570",
       "title": "Context-dependent mTOR pharmacology in atherosclerotic plaque stability and exposure-guided modulation.",
       "journal": "Frontiers in pharmacology",
       "date": "2026-10-26",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42914977",
+      "title": "Taurine lowers inflammaging by regulating the NLRP3 inflammasome in macrophages.",
+      "journal": "Cell",
+      "date": "2026-10-23",
+      "topic": "taurine"
     },
     {
       "pmid": "43034819",
@@ -37,11 +100,39 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42915856",
+      "title": "Gestational Exposure to the Food Processing Contaminant 3-MCPD Impairs Fetal Growth by Disrupting Placental Taurine Metabolism to Drive Vascular Senescence.",
+      "journal": "Journal of agricultural and food chemistry",
+      "date": "2026-09-30",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43036694",
+      "title": "Cellular senescence in diabetic retinopathy: Molecular mechanisms and therapeutic targeting.",
+      "journal": "Advances in ophthalmology practice and research",
+      "date": "2026-08-29",
+      "topic": "senolytics"
+    },
+    {
       "pmid": "43035650",
       "title": "High-concentration hydrogen ameliorates sepsis-induced multiple organ dysfunction with attenuation cellular senescence.",
       "journal": "BMC infectious diseases",
       "date": "2026-08-18",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "42620424",
+      "title": "17α-Estradiol Confers Limited Protection Against APOE4 Phenotypes in Middle-Aged Female Mice.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-08-07",
+      "topic": "ITP"
+    },
+    {
+      "pmid": "42872291",
+      "title": "Aging rate indicators and the search for anti-aging drugs.",
+      "journal": "Frontiers in science",
+      "date": "2026-01-01",
+      "topic": "ITP"
     }
   ]
 }
