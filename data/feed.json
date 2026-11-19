@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-11-18T11:25:03.603Z",
+  "fetched_at": "2026-11-19T11:25:18.379Z",
   "entries": [
     {
       "pmid": "43031490",
@@ -16,17 +16,10 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "43026677",
-      "title": "Sex, but not age, drives transcriptome-wide gene expression variation in a turtle with female-biased longevity.",
-      "journal": "The Journal of heredity",
-      "date": "2026-11-14",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "43016566",
-      "title": "Aging remodels progenitor and niche interactions in lung regeneration.",
-      "journal": "Frontiers in aging",
-      "date": "2026-10-28",
+      "pmid": "43052285",
+      "title": "Oncogenic signalling and host immunocompetency govern senescent cell clearance and systemic inflammation in a mouse model of oncogene-induced senescence.",
+      "journal": "Nature communications",
+      "date": "2026-10-20",
       "topic": "rapamycin"
     },
     {
@@ -34,6 +27,13 @@
       "title": "Translating Geroscience Into Clinical Practice: Molecular Targets, Emerging Therapies, and Lifestyle Strategies for Healthy Longevity.",
       "journal": "Cureus",
       "date": "2026-10-15",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "43047278",
+      "title": "A Novel TORC1 Inhibitor, RLX-201, Improves Skin Health, Biomechanics, and Extracellular Matrix Integrity in a Double-Blind Clinical Study.",
+      "journal": "Journal of cosmetic dermatology",
+      "date": "2026-10-01",
       "topic": "rapamycin"
     },
     {
