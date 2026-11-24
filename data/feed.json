@@ -1,18 +1,18 @@
 {
-  "fetched_at": "2026-11-23T11:25:17.530Z",
+  "fetched_at": "2026-11-24T11:25:37.475Z",
   "entries": [
+    {
+      "pmid": "43071188",
+      "title": "Mechanism of the lysosomal calcium signaling TRPML1-TFEB axis in Parkinson's disease.",
+      "journal": "Apoptosis : an international journal on programmed cell death",
+      "date": "2026-11-23",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "43059579",
       "title": "Target of rapamycin and regulation of membrane transporters: integrating nutrient sensing, stress adaptation and lifespan across eukaryotes.",
       "journal": "Essays in biochemistry",
       "date": "2026-11-20",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "43042699",
-      "title": "Pharmacological targeting of ageing hallmarks: molecular mechanism and clinical translation.",
-      "journal": "Archives of physiology and biochemistry",
-      "date": "2026-11-17",
       "topic": "rapamycin"
     },
     {
