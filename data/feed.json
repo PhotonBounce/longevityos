@@ -1,6 +1,20 @@
 {
-  "fetched_at": "2026-11-25T11:25:28.250Z",
+  "fetched_at": "2026-11-26T11:25:12.604Z",
   "entries": [
+    {
+      "pmid": "42980248",
+      "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
+      "journal": "COPD",
+      "date": "2026-12-01",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "43084581",
+      "title": "Effect of metformin on HIV reservoir, inflammation and cell differentiation in non-diabetic older people with HIV: a two-year placebo-controlled pilot trial (Metforaging).",
+      "journal": "The Journal of infectious diseases",
+      "date": "2026-11-25",
+      "topic": "metformin"
+    },
     {
       "pmid": "43071188",
       "title": "Mechanism of the lysosomal calcium signaling TRPML1-TFEB axis in Parkinson's disease.",
@@ -9,38 +23,31 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "43059579",
-      "title": "Target of rapamycin and regulation of membrane transporters: integrating nutrient sensing, stress adaptation and lifespan across eukaryotes.",
-      "journal": "Essays in biochemistry",
-      "date": "2026-11-20",
+      "pmid": "43091845",
+      "title": "The Role of Autophagy in Aging and Longevity: A Comprehensive Review of Therapeutic Strategies to Modulate Autophagy and Promote Healthy Aging.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-11-14",
       "topic": "rapamycin"
-    },
-    {
-      "pmid": "43051097",
-      "title": "Circulating plasma taurine, GDF-15, and FGF-21 levels as candidate biomarkers of healthy aging.",
-      "journal": "The journal of nutrition, health & aging",
-      "date": "2026-11-18",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "43038987",
-      "title": "Microbial bile acid deconjugation counters metabolic decline in aging.",
-      "journal": "Cell metabolism",
-      "date": "2026-11-16",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "43037734",
-      "title": "Taurine metabolism: a potential target for neuroprotection in age-related neurodegenerative diseases.",
-      "journal": "Mammalian genome : official journal of the International Mammalian Genome Society",
-      "date": "2026-11-16",
-      "topic": "taurine"
     },
     {
       "pmid": "43068055",
       "title": "Polyploidy is associated with enhanced S6K1-S6 signaling and improved tolerance to glucose starvation.",
       "journal": "Biochemistry and biophysics reports",
       "date": "2026-11-14",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "43025890",
+      "title": "Metformin and the ageing brain: what biomarkers can and cannot tell us.",
+      "journal": "Journal of neurology, neurosurgery, and psychiatry",
+      "date": "2026-11-13",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "43080930",
+      "title": "Omipalisib increases median lifespan by 41% in Caenorhabditis elegans but does not consistently delay Aβ-associated paralysis in GMC101 mutant.",
+      "journal": "microPublication biology",
+      "date": "2026-11-09",
       "topic": "rapamycin"
     },
     {
@@ -51,81 +58,25 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "42994542",
-      "title": "From NAD(+) elevation to clinical benefit: Tissue-specific regulation and translational barriers in aging and age-related disease.",
-      "journal": "Pharmacological research",
-      "date": "2026-11-06",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42970081",
-      "title": "Age: a modifiable risk factor for cardiovascular disease?",
-      "journal": "Herz",
-      "date": "2026-11-02",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "43017153",
-      "title": "Integrated gut microbiome and fecal metabolome profiling identifies taurine-associated microbial dysbiosis across the Alzheimer's disease clinical spectrum.",
-      "journal": "Frontiers in aging neuroscience",
-      "date": "2026-10-28",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "43030118",
-      "title": "Unlocking the Healthy Aging Potential of Novel NMN-Based Nutritional Formulations: Cardiopulmonary, Cognitive, and Aging-Related Outcomes in a 42-Day Open-Label Study.",
-      "journal": "Nutrients",
-      "date": "2026-10-23",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "43052285",
-      "title": "Oncogenic signalling and host immunocompetency govern senescent cell clearance and systemic inflammation in a mouse model of oncogene-induced senescence.",
-      "journal": "Nature communications",
-      "date": "2026-10-20",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "43047278",
-      "title": "A Novel TORC1 Inhibitor, RLX-201, Improves Skin Health, Biomechanics, and Extracellular Matrix Integrity in a Double-Blind Clinical Study.",
-      "journal": "Journal of cosmetic dermatology",
-      "date": "2026-10-01",
-      "topic": "rapamycin"
-    },
-    {
-      "pmid": "42915856",
-      "title": "Gestational Exposure to the Food Processing Contaminant 3-MCPD Impairs Fetal Growth by Disrupting Placental Taurine Metabolism to Drive Vascular Senescence.",
-      "journal": "Journal of agricultural and food chemistry",
-      "date": "2026-09-30",
-      "topic": "taurine"
-    },
-    {
-      "pmid": "42781074",
-      "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
-      "journal": "Clinical interventions in aging",
-      "date": "2026-09-19",
-      "topic": "NAD+"
-    },
-    {
-      "pmid": "42787547",
-      "title": "Narrative review of intravenous NAD(+) and NAD(+) precursors in wellness and translational medicine.",
+      "pmid": "43065638",
+      "title": "Life aspirations, risk-benefit perceptions, and public acceptance of candidate gerotherapeutic medications: a preregistered national survey in Singapore.",
       "journal": "Frontiers in aging",
-      "date": "2026-09-10",
-      "topic": "NAD+"
+      "date": "2026-11-06",
+      "topic": "metformin"
     },
     {
-      "pmid": "42670437",
-      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
-      "journal": "Drug design, development and therapy",
-      "date": "2026-08-24",
-      "topic": "NAD+"
+      "pmid": "43084901",
+      "title": "The aging brain and epilepsy: Current knowledge and novel therapeutic targets.",
+      "journal": "Pharmacological reviews",
+      "date": "2026-10-30",
+      "topic": "rapamycin"
     },
     {
-      "pmid": "42872291",
-      "title": "Aging rate indicators and the search for anti-aging drugs.",
-      "journal": "Frontiers in science",
-      "date": "2026-01-01",
-      "topic": "ITP"
+      "pmid": "43034819",
+      "title": "Translating Geroscience Into Clinical Practice: Molecular Targets, Emerging Therapies, and Lifestyle Strategies for Healthy Longevity.",
+      "journal": "Cureus",
+      "date": "2026-10-15",
+      "topic": "metformin"
     }
   ]
 }
