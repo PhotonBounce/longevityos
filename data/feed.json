@@ -1,19 +1,26 @@
 {
-  "fetched_at": "2026-11-26T11:25:12.604Z",
+  "fetched_at": "2026-11-27T11:25:05.333Z",
   "entries": [
     {
-      "pmid": "42980248",
-      "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
-      "journal": "COPD",
-      "date": "2026-12-01",
-      "topic": "metformin"
+      "pmid": "43099196",
+      "title": "The Metabolism-Proteostasis Axis in Stem Cell Fate and Bone Marrow Niche Homeostasis: A Review.",
+      "journal": "Stem cell reviews and reports",
+      "date": "2026-11-27",
+      "topic": "rapamycin"
     },
     {
-      "pmid": "43084581",
-      "title": "Effect of metformin on HIV reservoir, inflammation and cell differentiation in non-diabetic older people with HIV: a two-year placebo-controlled pilot trial (Metforaging).",
-      "journal": "The Journal of infectious diseases",
-      "date": "2026-11-25",
-      "topic": "metformin"
+      "pmid": "43099173",
+      "title": "Age-related impairment of oncogenic surveillance promotes liver tumor initiation.",
+      "journal": "Nature aging",
+      "date": "2026-11-26",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43099141",
+      "title": "JNK activity provides an intrinsic adaptive phenotype to naive pluripotent cells.",
+      "journal": "Cell death and differentiation",
+      "date": "2026-11-26",
+      "topic": "senolytics"
     },
     {
       "pmid": "43071188",
@@ -21,6 +28,48 @@
       "journal": "Apoptosis : an international journal on programmed cell death",
       "date": "2026-11-23",
       "topic": "rapamycin"
+    },
+    {
+      "pmid": "43094606",
+      "title": "Procyanidin C1 Enhances the Osteogenic Potential of Senescent Periodontal Ligament Stem Cells via YAP Modulation: An in vitro and in vivo Study.",
+      "journal": "Drug design, development and therapy",
+      "date": "2026-11-20",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43051097",
+      "title": "Circulating plasma taurine, GDF-15, and FGF-21 levels as candidate biomarkers of healthy aging.",
+      "journal": "The journal of nutrition, health & aging",
+      "date": "2026-11-18",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43100250",
+      "title": "Targeting Cellular Pseudo-Senescence to Overcome PARP inhibitors Resistance in BRCA1 -Mutated Breast Cancer.",
+      "journal": "bioRxiv : the preprint server for biology",
+      "date": "2026-11-17",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43038987",
+      "title": "Microbial bile acid deconjugation counters metabolic decline in aging.",
+      "journal": "Cell metabolism",
+      "date": "2026-11-16",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43037734",
+      "title": "Taurine metabolism: a potential target for neuroprotection in age-related neurodegenerative diseases.",
+      "journal": "Mammalian genome : official journal of the International Mammalian Genome Society",
+      "date": "2026-11-16",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43091875",
+      "title": "5-Azacytidine Reprograms Colorectal Cancer Cells Toward Senolytic Vulnerability and Enhanced T-Cell-Mediated Cytotoxicity.",
+      "journal": "International journal of molecular sciences",
+      "date": "2026-11-15",
+      "topic": "senolytics"
     },
     {
       "pmid": "43091845",
@@ -37,13 +86,6 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "43025890",
-      "title": "Metformin and the ageing brain: what biomarkers can and cannot tell us.",
-      "journal": "Journal of neurology, neurosurgery, and psychiatry",
-      "date": "2026-11-13",
-      "topic": "metformin"
-    },
-    {
       "pmid": "43080930",
       "title": "Omipalisib increases median lifespan by 41% in Caenorhabditis elegans but does not consistently delay Aβ-associated paralysis in GMC101 mutant.",
       "journal": "microPublication biology",
@@ -51,18 +93,18 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "43065872",
-      "title": "Multi-tissue metabolomic signatures of five longevity interventions converge on ergothioneine and lipid remodeling in male UM-HET3 mice.",
-      "journal": "Frontiers in aging",
-      "date": "2026-11-06",
-      "topic": "rapamycin"
+      "pmid": "42977036",
+      "title": "Evidence for spermine oxidase (SMOX) as a regulator of skeletal muscle mass throughout the lifespan.",
+      "journal": "Ageing research reviews",
+      "date": "2026-11-03",
+      "topic": "spermidine"
     },
     {
-      "pmid": "43065638",
-      "title": "Life aspirations, risk-benefit perceptions, and public acceptance of candidate gerotherapeutic medications: a preregistered national survey in Singapore.",
-      "journal": "Frontiers in aging",
-      "date": "2026-11-06",
-      "topic": "metformin"
+      "pmid": "42970081",
+      "title": "Age: a modifiable risk factor for cardiovascular disease?",
+      "journal": "Herz",
+      "date": "2026-11-02",
+      "topic": "taurine"
     },
     {
       "pmid": "43084901",
@@ -72,11 +114,60 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "43017153",
+      "title": "Integrated gut microbiome and fecal metabolome profiling identifies taurine-associated microbial dysbiosis across the Alzheimer's disease clinical spectrum.",
+      "journal": "Frontiers in aging neuroscience",
+      "date": "2026-10-28",
+      "topic": "taurine"
+    },
+    {
       "pmid": "43034819",
       "title": "Translating Geroscience Into Clinical Practice: Molecular Targets, Emerging Therapies, and Lifestyle Strategies for Healthy Longevity.",
       "journal": "Cureus",
       "date": "2026-10-15",
-      "topic": "metformin"
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42858321",
+      "title": "Effects of Spermidine Supplementation on Vascular Brain Health in Older Individuals with Subjective Cognitive Decline - An Exploratory MRI Analysis.",
+      "journal": "Aging and disease",
+      "date": "2026-10-09",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42858331",
+      "title": "Ginkgolide B as a Candidate Gerotherapeutic: Evidence, Evidentiary Limits, and Translational Requirements.",
+      "journal": "Aging and disease",
+      "date": "2026-10-02",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "42852089",
+      "title": "Polyamines, cardiorespiratory fitness, body composition, and mitochondrial function in older patients with coronary artery disease.",
+      "journal": "European heart journal open",
+      "date": "2026-09-21",
+      "topic": "spermidine"
+    },
+    {
+      "pmid": "43099380",
+      "title": "Artificial intelligence in cellular senescence research: a systematic review assessing methodological quality and reporting standards using PROBAST + AI and TRIPOD + AI.",
+      "journal": "BMC medical research methodology",
+      "date": "2026-09-05",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43099490",
+      "title": "Tauroursodeoxycholic acid rescues aged oocyte maturation in vitro by alleviating ER stress-induced PERK-eIF2α-CHOP activation.",
+      "journal": "BMC biology",
+      "date": "2026-08-26",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "42872291",
+      "title": "Aging rate indicators and the search for anti-aging drugs.",
+      "journal": "Frontiers in science",
+      "date": "2026-01-01",
+      "topic": "ITP"
     }
   ]
 }
