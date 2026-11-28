@@ -1,6 +1,48 @@
 {
-  "fetched_at": "2026-11-27T11:25:05.333Z",
+  "fetched_at": "2026-11-28T11:25:08.777Z",
   "entries": [
+    {
+      "pmid": "43102069",
+      "title": "Targeting senescent osteocytes with dasatinib and quercetin alleviates ionizing radiation‑induced bone damage.",
+      "journal": "Molecular medicine reports",
+      "date": "2027-01-01",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "43104486",
+      "title": "Targeted Activation of ROBO1 Mitigates Age-Related Osteoporosis by Enhancing Autophagic Flux.",
+      "journal": "FASEB journal : official publication of the Federation of American Societies for Experimental Biology",
+      "date": "2026-12-15",
+      "topic": "rapamycin"
+    },
+    {
+      "pmid": "43101910",
+      "title": "Cellular Senescence as a Therapeutic Target in Osteoarthritis: Insights From Preclinical Gene Therapy Studies.",
+      "journal": "Aging cell",
+      "date": "2026-12-01",
+      "topic": "senolytics"
+    },
+    {
+      "pmid": "42980248",
+      "title": "Targeting Accelerated Aging in COPD: The AMICO (A Trial of Metformin In COpd) Trial Design.",
+      "journal": "COPD",
+      "date": "2026-12-01",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "42970081",
+      "title": "Age: a modifiable risk factor for cardiovascular disease?",
+      "journal": "Herz",
+      "date": "2026-12-01",
+      "topic": "taurine"
+    },
+    {
+      "pmid": "43104727",
+      "title": "Spatially Organized Core-Shell Microcapsules Harness Epidermal-Dermal Coupling for Anti-Photoaging Therapy.",
+      "journal": "Small (Weinheim an der Bergstrasse, Germany)",
+      "date": "2026-11-27",
+      "topic": "rapamycin"
+    },
     {
       "pmid": "43099196",
       "title": "The Metabolism-Proteostasis Axis in Stem Cell Fate and Bone Marrow Niche Homeostasis: A Review.",
@@ -9,30 +51,30 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "43099173",
-      "title": "Age-related impairment of oncogenic surveillance promotes liver tumor initiation.",
+      "pmid": "43104119",
+      "title": "Decoding the role of cellular senescence in wounds.",
       "journal": "Nature aging",
-      "date": "2026-11-26",
+      "date": "2026-11-27",
       "topic": "senolytics"
     },
     {
-      "pmid": "43099141",
-      "title": "JNK activity provides an intrinsic adaptive phenotype to naive pluripotent cells.",
-      "journal": "Cell death and differentiation",
-      "date": "2026-11-26",
+      "pmid": "43103656",
+      "title": "Senescence-Driven Immune Dysfunction in Hepatobiliary Cancer: From Microenvironmental Mechanisms to Therapeutic Insights.",
+      "journal": "Cancer letters",
+      "date": "2026-11-27",
       "topic": "senolytics"
     },
     {
-      "pmid": "43071188",
-      "title": "Mechanism of the lysosomal calcium signaling TRPML1-TFEB axis in Parkinson's disease.",
-      "journal": "Apoptosis : an international journal on programmed cell death",
-      "date": "2026-11-23",
-      "topic": "rapamycin"
+      "pmid": "43084581",
+      "title": "Effect of metformin on HIV reservoir, inflammation and cell differentiation in non-diabetic older people with HIV: a two-year placebo-controlled pilot trial (Metforaging).",
+      "journal": "The Journal of infectious diseases",
+      "date": "2026-11-25",
+      "topic": "metformin"
     },
     {
-      "pmid": "43094606",
-      "title": "Procyanidin C1 Enhances the Osteogenic Potential of Senescent Periodontal Ligament Stem Cells via YAP Modulation: An in vitro and in vivo Study.",
-      "journal": "Drug design, development and therapy",
+      "pmid": "43100576",
+      "title": "A Measure of Transcriptional Dyscoordination for Quantifying Aging in Single Cells.",
+      "journal": "Research square",
       "date": "2026-11-20",
       "topic": "senolytics"
     },
@@ -65,13 +107,6 @@
       "topic": "taurine"
     },
     {
-      "pmid": "43091875",
-      "title": "5-Azacytidine Reprograms Colorectal Cancer Cells Toward Senolytic Vulnerability and Enhanced T-Cell-Mediated Cytotoxicity.",
-      "journal": "International journal of molecular sciences",
-      "date": "2026-11-15",
-      "topic": "senolytics"
-    },
-    {
       "pmid": "43091845",
       "title": "The Role of Autophagy in Aging and Longevity: A Comprehensive Review of Therapeutic Strategies to Modulate Autophagy and Promote Healthy Aging.",
       "journal": "International journal of molecular sciences",
@@ -79,11 +114,25 @@
       "topic": "rapamycin"
     },
     {
-      "pmid": "43068055",
-      "title": "Polyploidy is associated with enhanced S6K1-S6 signaling and improved tolerance to glucose starvation.",
-      "journal": "Biochemistry and biophysics reports",
-      "date": "2026-11-14",
-      "topic": "rapamycin"
+      "pmid": "43025890",
+      "title": "Metformin and the ageing brain: what biomarkers can and cannot tell us.",
+      "journal": "Journal of neurology, neurosurgery, and psychiatry",
+      "date": "2026-11-13",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "43090416",
+      "title": "Investigating the Acute Effects of American Ginseng (Panax quinquefolius L.) on Naturally Aged Rats: A Study Using Serum and Brain Metabolomics Analysis.",
+      "journal": "Metabolites",
+      "date": "2026-11-11",
+      "topic": "glycine"
+    },
+    {
+      "pmid": "43008267",
+      "title": "Age-Dependent Alterations in Glutathione Metabolites Following Muscle Injury.",
+      "journal": "Canadian journal of physiology and pharmacology",
+      "date": "2026-11-10",
+      "topic": "glycine"
     },
     {
       "pmid": "43080930",
@@ -93,18 +142,32 @@
       "topic": "rapamycin"
     },
     {
+      "pmid": "42994542",
+      "title": "From NAD(+) elevation to clinical benefit: Tissue-specific regulation and translational barriers in aging and age-related disease.",
+      "journal": "Pharmacological research",
+      "date": "2026-11-06",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "43065638",
+      "title": "Life aspirations, risk-benefit perceptions, and public acceptance of candidate gerotherapeutic medications: a preregistered national survey in Singapore.",
+      "journal": "Frontiers in aging",
+      "date": "2026-11-06",
+      "topic": "metformin"
+    },
+    {
+      "pmid": "43088457",
+      "title": "NAD(+)/NADH as the Electrochemical Currency and Other Specific Electron Transfer Molecules in Health and Disease.",
+      "journal": "Current issues in molecular biology",
+      "date": "2026-11-03",
+      "topic": "NAD+"
+    },
+    {
       "pmid": "42977036",
       "title": "Evidence for spermine oxidase (SMOX) as a regulator of skeletal muscle mass throughout the lifespan.",
       "journal": "Ageing research reviews",
       "date": "2026-11-03",
       "topic": "spermidine"
-    },
-    {
-      "pmid": "42970081",
-      "title": "Age: a modifiable risk factor for cardiovascular disease?",
-      "journal": "Herz",
-      "date": "2026-11-02",
-      "topic": "taurine"
     },
     {
       "pmid": "43084901",
@@ -121,11 +184,18 @@
       "topic": "taurine"
     },
     {
+      "pmid": "43030118",
+      "title": "Unlocking the Healthy Aging Potential of Novel NMN-Based Nutritional Formulations: Cardiopulmonary, Cognitive, and Aging-Related Outcomes in a 42-Day Open-Label Study.",
+      "journal": "Nutrients",
+      "date": "2026-10-23",
+      "topic": "NAD+"
+    },
+    {
       "pmid": "43034819",
       "title": "Translating Geroscience Into Clinical Practice: Molecular Targets, Emerging Therapies, and Lifestyle Strategies for Healthy Longevity.",
       "journal": "Cureus",
       "date": "2026-10-15",
-      "topic": "spermidine"
+      "topic": "metformin"
     },
     {
       "pmid": "42858321",
@@ -142,6 +212,13 @@
       "topic": "spermidine"
     },
     {
+      "pmid": "42884572",
+      "title": "Dietary Zinc Glycine Supplementation Attenuates Aging-Driven Cochlear Hair Cell Oxidative Injury and Hearing Loss.",
+      "journal": "Nutrients",
+      "date": "2026-09-23",
+      "topic": "glycine"
+    },
+    {
       "pmid": "42852089",
       "title": "Polyamines, cardiorespiratory fitness, body composition, and mitochondrial function in older patients with coronary artery disease.",
       "journal": "European heart journal open",
@@ -149,11 +226,18 @@
       "topic": "spermidine"
     },
     {
-      "pmid": "43099380",
-      "title": "Artificial intelligence in cellular senescence research: a systematic review assessing methodological quality and reporting standards using PROBAST + AI and TRIPOD + AI.",
-      "journal": "BMC medical research methodology",
-      "date": "2026-09-05",
-      "topic": "senolytics"
+      "pmid": "42781074",
+      "title": "Therapeutic Targeting of Inflammaging and Emerging Strategies for Managing Age-Related Multimorbidity: A Narrative Review.",
+      "journal": "Clinical interventions in aging",
+      "date": "2026-09-19",
+      "topic": "NAD+"
+    },
+    {
+      "pmid": "42787547",
+      "title": "Narrative review of intravenous NAD(+) and NAD(+) precursors in wellness and translational medicine.",
+      "journal": "Frontiers in aging",
+      "date": "2026-09-10",
+      "topic": "NAD+"
     },
     {
       "pmid": "43099490",
@@ -161,6 +245,13 @@
       "journal": "BMC biology",
       "date": "2026-08-26",
       "topic": "taurine"
+    },
+    {
+      "pmid": "42670437",
+      "title": "A Staged Translational Framework for Evaluating Oral Glutamatergic and Senescence-Modulating Strategies in Treatment-Resistant Depression.",
+      "journal": "Drug design, development and therapy",
+      "date": "2026-08-24",
+      "topic": "NAD+"
     },
     {
       "pmid": "42872291",
